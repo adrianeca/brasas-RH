@@ -1858,12 +1858,19 @@ function renderProfPage(){
 function pagProf(dir){ PROF_PAGE+=dir; renderProfPage(); }
 
 function renderProfNivelTable(profs){
-  // expande professores com unidade secundária, excluindo unidades não-operacionais
-  var EXCL_PROF_UNITS=['EDITORA','MÉTODOS','EC NEW'];
+  // Sempre usa apenas professores ativos com FUNÇÃO PROFESSOR, ignorando filtro de status da UI
+  profs=profs.filter(function(e){ return e.ativo&&e.funcao&&e.funcao.toUpperCase().includes('PROFESSOR'); });
+
+  // unidades não-operacionais
+  function isExcl(u){
+    var s=(u||'').trim().normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+    return s==='EDITORA'||s==='METODOS'||s==='EC NEW';
+  }
+
   var rows=[];
   profs.forEach(function(e){
-    if(EXCL_PROF_UNITS.indexOf(e.unidade)<0) rows.push({unidade:e.unidade, nivel:e.nivel});
-    if(e.unidadeSec&&EXCL_PROF_UNITS.indexOf(e.unidadeSec)<0) rows.push({unidade:e.unidadeSec, nivel:e.nivel});
+    if(!isExcl(e.unidade)) rows.push({unidade:e.unidade, nivel:e.nivel});
+    if(e.unidadeSec&&!isExcl(e.unidadeSec)) rows.push({unidade:e.unidadeSec, nivel:e.nivel});
   });
 
   var niveis=NIVEL_ORDER.filter(function(n){
@@ -1871,10 +1878,22 @@ function renderProfNivelTable(profs){
   });
   var unidades=[...new Set(rows.map(function(r){ return r.unidade; }))].sort();
 
+  // professores em mais de uma unidade operacional — EC NEW/EDITORA/MÉTODOS não contam como segunda unidade
+  var dupsNivel={};
+  var totalDups=0;
+  profs.forEach(function(e){
+    var primOk=!isExcl(e.unidade);
+    var secOk=e.unidadeSec&&!isExcl(e.unidadeSec);
+    if(primOk&&secOk){
+      dupsNivel[e.nivel]=(dupsNivel[e.nivel]||0)+1;
+      totalDups++;
+    }
+  });
+
   var hStyle='style="background:var(--navy-700);color:#fff"';
   var header='<tr '+hStyle+'><th '+hStyle+'>Unidade</th>'+
     niveis.map(function(n){ return '<th class="center" '+hStyle+'>'+n+'</th>'; }).join('')+
-    '<th class="num" '+hStyle+'>Total geral</th></tr>';
+    '<th class="num" '+hStyle+'>Total</th></tr>';
 
   var body=unidades.map(function(u,i){
     var rowBg=i%2===0?'background:var(--gray-50)':'';
@@ -1887,16 +1906,36 @@ function renderProfNivelTable(profs){
     return '<tr style="'+rowBg+'"><td><strong>'+esc(u)+'</strong></td>'+cells+'<td class="num"><strong>'+total+'</strong></td></tr>';
   }).join('');
 
-  // linha de totais
-  var totRow='<tr class="row-total"><td>Total geral</td>'+
+  var totNivel={}; niveis.forEach(function(n){ totNivel[n]=rows.filter(function(r){ return r.nivel===n; }).length; });
+  var grandTotal=rows.length;
+
+  var totStyle='style="background:var(--navy-600);color:#fff;font-weight:700"';
+  var totRow='<tr '+totStyle+'><td '+totStyle+'>Total</td>'+
+    niveis.map(function(n){ return '<td class="center" style="color:#fff">'+totNivel[n]+'</td>'; }).join('')+
+    '<td class="num" style="color:#fff">'+grandTotal+'</td></tr>';
+
+  var dupStyle='style="background:var(--gray-200);color:var(--gray-600);font-size:.82rem"';
+  var dupRow='<tr '+dupStyle+'><td '+dupStyle+' style="background:var(--gray-200);color:var(--gray-600);font-size:.82rem;padding-left:16px">Em +1 unidade</td>'+
+    niveis.map(function(n){ var d=dupsNivel[n]||0; return '<td class="center">'+(d||'-')+'</td>'; }).join('')+
+    '<td class="num">'+(totalDups||'-')+'</td></tr>';
+
+  // Professores exclusivamente em unidades excluídas: estão no KPI mas não entram em rows
+  var profsNotInRows=profs.filter(function(e){
+    return isExcl(e.unidade)&&(!e.unidadeSec||isExcl(e.unidadeSec));
+  });
+  // Total único = rows - duplicatas + os que só têm unidade excluída (reintegrando ao total)
+  var finalTotal=rows.length-totalDups+profsNotInRows.length;
+  var finStyle='style="background:var(--warning-600);color:#fff;font-weight:700"';
+  var finalRow='<tr '+finStyle+'><td '+finStyle+'>Total único</td>'+
     niveis.map(function(n){
-      var c=rows.filter(function(r){ return r.nivel===n; }).length;
-      return '<td class="center">'+c+'</td>';
+      var inTable=totNivel[n]-(dupsNivel[n]||0);
+      var notInTable=profsNotInRows.filter(function(e){ return e.nivel===n; }).length;
+      return '<td class="center" style="color:#fff">'+(inTable+notInTable)+'</td>';
     }).join('')+
-    '<td class="num">'+rows.length+'</td></tr>';
+    '<td class="num" style="color:#fff">'+finalTotal+'</td></tr>';
 
   var el=document.getElementById('tblProfNivel');
-  if(el) el.innerHTML=header+body+totRow;
+  if(el) el.innerHTML=header+body+totRow+dupRow+finalRow;
 }
 
 function loadTurmasData(){

@@ -199,9 +199,22 @@ Os dois gráficos separados (Top35 + Bottom20) foram substituídos por **um úni
 **Unidades excluídas** de filtro e tabela de Professores por Unidade/Nível:
 - `EXCL_PROF_UNITS = ['EDITORA', 'MÉTODOS', 'EC NEW']`
 
-**Tabela Professores por Unidade e Nível:**
+**Tabela Professores por Unidade e Nível (`renderProfNivelTable`):**
 - Header com `background:var(--navy-700); color:#fff`
 - Linhas ímpares com `background:var(--gray-50)` (zebra striping)
+- **Sempre filtra `ativo=true` + funcao inclui PROFESSOR** internamente, ignorando filtro de status da UI
+- Três linhas de rodapé:
+  - **Total** (navy-600): soma bruta de aparições (professor em 2 unidades conta 2×)
+  - **Em +1 unidade** (cinza): professores com 2 unidades operacionais — EDITORA/MÉTODOS/EC NEW NÃO contam como segunda unidade válida
+  - **Total único** (âmbar): `rows.length − totalDups + profsNotInRows` = headcount real
+- `profsNotInRows` = professores cujas AMBAS as unidades (primária e secundária) são excluídas — entram no KPI mas não em nenhuma linha da tabela; são somados de volta ao Total único para fechar a conta com o KPI
+- Função `isExcl(u)`: `u.normalize('NFD').replace(combining-marks,'').toUpperCase()` → compara com `'EDITORA'`, `'METODOS'`, `'EC NEW'` — cobre acentos NFC, NFD e maiúsculas/minúsculas
+- `nivel` lido de `getData()` com fallback: `'NÍVEL PROFESSORES'` → `'NÍVEL'` → `'NIVEL'` (col AH)
+
+### Brindes — acesso do role `diretor`
+- `diretor` agora tem acesso à aba Brindes (`ROLE_TABS['diretor']` inclui `'brindes'`)
+- `getBrindesConsolidado` filtra pelo campo `unidade` do session quando `role === 'diretor'`
+- Brindes foi movido para depois de Engajamento na navbar
 
 ---
 

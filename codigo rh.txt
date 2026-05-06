@@ -109,7 +109,7 @@ function getData(token) {
       const unidade    = unitParts[0] || '';
       const unidadeSec = String(g(row,'UNIDADE SECUNDÁRIA') || '').trim();
       const todasUnidades = [...new Set([unidade, unidadeSec].filter(Boolean))];
-      const nivel      = String(g(row,'NÍVEL PROFESSORES') || '').trim().replace(/,/g,'.');
+      const nivel      = String(g(row,'NÍVEL PROFESSORES') || g(row,'NÍVEL') || g(row,'NIVEL') || '').trim().replace(/,/g,'.');
 
       const admDate   = parseDate_(g(row,'DATA DE ADMISSÃO'));
       const birthDate = parseDate_(g(row,'DATA DE NASCIMENTO'));
