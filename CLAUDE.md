@@ -108,6 +108,30 @@ Paleta navy escuro como base, com tokens semânticos:
 - `--font-main` (DM Sans) e `--font-mono` (JetBrains Mono)
 - `--shadow-sm/md/lg`, `--radius/radius-sm`
 
+## Bugs conhecidos e corrigidos
+
+### Filtro de Mês/Ano na aba Coparticipação (`getCopaData`)
+
+**Sintoma:** o filtro não mostrava todos os meses — fevereiro e abril de 2026, por exemplo, sumiam do dropdown ou apareciam com o mês errado (fev → jan, abr → mar).
+
+**Causa raiz:** bug de fuso horário no Apps Script. A coluna `Mês/Ano` da planilha `oficial_coparticipação` armazena o 1º dia de cada mês como data (ex: `01/04/2026`). O Apps Script converte células de data em objetos `Date` com **meia-noite UTC**. O servidor do Apps Script roda em fuso negativo (tipo UTC-5), então `getMonth()` interpreta essa meia-noite UTC como o dia anterior — jogando o mês uma posição para trás.
+
+**Tentativas fracassadas:**
+- `getMonth()` + `getFullYear()` → errado porque o JVM do servidor tem fuso negativo
+- `Utilities.formatDate(..., Session.getScriptTimeZone())` → fuso do script pode divergir da planilha
+- `Utilities.formatDate(..., ss.getSpreadsheetTimeZone())` → UTC-3 deslocava meia-noite UTC para 21h do dia anterior, quebrando todos os dados (0 registros)
+
+**Solução correta:** usar `getUTCMonth()` e `getUTCFullYear()`. O Apps Script cria os objetos `Date` com a data da planilha representada como meia-noite **UTC**, então os métodos UTC sempre retornam o mês e ano corretos, independente do fuso do servidor.
+
+```javascript
+// Correto — não usar getMonth()/getFullYear() para datas de planilha no Apps Script
+mesStr = String(mesAnoRaw.getUTCMonth()+1).padStart(2,'0') + '/' + mesAnoRaw.getUTCFullYear();
+```
+
+> **Regra geral:** ao trabalhar com datas vindas de `sheet.getValues()` no Apps Script, sempre usar `getUTCMonth()` / `getUTCFullYear()` para extrair mês e ano. Nunca usar `getMonth()` / `getFullYear()` pois dependem do fuso do servidor, que é imprevisível.
+
+---
+
 ## Fluxo de trabalho no Git
 
 Esse projeto não tem CI nem deploy automático. As alterações são:

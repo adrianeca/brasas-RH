@@ -518,19 +518,30 @@ function getCopaData(token) {
       const mesAnoRaw = g(row,'Mês/Ano');
       let mesStr;
       if (mesAnoRaw instanceof Date && !isNaN(mesAnoRaw.getTime())) {
-        mesStr = String(mesAnoRaw.getMonth()+1).padStart(2,'0') + '/' + mesAnoRaw.getFullYear();
+        // getUTCMonth/Year evita bug de fuso: Apps Script cria Date com meia-noite UTC
+        mesStr = String(mesAnoRaw.getUTCMonth()+1).padStart(2,'0') + '/' + mesAnoRaw.getUTCFullYear();
       } else if (typeof mesAnoRaw === 'number' && mesAnoRaw > 0) {
         // Número serial OA (Excel/Sheets) → converte para Date
         const d = new Date(Math.round((mesAnoRaw - 25569) * 86400 * 1000));
-        mesStr = String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+        mesStr = String(d.getUTCMonth()+1).padStart(2,'0') + '/' + d.getUTCFullYear();
       } else {
         const s = String(mesAnoRaw||'').trim();
-        const m3 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); // DD/MM/YYYY
+        // DD/MM/YYYY ou DD/MM/YYYY HH:MM:SS
+        const m3 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        // MM/YYYY direto
+        const m2 = !m3 && s.match(/^(\d{1,2})\/(\d{4})$/);
+        // YYYY-MM ou YYYY-MM-DD (ISO)
+        const mISO = !m3 && !m2 && s.match(/^(\d{4})-(\d{2})/);
         if (m3) {
-          mesStr = String(m3[2]).padStart(2,'0') + '/' + m3[3]; // extrai MM/YYYY
+          mesStr = String(m3[2]).padStart(2,'0') + '/' + m3[3];
+        } else if (m2) {
+          mesStr = String(m2[1]).padStart(2,'0') + '/' + m2[2];
+        } else if (mISO) {
+          mesStr = mISO[2] + '/' + mISO[1];
         } else {
-          const m2 = s.match(/^(\d{1,2})\/(\d{4})$/);           // MM/YYYY direto
-          mesStr = m2 ? String(m2[1]).padStart(2,'0') + '/' + m2[2] : s;
+          // último recurso: tenta parsear como Date
+          const d = new Date(s);
+          mesStr = (!s || isNaN(d.getTime())) ? s : String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
         }
       }
 
