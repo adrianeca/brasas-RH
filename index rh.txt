@@ -838,11 +838,11 @@ var MONTHS_PT=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov'
 var BRINDE_SEL={'mdBrindeLocal':[],'mdBrindeTipo':[]}; 
 
 var ROLE_TABS={
-  'admin':   ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
-  'viewer':  ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
-  'brindes': ['brindes'],
-  'diretor': ['geral','people','horas','faltas','vr'],
-  'dp':      ['geral','people','horas','faltas','vr','copa']
+  'admin':     ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
+  'viewer':    ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
+  'marketing': ['geral','brindes'],
+  'diretor':   ['geral','people','horas','faltas','vr'],
+  'dp':        ['geral','people','horas','faltas','vr','copa']
 };
 
 // ACESSO
@@ -857,9 +857,6 @@ function applyRoleAccess(){
   var dpAllowed=['horas','faltas','vr','copa'].some(function(t){ return allowed.indexOf(t)>=0; });
   var dpWrap=document.getElementById('dp-nav-wrap');
   if(dpWrap) dpWrap.style.display=dpAllowed?'':'none';
-  if(allowed.length===1&&allowed[0]==='brindes'){
-    switchTab('brindes',document.querySelector('.tab-brindes-nav'));
-  }
 }
 function canAccess(tabId){
   var role=USER_INFO?USER_INFO.role:'viewer';

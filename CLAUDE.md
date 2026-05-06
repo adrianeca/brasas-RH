@@ -36,6 +36,8 @@ Dashboard interno de RH da rede BRASAS RJ, construído em **Google Apps Script**
 
 - **`admin`** — vê todos os dados de todas as unidades.
 - **`diretor`** — vê apenas os dados da própria unidade (filtro aplicado no backend).
+- **`marketing`** — acesso às abas Visão Geral e Brindes (antes chamado `brindes`, que dava acesso só a Brindes).
+- **`dp`** — acesso às abas Visão Geral, People, Horas, Faltas, VR e Coparticipação.
 
 ### Funções principais
 
