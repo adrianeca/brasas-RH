@@ -173,13 +173,27 @@ As abas **Horas, Faltas, VR e Coparticipação** foram removidas da barra de nav
 
 Variáveis globais: `PROF_PAGE`, `PROF_PAGE_SIZE=40`, `PROF_ROWS`. A função `renderProfessores()` preenche `PROF_ROWS` e chama `renderProfPage()`. Controles de navegação: `pagProf(dir)` e elementos `#prof-pag-prev`, `#prof-pag-next`, `#prof-pag-info`.
 
-### Professores — gráfico Turmas por Professor
+### Professores — gráficos de Turmas por Professor (dois gráficos)
 
-**Chave única:** o backend (`getTurmasData`) agora retorna `chaveMatricula` (coluna Z da planilha `db_max`). O frontend agrupa por `chaveMatricula` para diferenciar professores com mesmo apelido, mas exibe apenas o apelido no gráfico.
+O gráfico único foi substituído por dois gráficos de barras **verticais**.
 
-**Filtro de turmas de teste:** no backend, turmas cujo nome (coluna B da planilha `db_max`) bate com `/testes?\s+inc/i` são ignoradas antes de chegar ao frontend. Cobre: "Teste Incompleto", "Testes Incompletos", "Teste Incomp.", "Testes Incom." e variações de maiúsculas.
+**Campos retornados pelo backend (`getTurmasData`):**
+- `chaveMatricula` — coluna Z (`APELIDO | MATRÍCULA`): chave única para agrupar professores com mesmo apelido
+- `chave` — coluna Y (`UNIDADE | APELIDO`): label com unidade visível, usado no gráfico de baixo
+- `nivel` — coluna AC (`NÍVEL`): nível do professor, exibido como segunda linha do label no gráfico de baixo
+- Filtro de teste: turmas cujo nome (coluna B) bate com `/testes?\s+inc/i` são ignoradas
 
-**Visual:** altura dinâmica (26px × nº de barras), limitado a 40 barras, ordenado por quantidade decrescente.
+**Chart 1 — `chartTurmasTop35` (Top 35 com mais turmas):**
+- Barras verticais azul-navy (`#2a4d76`), labels = apelido, rotação 45–90°
+- Linha de referência tracejada laranja (`#e05c2a`) mostrando a **média BRASAS Geral** (total turmas ÷ total professores únicos, sobre todos os dados antes do filtro de unidade)
+- Gráfico misto (`type:'bar'` + `type:'line'` no mesmo dataset) criado diretamente com `new Chart(...)` (não usa `mkChart`)
+- Canvas `#chartTurmasTop35`, wrapper `#wrapTurmasTop35`, altura fixa `440px`
+
+**Chart 2 — `chartTurmasBot20` (Top 20 com menos turmas):**
+- Barras verticais âmbar (`#c9a227`), rotação 45–90°
+- Label em 2 linhas: `['UNIDADE | APELIDO', '(NÍVEL)']` — Chart.js renderiza arrays como multi-linha
+- Canvas `#chartTurmasBot20`, wrapper `#wrapTurmasBot20`, altura fixa `460px`
+- Criado diretamente com `new Chart(...)` para controle de rotação dos ticks
 
 ---
 

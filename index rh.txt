@@ -512,10 +512,19 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
      </div>
       <div class="charts-grid" style="margin-bottom:24px">
         <div class="chart-container full">
-          <div class="chart-title">Turmas Ativas por Professor</div>
-          <div class="chart-subtitle">Turmas com término futuro ou sem data de término · unidade no filtro</div>
-          <div class="chart-canvas-wrapper" style="height:320px">
-            <canvas id="chartTurmasProf"></canvas>
+          <div class="chart-title">Top 35 — Professores com Mais Turmas Ativas</div>
+          <div class="chart-subtitle">Linha vermelha = média BRASAS Geral · turmas ativas, sem testes incompletos</div>
+          <div class="chart-canvas-wrapper" id="wrapTurmasTop35" style="height:320px">
+            <canvas id="chartTurmasTop35"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="charts-grid" style="margin-bottom:24px">
+        <div class="chart-container full">
+          <div class="chart-title">Top 20 — Professores com Menos Turmas Ativas</div>
+          <div class="chart-subtitle">Unidade | Apelido · turmas ativas, sem testes incompletos</div>
+          <div class="chart-canvas-wrapper" id="wrapTurmasBot20" style="height:320px">
+            <canvas id="chartTurmasBot20"></canvas>
           </div>
         </div>
       </div>
@@ -1886,21 +1895,87 @@ function loadTurmasData(){
 function renderTurmasChart(){
   var fUn=v('f-prof-unidade');
   var data=fUn?ALL_TURMAS.filter(function(r){ return r.unidade===fUn; }):ALL_TURMAS;
-  // agrupa por chaveMatricula (professores com mesmo apelido mas matrículas diferentes)
-  var counts={},labels={};
+
+  // Agrupa por chaveMatricula; guarda apelido, chave (unidade|apelido) e nível
+  var counts={},apelidoMap={},chaveMap={},nivelMap={};
   data.forEach(function(r){
     var key=r.chaveMatricula||r.apelido;
     counts[key]=(counts[key]||0)+1;
-    if(!labels[key]) labels[key]=r.apelido; // exibe só o apelido no gráfico
+    if(!apelidoMap[key]) apelidoMap[key]=r.apelido;
+    if(!chaveMap[key])   chaveMap[key]=r.chave||r.apelido;
+    if(!nivelMap[key]&&r.nivel) nivelMap[key]=r.nivel;
   });
-  var sorted=Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; }).slice(0,40);
-  var chartLabels=sorted.map(function(e){ return labels[e[0]]||e[0]; });
-  var values=sorted.map(function(e){ return e[1]; });
-  // altura dinâmica: 22px por barra + margens
-  var chartHeight=Math.max(300, sorted.length*26+60);
-  var wrapper=document.querySelector('#chartTurmasProf')?.parentElement;
-  if(wrapper) wrapper.style.height=chartHeight+'px';
-  mkChart('chartTurmasProf','bar',chartLabels,values,'Turmas',{indexAxis:'y',barThickness:16,colors:['#2a4d76']});
+
+  var allEntries=Object.entries(counts);
+  var totalProfs=allEntries.length;
+  var totalTurmas=allEntries.reduce(function(s,e){ return s+e[1]; },0);
+  var avg=totalProfs>0?Math.round((totalTurmas/totalProfs)*10)/10:0;
+
+  // ── Chart 1: Top 35 com mais turmas + linha de média ──────────────────────
+  var top35=allEntries.slice().sort(function(a,b){ return b[1]-a[1]; }).slice(0,35);
+  var labelsTop=top35.map(function(e){ return apelidoMap[e[0]]||e[0]; });
+  var valuesTop=top35.map(function(e){ return e[1]; });
+  var w1=document.getElementById('wrapTurmasTop35');
+  if(w1) w1.style.height='440px';
+  var ctx1=document.getElementById('chartTurmasTop35');
+  if(ctx1){
+    if(CHARTS['chartTurmasTop35']){ CHARTS['chartTurmasTop35'].destroy(); delete CHARTS['chartTurmasTop35']; }
+    CHARTS['chartTurmasTop35']=new Chart(ctx1,{
+      data:{
+        labels:labelsTop,
+        datasets:[
+          {type:'bar',label:'Turmas Ativas',data:valuesTop,backgroundColor:'#2a4d76',borderRadius:4,barThickness:14,order:2},
+          {type:'line',label:'Média BRASAS ('+avg+')',data:labelsTop.map(function(){ return avg; }),
+           borderColor:'#e05c2a',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:true,position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:12,padding:12}},
+          tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+fmt(c.raw); }}}
+        },
+        scales:{
+          x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:10},maxRotation:90,minRotation:45,autoSkip:false}},
+          y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true}
+        }
+      }
+    });
+  }
+
+  // ── Chart 2: Bottom 20 com menos turmas (chave + nível como label) ────────
+  var bot20=allEntries.slice().sort(function(a,b){ return a[1]-b[1]; }).slice(0,20);
+  var labelsBot=bot20.map(function(e){
+    var key=e[0];
+    var chave=chaveMap[key]||e[0];
+    var nivel=nivelMap[key];
+    return nivel?[chave,'('+nivel+')']:chave;
+  });
+  var valuesBot=bot20.map(function(e){ return e[1]; });
+  var w2=document.getElementById('wrapTurmasBot20');
+  if(w2) w2.style.height='460px';
+  var ctx2=document.getElementById('chartTurmasBot20');
+  if(ctx2){
+    if(CHARTS['chartTurmasBot20']){ CHARTS['chartTurmasBot20'].destroy(); delete CHARTS['chartTurmasBot20']; }
+    CHARTS['chartTurmasBot20']=new Chart(ctx2,{
+      type:'bar',
+      data:{
+        labels:labelsBot,
+        datasets:[{label:'Turmas Ativas',data:valuesBot,backgroundColor:'#c9a227',borderRadius:4,barThickness:14}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:function(c){ return ' Turmas Ativas: '+fmt(c.raw); }}}
+        },
+        scales:{
+          x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:10},maxRotation:90,minRotation:45,autoSkip:false}},
+          y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true}
+        }
+      }
+    });
+  }
 }
 
 // RENDER: COHORT

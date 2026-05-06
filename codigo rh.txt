@@ -623,7 +623,9 @@ function getTurmasData(token) {
       const numF = (v) => { const n = parseFloat(String(v||'').replace(',','.')); return isNaN(n) ? 0 : n; };
       rows.push({
         apelido,
+        chave: gs(row, 'CHAVE') || apelido,
         chaveMatricula: gs(row, 'CHAVE MATRÍCULA') || apelido,
+        nivel: gs(row, 'NÍVEL') || gs(row, 'NIVEL') || '',
         unidade:  gs(row, 'UNIDADE AJUSTADA') || gs(row, 'UNIDADE'),
         alVigente: numF(gRaw(row, 'AL_VIGENTE')),
         alMaximo:  numF(gRaw(row, 'AL_MAXIMO')),
