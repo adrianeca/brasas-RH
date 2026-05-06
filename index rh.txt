@@ -1,0 +1,2469 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BRASAS Analytics · RH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy-900:#0a1628;--navy-800:#0f2035;--navy-700:#162d4a;
+  --navy-600:#1e3a5f;--navy-500:#2a4d76;--navy-400:#3d6b99;
+  --navy-300:#5a8aba;--navy-200:#89afd4;--navy-100:#c0d4e9;
+  --navy-50:#e8eff7;--navy-25:#f3f7fb;
+  --success-600:#15803d;--success-500:#22c55e;--success-100:#dcfce7;--success-50:#f0fdf4;
+  --danger-600:#dc2626;--danger-500:#ef4444;--danger-100:#fee2e2;--danger-50:#fef2f2;
+  --warning-600:#d97706;--warning-500:#f59e0b;--warning-100:#fef3c7;--warning-50:#fffbeb;
+  --accent-600:#7c3aed;--accent-500:#8b5cf6;--accent-100:#ede9fe;--accent-50:#f5f3ff;
+  --teal-600:#0d9488;--teal-100:#ccfbf1;--teal-50:#f0fdfa;
+  --white:#fff;--gray-50:#f8fafc;--gray-100:#f1f5f9;--gray-200:#e2e8f0;
+  --gray-300:#cbd5e1;--gray-400:#94a3b8;--gray-500:#64748b;--gray-600:#475569;--gray-700:#334155;
+  --font-main:'DM Sans',-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --shadow-sm:0 1px 2px rgba(10,22,40,.05);
+  --shadow-md:0 4px 12px rgba(10,22,40,.08);
+  --shadow-lg:0 8px 32px rgba(10,22,40,.14);
+  --radius:12px;--radius-sm:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900);line-height:1.6;min-height:100vh}
+#loginOverlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 60%,var(--navy-600) 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-card{background:rgba(255,255,255,.04);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:48px 44px;width:100%;max-width:420px}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo-brand{font-size:1.1rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:#fff;margin-top:10px}
+.login-logo-sub{font-size:.7rem;letter-spacing:.1em;color:var(--navy-200);text-transform:uppercase;margin-top:2px}
+.login-desc{font-size:.82rem;color:var(--navy-200);text-align:center;margin-bottom:28px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--navy-200);margin-bottom:6px}
+.login-field input{width:100%;padding:12px 16px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.9rem;color:#fff;transition:border-color .2s}
+.login-field input::placeholder{color:var(--navy-300)}
+.login-field input:focus{outline:none;border-color:var(--navy-300)}
+.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--navy-400),var(--navy-500));border:none;border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.92rem;font-weight:700;color:#fff;cursor:pointer;margin-top:8px;transition:opacity .2s,transform .15s}
+.login-btn:hover{opacity:.9;transform:translateY(-1px)}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.login-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius-sm);padding:10px 14px;font-size:.82rem;color:#fca5a5;margin-top:12px;display:none}
+.cockpit-nav{background:var(--navy-900);border-bottom:1px solid rgba(255,255,255,.08);padding:0 32px}
+.cockpit-nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:4px}
+.cockpit-nav-logo{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-300);padding:10px 16px 10px 0;margin-right:8px;border-right:1px solid rgba(255,255,255,.1);white-space:nowrap}
+.cockpit-tab{display:inline-flex;align-items:center;gap:7px;padding:10px 16px;font-size:.78rem;font-weight:600;color:var(--navy-300);text-decoration:none;border-bottom:2.5px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font-main)}
+.cockpit-tab:hover{color:var(--white)}
+.cockpit-tab.active{color:var(--white);border-bottom-color:var(--navy-300)}
+.cockpit-tab .tab-icon{font-size:.9rem}
+.cockpit-nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.nav-user{font-size:.75rem;color:var(--navy-300);display:flex;align-items:center;gap:6px}
+.nav-user strong{color:var(--navy-100)}
+.logout-btn{font-size:.72rem;font-weight:600;color:var(--navy-400);background:none;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:4px 10px;cursor:pointer;transition:color .15s,border-color .15s;font-family:var(--font-main)}
+.logout-btn:hover{color:#fff;border-color:rgba(255,255,255,.25)}
+.app-header{background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 100%);padding:28px 32px 24px;color:#fff;position:relative;overflow:hidden}
+.app-header::after{content:'';position:absolute;top:-50%;right:-10%;width:400px;height:400px;background:radial-gradient(circle,rgba(90,138,186,.15) 0%,transparent 70%);border-radius:50%}
+.header-content{position:relative;z-index:1;max-width:1400px;margin:0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+.header-text h1{font-size:1.65rem;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.header-text p{font-size:.875rem;color:var(--navy-200)}
+.header-meta{font-size:.72rem;color:var(--navy-300);margin-top:8px;display:flex;align-items:center;gap:8px}
+.header-logo{font-size:1.8rem;font-weight:900;color:#fff;letter-spacing:-.03em;background:rgba(255,255,255,.08);padding:10px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.12)}
+.container{max-width:1400px;margin:0 auto;padding:24px 32px 56px}
+.loading-overlay{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 20px;gap:16px}
+.spinner{width:40px;height:40px;border:3px solid var(--navy-100);border-top-color:var(--navy-500);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--gray-500);font-size:.9rem}
+.filters-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:var(--white);padding:20px 24px;border-radius:var(--radius);box-shadow:var(--shadow-sm);border:1px solid var(--gray-200);margin-bottom:24px}
+.filter-group{display:flex;flex-direction:column;gap:5px;min-width:130px;flex:1}
+.filter-group label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-500)}
+.filter-group select,.filter-group input[type=text],.filter-group input[type=date]{padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.85rem;color:var(--navy-800);background:var(--gray-50);min-height:38px;transition:border-color .2s;appearance:none;-webkit-appearance:none;width:100%}
+.filter-group select{padding-right:32px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.filter-group select:focus,.filter-group input:focus{outline:none;border-color:var(--navy-400);box-shadow:0 0 0 3px rgba(42,77,118,.1)}
+.date-range-wrap{display:flex;gap:6px;align-items:center}
+.date-range-wrap input{flex:1;min-width:0}
+.date-range-sep{font-size:.72rem;color:var(--gray-400);white-space:nowrap}
+.filter-actions{display:flex;gap:8px;align-items:flex-end}
+.btn-clear,.btn-download{padding:9px 16px;border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.82rem;font-weight:600;cursor:pointer;min-height:38px;transition:all .2s;white-space:nowrap}
+.btn-clear{border:1.5px solid var(--gray-200);background:var(--white);color:var(--gray-500)}
+.btn-clear:hover{border-color:var(--navy-300);color:var(--navy-600)}
+.btn-download{border:1.5px solid var(--success-500);background:var(--success-50);color:var(--success-600);display:flex;align-items:center;gap:5px}
+.btn-download:hover{background:var(--success-100)}
+.multi-dropdown{position:relative;min-height:38px}
+.multi-dropdown-btn{width:100%;padding:9px 32px 9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.85rem;color:var(--navy-800);background:var(--gray-50);cursor:pointer;text-align:left;min-height:38px;display:flex;justify-content:space-between;align-items:center;transition:border-color .2s}
+.multi-dropdown-btn:hover,.multi-dropdown-btn.open{border-color:var(--navy-400)}
+.multi-dropdown-btn.has-sel{background:var(--navy-50);border-color:var(--navy-300);color:var(--navy-700);font-weight:600}
+.multi-dropdown-chevron{font-size:.65rem;color:var(--gray-400);transition:transform .2s;flex-shrink:0;margin-left:6px}
+.multi-dropdown-btn.open .multi-dropdown-chevron{transform:rotate(180deg)}
+.multi-dropdown-list{display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:220px;width:100%;background:#fff;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);z-index:200;max-height:300px;overflow-y:auto}
+.multi-dropdown-list.open{display:block}
+.multi-opt{display:flex;align-items:center;gap:9px;padding:8px 12px;font-size:.84rem;color:var(--navy-800);cursor:pointer;transition:background .12s}
+.multi-opt:hover{background:var(--navy-25)}
+.multi-opt input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--navy-500);flex-shrink:0}
+.multi-opt-label{line-height:1.3}
+.multi-sep{height:1px;background:var(--gray-100);margin:4px 0}
+.insight-banner{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.insight-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);padding:18px 20px;display:flex;align-items:flex-start;gap:14px;box-shadow:var(--shadow-sm)}
+.insight-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0}
+.insight-icon.blue{background:var(--navy-50)}.insight-icon.green{background:var(--success-50)}.insight-icon.red{background:var(--danger-50)}.insight-icon.orange{background:var(--warning-50)}
+.insight-title{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);margin-bottom:4px}
+.insight-value{font-size:1.05rem;font-weight:700;color:var(--navy-800);line-height:1.3}
+.insight-detail{font-size:.78rem;color:var(--gray-500);margin-top:2px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;overflow:visible!important}
+.kpi-card{background:var(--white);padding:20px 22px;border-radius:var(--radius);box-shadow:var(--shadow-sm);border:1px solid var(--gray-200);overflow:visible!important}
+.kpi-card.highlight{background:linear-gradient(135deg,var(--navy-800) 0%,var(--navy-600) 100%);border-color:transparent}
+.kpi-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);margin-bottom:8px}
+.kpi-card.highlight .kpi-label{color:rgba(255,255,255,.7)}
+.kpi-value{font-size:1.55rem;font-weight:700;color:var(--navy-800);font-family:var(--font-mono);letter-spacing:-.02em}
+.kpi-card.highlight .kpi-value{color:#fff}
+.kpi-sub{font-size:.78rem;color:var(--gray-500);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kpi-card.highlight .kpi-sub{color:rgba(255,255,255,.7)}
+.kpi-sub-detail{font-size:.72rem;color:var(--gray-400);margin-top:2px;line-height:1.3}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+.chart-container{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow-sm);border:1px solid var(--gray-200);padding:20px 24px}
+.chart-container.full{grid-column:1/-1}
+.chart-title{font-size:.88rem;font-weight:600;color:var(--navy-800);margin-bottom:3px}
+.chart-subtitle{font-size:.75rem;color:var(--gray-400);margin-bottom:16px}
+.chart-canvas-wrapper{position:relative;height:280px}
+.chart-canvas-wrapper canvas{width:100%!important;height:100%!important}
+.func-pyramid{padding:4px 0}
+.func-row{display:grid;grid-template-columns:180px 1fr auto;align-items:center;gap:12px;padding:5px 0}
+.func-row-label{font-size:.78rem;font-weight:600;color:var(--navy-700);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.func-bar-wrap{background:var(--gray-100);border-radius:4px;height:22px;overflow:hidden}
+.func-bar-fill{height:100%;border-radius:4px;background:var(--navy-400);transition:width .6s cubic-bezier(.4,0,.2,1)}
+.func-meta{font-family:var(--font-mono);font-size:.73rem;color:var(--gray-500);white-space:nowrap;min-width:72px;text-align:right}
+.func-meta strong{color:var(--navy-700)}
+.section{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow-sm);border:1px solid var(--gray-200);margin-bottom:24px;overflow:hidden}
+.section-header{padding:18px 24px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.section-title{font-size:.95rem;font-weight:600;color:var(--navy-800)}
+.section-subtitle{font-size:.75rem;color:var(--gray-400)}
+.section-badge{font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--navy-50);color:var(--navy-600);font-family:var(--font-mono)}
+.section-actions{display:flex;gap:8px;align-items:center}
+.data-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.data-table thead th{padding:12px 16px;text-align:left;font-weight:600;color:var(--gray-500);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;background:var(--gray-50);border-bottom:1.5px solid var(--gray-200);white-space:nowrap}
+.data-table thead th.num{text-align:right}
+.data-table thead th.center{text-align:center}
+.data-table thead th.sortable{cursor:pointer;user-select:none;transition:color .15s,background .15s}
+.data-table thead th.sortable:hover{color:var(--navy-600);background:var(--navy-25)}
+.data-table thead th.sort-asc::after{content:' ↑';color:var(--navy-400)}
+.data-table thead th.sort-desc::after{content:' ↓';color:var(--navy-400)}
+.data-table tbody td{padding:11px 16px;border-bottom:1px solid var(--gray-100);color:var(--navy-800);vertical-align:middle}
+.data-table tbody td.num{text-align:right;font-family:var(--font-mono);font-size:.8rem}
+.data-table tbody td.center{text-align:center}
+.data-table tbody tr:hover{background:var(--navy-25)}
+.data-table tbody tr:last-child td{border-bottom:none}
+.data-table tbody tr.row-total{background:var(--navy-50);font-weight:700}
+.data-table tbody tr.row-total td{border-top:2px solid var(--navy-200)}
+.table-scroll{overflow-x:auto}
+.table-empty{text-align:center;padding:48px;color:var(--gray-400);font-size:.88rem}
+.rot-table{width:100%;border-collapse:collapse;font-size:.8rem;white-space:nowrap}
+.rot-table th{padding:9px 14px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center;background:var(--navy-700);color:#fff;border:1px solid var(--navy-600)}
+.rot-table th.rot-label{text-align:left;min-width:220px;background:var(--navy-800)}
+.rot-table th.rot-total{background:var(--navy-500);color:#fff}
+.rot-table td{padding:8px 14px;border:1px solid var(--gray-100);text-align:center;font-family:var(--font-mono);font-size:.78rem;color:var(--navy-800)}
+.rot-table td.rot-label{font-family:var(--font-main);text-align:left;color:var(--navy-700);background:var(--navy-25);padding-left:16px;min-width:220px;font-size:.8rem}
+.rot-table td.rot-total{background:var(--navy-50);font-weight:700;color:var(--navy-800)}
+.rot-table tr.rot-section-hd td{background:var(--gray-50);color:transparent;height:6px;padding:0;border-top:2px solid var(--gray-200)}
+.rot-table tr.rot-bold td{font-weight:700;background:rgba(42,77,118,.05)}
+.rot-table tr.rot-bold td.rot-label{background:rgba(42,77,118,.08);color:var(--navy-700)}
+.rot-table tr.rot-highlight td{background:var(--navy-800);color:#fff;font-weight:700}
+.rot-table tr.rot-highlight td.rot-label{background:var(--navy-800);color:var(--navy-100)}
+.rot-table tr.rot-highlight td.rot-total{background:var(--navy-600);color:#fff}
+.rot-table tr.rot-sub td{font-size:.73rem;color:var(--gray-600)}
+.rot-table tr.rot-sub td.rot-label{font-size:.73rem;color:var(--gray-500);padding-left:24px;font-style:italic}
+.rot-neg{color:var(--danger-600)!important;font-weight:700}
+.rot-pos{color:var(--success-600)!important;font-weight:700}
+.rot-dash{color:var(--gray-300)}
+.toggle-group{display:flex;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0}
+.toggle-btn{padding:7px 14px;font-family:var(--font-main);font-size:.78rem;font-weight:600;border:none;background:var(--white);color:var(--gray-500);cursor:pointer;transition:all .15s}
+.toggle-btn:not(:last-child){border-right:1px solid var(--gray-200)}
+.toggle-btn.active{background:var(--navy-700);color:#fff}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:600;font-family:var(--font-mono)}
+.badge-ativo{background:var(--success-100);color:var(--success-600)}
+.badge-inativo{background:var(--danger-100);color:var(--danger-600)}
+.badge-m{background:var(--navy-50);color:var(--navy-600)}
+.badge-f{background:var(--accent-100);color:var(--accent-600)}
+.badge-brinde{background:var(--warning-100);color:var(--warning-600)}
+.badge-nivel{background:var(--teal-100);color:var(--teal-600)}
+.badge-sem1{background:var(--success-100);color:var(--success-600)}
+.badge-sem2{background:var(--navy-50);color:var(--navy-600)}
+.progress-bar-wrap{background:var(--gray-100);border-radius:99px;height:6px;overflow:hidden;min-width:60px}
+.progress-bar-fill{height:100%;border-radius:99px;background:var(--navy-400);transition:width .4s}
+.help-wrap{position:relative;display:inline-flex;align-items:center}
+.help-btn{width:18px;height:18px;border-radius:50%;background:var(--gray-100);border:1.5px solid var(--gray-300);color:var(--gray-500);font-size:10px;font-weight:700;cursor:help;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-main);line-height:1}
+.help-popup{display:none;position:absolute;top:calc(100% + 8px);right:0;width:320px;background:var(--navy-900);color:#fff;border-radius:10px;padding:13px 15px;font-size:.77rem;line-height:1.55;font-family:var(--font-main);font-weight:400;box-shadow:0 8px 24px rgba(10,22,40,.35);z-index:999}
+.help-popup::before{content:'';position:absolute;top:-5px;right:10px;width:10px;height:10px;background:var(--navy-900);transform:rotate(45deg);border-radius:2px}
+.help-wrap:hover .help-popup{display:block}
+.gift-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.gift-summary-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);padding:16px 20px;box-shadow:var(--shadow-sm)}
+.gift-summary-label{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);margin-bottom:6px}
+.gift-summary-value{font-size:1.3rem;font-weight:700;color:var(--navy-800);font-family:var(--font-mono)}
+.gift-summary-sub{font-size:.75rem;color:var(--gray-500);margin-top:3px}
+.cohort-bar{display:inline-block;height:10px;border-radius:5px;background:var(--navy-300);vertical-align:middle;margin-right:6px;min-width:2px}
+.fade-in{animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.tab-content{display:none}
+.tab-content.active{display:block}
+#app{display:none}
+.email-link{color:var(--navy-400);text-decoration:none;font-size:.78rem}
+.email-link:hover{text-decoration:underline}
+.eng-question-cell{padding:16px 20px;border-right:1px solid var(--gray-100);border-bottom:1px solid var(--gray-100)}
+.eng-question-cell:nth-child(even){border-right:none}
+.eng-question-cell:last-child,.eng-question-cell:nth-last-child(2):nth-child(odd){border-bottom:none}
+.eng-q-label{font-size:.72rem;color:var(--gray-400);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.eng-open-label{font-size:.72rem;color:var(--gray-400);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.eng-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.eng-bar-option{font-size:.78rem;color:var(--navy-700);width:220px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eng-bar-track{flex:1;background:var(--gray-100);border-radius:3px;height:8px;overflow:hidden;min-width:40px}
+.eng-bar-fill{height:100%;border-radius:3px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.eng-bar-fill.pos{background:var(--success-500)!important}
+.eng-bar-fill.neg{background:var(--danger-500)!important}
+.eng-bar-fill.neu{background:var(--warning-500)!important}
+.eng-bar-fill.def{background:var(--navy-400)!important}
+.eng-bar-n{font-size:.72rem;color:var(--gray-400);width:24px;text-align:right;flex-shrink:0;font-family:var(--font-mono)}
+.eng-bar-pct{font-size:.72rem;color:var(--gray-400);width:36px;text-align:right;flex-shrink:0;font-family:var(--font-mono)}
+@media(max-width:900px){
+  .container{padding:16px}.charts-grid{grid-template-columns:1fr}
+  .insight-banner{grid-template-columns:1fr 1fr}
+  .gift-kpi-row{grid-template-columns:1fr 1fr}
+  .filters-bar{flex-direction:column}.filter-group{min-width:100%}
+  .header-content{flex-direction:column}.func-row{grid-template-columns:120px 1fr auto}
+}
+@media(max-width:600px){.insight-banner{grid-template-columns:1fr}.gift-kpi-row{grid-template-columns:1fr}.kpi-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-brand">🏫 BRASAS</div>
+      <div class="login-logo-sub">Analytics · Dashboard RH</div>
+    </div>
+    <div class="login-desc">Acesso restrito a colaboradores autorizados</div>
+    <div class="login-field"><label>E-mail</label><input type="email" id="loginEmail" placeholder="seu@brasas.com" autocomplete="username"></div>
+    <div class="login-field"><label>Senha</label><input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <nav class="cockpit-nav">
+    <div class="cockpit-nav-inner">
+      <div class="cockpit-nav-logo">🏫 BRASAS Analytics</div>
+      <button class="cockpit-tab active" onclick="switchTab('geral',this)"><span class="tab-icon">👥</span> Visão Geral</button>
+      <button class="cockpit-tab" onclick="switchTab('people',this)"><span class="tab-icon">📊</span> People Analytics</button>
+      <button class="cockpit-tab tab-brindes-nav" onclick="switchTab('brindes',this)"><span class="tab-icon">🎁</span> Brindes</button>
+      <button class="cockpit-tab" onclick="switchTab('professores',this)"><span class="tab-icon">🎓</span> Professores</button>
+      <button class="cockpit-tab" onclick="switchTab('horas',this)"><span class="tab-icon">⏱</span> Horas</button>
+      <button class="cockpit-tab" onclick="switchTab('faltas',this)"><span class="tab-icon">📉</span> Faltas</button>
+      <button class="cockpit-tab" onclick="switchTab('vr',this)"><span class="tab-icon">💳</span> VR</button>
+      <button class="cockpit-tab" onclick="switchTab('cohort',this)"><span class="tab-icon">📈</span> Cohort</button>
+      <button class="cockpit-tab" onclick="switchTab('engajamento',this)"><span class="tab-icon">💬</span> Engajamento</button>
+      <button class="cockpit-tab" onclick="switchTab('copa',this)"><span class="tab-icon">🏥</span> Coparticipação</button>
+      <div class="cockpit-nav-right">
+        <div class="nav-user">👤 <strong id="navUserName">—</strong></div>
+        <button class="logout-btn" onclick="doLogout()">Sair</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="app-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h1>Dashboard de RH</h1>
+        <p>Controle de colaboradores, People Analytics, Brindes e Cohort · Rede BRASAS RJ</p>
+        <div class="header-meta" id="headerMeta">Carregando dados…</div>
+      </div>
+      <div class="header-logo">RH</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="loadingState" class="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-text">Carregando dados da planilha…</div>
+    </div>
+
+    <!-- TAB: VISÃO GERAL -->
+    <div id="tab-geral" class="tab-content">
+      <div class="filters-bar">
+        <div class="filter-group" style="min-width:180px;flex:2">
+          <label>Unidade</label>
+          <div class="multi-dropdown" id="mdUnidade">
+            <button class="multi-dropdown-btn" id="mdUnidadeBtn" onclick="toggleMultiDrop('mdUnidade')">
+              <span id="mdUnidadeText">Todas as unidades</span>
+              <span class="multi-dropdown-chevron">▾</span>
+            </button>
+            <div class="multi-dropdown-list" id="mdUnidadeList">
+              <label class="multi-opt"><input type="checkbox" id="mdAll" checked onchange="handleMdAll(this)"><span class="multi-opt-label"><strong>Todas as unidades</strong></span></label>
+              <div class="multi-sep"></div>
+              <div id="mdUnidadeOpts"></div>
+            </div>
+          </div>
+        </div>
+        <div class="filter-group"><label>Status</label><select id="f-status" onchange="applyFilters()"><option value="">Todos</option><option value="Ativo">Ativos</option><option value="Inativo">Inativos</option></select></div>
+        <div class="filter-group"><label>Função</label><select id="f-funcao" onchange="applyFilters()"><option value="">Todas</option></select></div>
+        <div class="filter-group" style="min-width:100px;flex:0.6"><label>Sexo</label><select id="f-sexo" onchange="applyFilters()"><option value="">Todos</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
+        <div class="filter-group" style="min-width:240px;flex:1.5">
+          <label>Admissão (de → até)</label>
+          <div class="date-range-wrap"><input type="date" id="f-adm-de" onchange="applyFilters()"><span class="date-range-sep">→</span><input type="date" id="f-adm-ate" onchange="applyFilters()"></div>
+        </div>
+        <div class="filter-group" style="min-width:240px;flex:1.5">
+          <label>Desligamento (de → até)</label>
+          <div class="date-range-wrap"><input type="date" id="f-des-de" onchange="applyFilters()"><span class="date-range-sep">→</span><input type="date" id="f-des-ate" onchange="applyFilters()"></div>
+        </div>
+        <div class="filter-group"><label>Buscar nome</label><input type="text" id="f-nome" placeholder="Digite um nome…" oninput="applyFilters()" style="background-image:none"></div>
+        <div class="filter-actions"><button class="btn-clear" onclick="clearFilters()">Limpar</button></div>
+      </div>
+      <div class="insight-banner">
+        <div class="insight-card"><div class="insight-icon blue">👥</div><div><div class="insight-title">Total Colaboradores</div><div class="insight-value" id="ins-total">—</div><div class="insight-detail" id="ins-total-d">no filtro</div></div></div>
+        <div class="insight-card"><div class="insight-icon green">✅</div><div><div class="insight-title">Colaboradores Ativos</div><div class="insight-value" id="ins-ativos">—</div><div class="insight-detail" id="ins-ativos-d">—</div></div></div>
+        <div class="insight-card"><div class="insight-icon red">❌</div><div><div class="insight-title">Desligados</div><div class="insight-value" id="ins-inativos">—</div><div class="insight-detail" id="ins-inativos-d">—</div></div></div>
+        <div class="insight-card"><div class="insight-icon orange">🏢</div><div><div class="insight-title">Unidades com Ativos</div><div class="insight-value" id="ins-unidades">—</div><div class="insight-detail">no filtro atual</div></div></div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi-card highlight"><div class="kpi-label">Taxa de Retenção</div><div class="kpi-value" id="kpi-retencao">—</div><div class="kpi-sub">colaboradores ativos</div></div>
+        <div class="kpi-card"><div class="kpi-label">Tempo Médio de Casa</div><div class="kpi-value" id="kpi-tempo-medio">—</div><div class="kpi-sub">anos · apenas ativos</div></div>
+        <div class="kpi-card"><div class="kpi-label">Funcionário Mais Antigo</div><div class="kpi-value" id="kpi-mais-antigo">—</div><div class="kpi-sub" id="kpi-mais-antigo-nome">—</div><div class="kpi-sub-detail" id="kpi-mais-antigo-d">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Admissão Mais Recente</div><div class="kpi-value" id="kpi-mais-recente">—</div><div class="kpi-sub" id="kpi-mais-recente-nome">—</div><div class="kpi-sub-detail" id="kpi-mais-recente-d">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Plano de Saúde</div><div class="kpi-value" id="kpi-plano">—</div><div class="kpi-sub">cobertos (ativos)</div></div>
+        <div class="kpi-card"><div class="kpi-label">Dependentes</div><div class="kpi-value" id="kpi-dep">—</div><div class="kpi-sub">total no plano</div></div>
+      </div>
+      <div class="section" style="margin-bottom:24px">
+        <div class="section-header"><div><div class="section-title">Distribuição por Função</div><div class="section-subtitle">Colaboradores ativos ordenados por headcount</div></div><div class="section-badge" id="func-chart-badge">—</div></div>
+        <div style="padding:16px 24px 20px"><div class="func-pyramid" id="funcPyramid"></div></div>
+      </div>
+      <div class="section">
+        <div class="section-header"><div><div class="section-title">Detalhamento por Unidade</div><div class="section-subtitle">Ativos, inativos e taxa de retenção por unidade</div></div><div class="section-badge" id="tbl-unit-badge">0 unidades</div></div>
+        <div class="table-scroll"><table class="data-table"><thead><tr><th class="sortable" onclick="sortUnit('u')">Unidade</th><th class="num sortable" onclick="sortUnit('ativos')">Ativos</th><th class="num sortable" onclick="sortUnit('inativos')">Inativos</th><th class="num sortable" onclick="sortUnit('total')">Total</th><th class="num sortable" onclick="sortUnit('ret')">% Retenção</th><th>Distribuição</th></tr></thead><tbody id="tblUnidadeBody"></tbody></table></div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div><div class="section-title">Lista de Colaboradores</div><div class="section-subtitle">Clique nos cabeçalhos para ordenar</div></div>
+          <div class="section-actions"><div class="section-badge" id="tbl-emp-badge">0 registros</div><button class="btn-download" onclick="downloadCSV()">⬇ Exportar CSV</button></div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="tblEmps">
+            <thead><tr>
+              <th class="sortable" data-col="nome" onclick="sortEmps('nome')">Nome</th>
+              <th class="sortable" data-col="unidade" onclick="sortEmps('unidade')">Unidade</th>
+              <th class="sortable" data-col="funcao" onclick="sortEmps('funcao')">Função</th>
+              <th class="center sortable" data-col="sexo" onclick="sortEmps('sexo')">Sexo</th>
+              <th class="center sortable" data-col="status" onclick="sortEmps('status')">Status</th>
+              <th class="num sortable" data-col="dataAdm" onclick="sortEmps('dataAdm')">Admissão</th>
+              <th class="num sortable" data-col="tenureYears" onclick="sortEmps('tenureYears')">Anos Casa</th>
+              <th class="num sortable" data-col="dataDeslig" onclick="sortEmps('dataDeslig')">Dt. Deslig.</th>
+              <th class="sortable" data-col="emailBrasas" onclick="sortEmps('emailBrasas')">E-mail BRASAS</th>
+            </tr></thead>
+            <tbody id="tblEmpsBody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--gray-100)">
+          <div style="font-size:.78rem;color:var(--gray-500)" id="pag-info">—</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-clear" id="pag-prev" onclick="pagEmps(-1)" style="min-height:32px;padding:6px 14px">← Anterior</button>
+            <button class="btn-clear" id="pag-next" onclick="pagEmps(1)" style="min-height:32px;padding:6px 14px">Próxima →</button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /tab-geral -->
+
+    <!-- TAB: PEOPLE ANALYTICS -->
+    <div id="tab-people" class="tab-content">
+      <div class="filters-bar">
+        <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="pf-unidade" onchange="renderPeople()"><option value="">Todas</option></select></div>
+        <div class="filter-group"><label>Status</label><select id="pf-status" onchange="renderPeople()"><option value="ativo">Apenas Ativos</option><option value="">Todos</option><option value="inativo">Apenas Inativos</option></select></div>
+        <div class="filter-group"><label>Sexo</label><select id="pf-sexo" onchange="renderPeople()"><option value="">Todos</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
+        <div class="filter-group"><label>Função</label><select id="pf-funcao" onchange="renderPeople()"><option value="">Todas</option></select></div>
+        <div class="filter-actions"><button class="btn-clear" onclick="clearPeopleFilters()">Limpar</button></div>
+      </div>
+      <div class="kpi-row" id="people-kpis"></div>
+      <div class="charts-grid">
+        <div class="chart-container"><div class="chart-title">Distribuição por Gênero</div><div class="chart-subtitle">Colaboradores no filtro</div><div class="chart-canvas-wrapper"><canvas id="chartGenero"></canvas></div></div>
+        <div class="chart-container"><div class="chart-title">Faixa Etária</div><div class="chart-subtitle">Colaboradores com data de nascimento</div><div class="chart-canvas-wrapper"><canvas id="chartIdade"></canvas></div></div>
+        <div class="chart-container"><div class="chart-title">Tempo de Casa</div><div class="chart-subtitle">Distribuição por faixa · ativos</div><div class="chart-canvas-wrapper"><canvas id="chartTempoAtivos"></canvas></div></div>
+        <div class="chart-container"><div class="chart-title">Plano de Saúde</div><div class="chart-subtitle">Distribuição por tipo de plano · ativos</div><div class="chart-canvas-wrapper"><canvas id="chartPlano"></canvas></div></div>
+        <div class="chart-container full"><div class="chart-title">Admissões por Ano</div><div class="chart-subtitle">Número de contratações por ano civil · a partir de 2022</div><div class="chart-canvas-wrapper" style="height:220px"><canvas id="chartAdmAno"></canvas></div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div><div class="section-title">📊 Relatório de Rotatividade</div><div class="section-subtitle"><span class="help-wrap">Contratações, demissões e índices de turnover por período<button class="help-btn" style="margin-left:6px">?</button><div class="help-popup"><strong>Fórmulas</strong><br>Rotatividade = Contratações + Demissões<br>Saldo fim = Saldo início + Contratações – Demissões<br>Turnover = Rotatividade ÷ Quadro médio × 100<br>Quadro médio = (Saldo início + Saldo fim) ÷ 2<br>&lt;6m = desligados com &lt;6 meses de casa</div></span></div></div>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <select id="r-unidade" onchange="renderRotatividade()" style="padding:7px 28px 7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.82rem;color:var(--navy-800);background:var(--gray-50);appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364748b%27 stroke-width=%272%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center;min-height:34px;cursor:pointer"><option value="">Todas as Unidades</option></select>
+            <div class="toggle-group"><button class="toggle-btn active" id="rotBtnAnual" onclick="setRotView('anual',this)">Anual</button><button class="toggle-btn" id="rotBtnMensal" onclick="setRotView('mensal',this)">Mensal</button></div>
+            <select id="r-ano" onchange="renderRotatividade()" style="display:none;padding:7px 28px 7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.82rem;color:var(--navy-800);background:var(--gray-50);appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364748b%27 stroke-width=%272%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center;min-height:34px;cursor:pointer"></select>
+          </div>
+        </div>
+        <div class="table-scroll" style="padding:0 0 4px"><table class="rot-table" id="tblRotatividade"><tbody id="tblRotBody"><tr><td colspan="10" class="table-empty">Carregando…</td></tr></tbody></table></div>
+      </div>
+      <div class="section">
+        <div class="section-header"><div class="section-title">Composição por Função e Gênero</div><div class="section-subtitle">Colaboradores no filtro</div></div>
+        <div class="table-scroll"><table class="data-table"><thead><tr><th>Função</th><th class="num">Masculino</th><th class="num">Feminino</th><th class="num">Total</th><th class="num">% Total</th></tr></thead><tbody id="tblGeneroFuncao"></tbody></table></div>
+      </div>
+    </div><!-- /tab-people -->
+
+    <!-- TAB: BRINDES -->
+    <div id="tab-brindes" class="tab-content">
+      <div class="filters-bar">
+        <div class="filter-group" style="min-width:140px">
+          <label>Ano</label>
+          <div class="multi-dropdown" id="mdBrindeAno">
+            <button class="multi-dropdown-btn" id="mdBrindeAnoBtn" onclick="toggleMultiDrop('mdBrindeAno')">
+              <span id="mdBrindeAnoText">2026</span>
+              <span class="multi-dropdown-chevron">▾</span>
+            </button>
+            <div class="multi-dropdown-list" id="mdBrindeAnoList">
+              <div id="mdBrindeAnoOpts">
+                <label class="multi-opt"><input type="checkbox" value="2026" checked onchange="updateMdBrindeDisplay('mdBrindeAno');renderBrindes()"><span class="multi-opt-label">2026</span></label>
+                <label class="multi-opt"><input type="checkbox" value="2027" onchange="updateMdBrindeDisplay('mdBrindeAno');renderBrindes()"><span class="multi-opt-label">2027</span></label>
+                <label class="multi-opt"><input type="checkbox" value="2028" onchange="updateMdBrindeDisplay('mdBrindeAno');renderBrindes()"><span class="multi-opt-label">2028</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+    <div class="filter-group"><label>Semestre</label><select id="f-brinde-sem" onchange="renderBrindes()"><option value="">Todos</option><option value="1º Semestre">1º Semestre</option><option value="2º Semestre">2º Semestre</option></select></div>
+    <div class="filter-group" style="min-width:160px">
+     <label>Unidade / Franquia</label>
+     <div class="multi-dropdown" id="mdBrindeLocal">
+    <button class="multi-dropdown-btn" id="mdBrindeLocalBtn" onclick="toggleMultiDrop('mdBrindeLocal')"><span id="mdBrindeLocalText">Todas</span><span class="multi-dropdown-chevron">▾</span></button>
+    <div class="multi-dropdown-list" id="mdBrindeLocalList"><div id="mdBrindeLocalOpts"></div></div>
+   </div>
+ </div>
+        <div class="filter-group" style="min-width:160px">
+          <label>Brinde</label>
+          <div class="multi-dropdown" id="mdBrindeTipo">
+            <button class="multi-dropdown-btn" id="mdBrindeTipoBtn" onclick="toggleMultiDrop('mdBrindeTipo')"><span id="mdBrindeTipoText">Todos</span><span class="multi-dropdown-chevron">▾</span></button>
+            <div class="multi-dropdown-list" id="mdBrindeTipoList"><div id="mdBrindeTipoOpts"></div></div>
+          </div>
+        </div>
+        <div class="filter-actions">
+  <button class="btn-download" onclick="renderBrindes()" style="border-color:var(--navy-400);background:var(--navy-50);color:var(--navy-700)">Aplicar</button>
+  <button class="btn-clear" onclick="clearBrindesFilters()">Limpar</button>
+</div>
+      </div>
+      <div class="gift-kpi-row">
+        <div class="gift-summary-card"><div class="gift-summary-label">Total de Brindes</div><div class="gift-summary-value" id="gk-total">0</div><div class="gift-summary-sub">no filtro</div></div>
+        <div class="gift-summary-card"><div class="gift-summary-label">1º Semestre</div><div class="gift-summary-value" id="gk-sem1">0</div><div class="gift-summary-sub">colaboradores</div></div>
+        <div class="gift-summary-card"><div class="gift-summary-label">2º Semestre</div><div class="gift-summary-value" id="gk-sem2">0</div><div class="gift-summary-sub">colaboradores</div></div>
+        <div class="gift-summary-card"><div class="gift-summary-label">Tipos Distintos</div><div class="gift-summary-value" id="gk-tipos">0</div><div class="gift-summary-sub">brindes diferentes</div></div>
+      </div>
+      <div class="section" style="margin-bottom:24px">
+        <div class="section-header">
+          <div class="section-title">Resumo por Brinde e Semestre</div>
+          <div class="section-subtitle">Quantidade por tipo de brinde · ano selecionado</div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="tblBrindeResumo" style="min-width:500px"></table>
+        </div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-container"><div class="chart-title">Brindes por Tipo</div><div class="chart-subtitle">Quantidade por brinde</div><div class="chart-canvas-wrapper"><canvas id="chartBrindesTipo"></canvas></div></div>
+        <div class="chart-container"><div class="chart-title">Brindes por Unidade/Franquia</div><div class="chart-subtitle">Distribuição</div><div class="chart-canvas-wrapper"><canvas id="chartBrindesUnidade"></canvas></div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div><div class="section-title">Lista de Brindes</div><div class="section-subtitle">Unidades e Franquias · ano selecionado</div></div>
+          <div class="section-actions"><div class="section-badge" id="brinde-badge">0 registros</div><button class="btn-download" onclick="downloadBrindesCSV()">⬇ Exportar CSV</button></div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Nome</th><th>Unidade</th><th class="center">Tipo</th><th class="num">Data Admissão</th><th class="num">Anos de Casa</th><th class="center">Semestre</th><th>Brinde</th></tr></thead>
+            <tbody id="tblBrindes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /tab-brindes -->
+
+    <!-- TAB: PROFESSORES -->
+    <div id="tab-professores" class="tab-content">
+      <div class="filters-bar">
+        <div class="filter-group"><label>Status</label><select id="f-prof-status" onchange="renderProfessores()"><option value="Ativo">Apenas Ativos</option><option value="">Todos</option></select></div>
+        <div class="filter-group"><label>Unidade</label><select id="f-prof-unidade" onchange="renderProfessores()"><option value="">Todas</option></select></div>
+        <div class="filter-group"><label>Nível</label><select id="f-prof-nivel" onchange="renderProfessores()"><option value="">Todos</option></select></div>
+      </div>
+      <div class="kpi-row" id="prof-kpis"></div>
+      <div class="charts-grid">
+        <div class="chart-container"><div class="chart-title">Distribuição por Nível</div><div class="chart-subtitle">Quantidade de professores por nível</div><div class="chart-canvas-wrapper"><canvas id="chartNivel"></canvas></div></div>
+        <div class="chart-container"><div class="chart-title">Professores por Unidade</div><div class="chart-subtitle">Headcount por unidade</div><div class="chart-canvas-wrapper"><canvas id="chartProfUnidade"></canvas></div></div>
+      </div>
+      <div class="charts-grid">
+      <div class="chart-container full">
+      <div class="chart-title">Admissões por Semestre · Ativos vs Total</div>
+      <div class="chart-subtitle">Professores admitidos a partir de 2022 · 1º e 2º semestre</div>
+     <div class="chart-canvas-wrapper" style="height:240px">
+     <canvas id="chartProfSemestre"></canvas>
+     </div>
+     </div>
+     </div>
+      <div class="charts-grid" style="margin-bottom:24px">
+        <div class="chart-container full">
+          <div class="chart-title">Turmas Ativas por Professor</div>
+          <div class="chart-subtitle">Turmas com término futuro ou sem data de término · unidade no filtro</div>
+          <div class="chart-canvas-wrapper" style="height:320px">
+            <canvas id="chartTurmasProf"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="section"><div class="section-header"><div><div class="section-title">Lista de Professores</div><div class="section-subtitle">Teachers com nível cadastrado</div></div><div class="section-badge" id="prof-badge">0 registros</div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Apelido</th><th>Nome Completo</th><th>Unidade</th><th class="center">Nível</th><th class="center">Status</th><th class="num">Anos de Casa</th><th>E-mail BRASAS</th></tr></thead><tbody id="tblProfessores"></tbody></table></div></div>
+      <div class="section">
+      <div class="section-header">
+        <div class="section-title">Professores por Unidade e Nível</div>
+        <div class="section-subtitle">Inclui unidade secundária</div>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table"><tbody id="tblProfNivel"></tbody></table>
+      </div>
+    </div>
+    </div><!-- /tab-professores -->
+
+    <!-- TAB: COHORT -->
+    <div id="tab-cohort" class="tab-content">
+      <div class="filters-bar">
+        <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="co-unidade" onchange="renderCohort()"><option value="">Todas</option></select></div>
+        <div class="filter-group"><label>Função</label><select id="co-funcao" onchange="renderCohort()"><option value="">Todas</option></select></div>
+        <div class="filter-actions"><button class="btn-clear" onclick="clearCohortFilters()">Limpar</button></div>
+      </div>
+      <div class="kpi-row" id="cohort-kpis"></div>
+      <div class="charts-grid">
+        <div class="chart-container"><div class="chart-title">Distribuição de Tempo de Casa</div><div class="chart-subtitle">Colaboradores ativos por faixa de anos</div><div class="chart-canvas-wrapper"><canvas id="chartCohortDist"></canvas></div></div>
+        <div class="chart-container"><div class="chart-title">Headcount por Ano de Admissão</div><div class="chart-subtitle">Colaboradores admitidos · a partir de 2022</div><div class="chart-canvas-wrapper"><canvas id="chartCohortAdm"></canvas></div></div>
+        <div class="chart-container full"><div class="chart-title">Evolução do Quadro · Admitidos vs Ainda Ativos</div><div class="chart-subtitle">Por ano de admissão · a partir de 2022</div><div class="chart-canvas-wrapper" style="height:240px"><canvas id="chartCohortAtivos"></canvas></div></div>
+      </div>
+      <div class="section"><div class="section-header"><div class="section-title">Análise de Cohort por Ano de Admissão</div><div class="section-subtitle">Contratados × ainda ativos · a partir de 2022</div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Ano Admissão</th><th class="num">Contratados</th><th class="num">Ainda Ativos</th><th class="num">Desligados</th><th class="num">Retenção</th><th class="num">Tempo Médio (anos)</th><th>Distribuição</th></tr></thead><tbody id="tblCohort"></tbody></table></div></div>
+    </div><!-- /tab-cohort -->
+
+    <!-- TAB: ENGAJAMENTO -->
+    <div id="tab-engajamento" class="tab-content">
+      <div class="filters-bar">
+        <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="ef-unidade" onchange="renderEngajamento()"><option value="">Todas as unidades</option></select></div>
+        <div class="filter-actions"><button class="btn-clear" onclick="clearEngFilters()">Limpar</button></div>
+      </div>
+      <div class="kpi-row" id="eng-kpis"></div>
+      <div class="section" style="margin-bottom:20px">
+        <div class="section-header"><div><div class="section-title">Gestão</div><div class="section-subtitle">Clima, comunicação e liderança</div></div><div class="section-badge" id="eng-score-gestao">—</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr" id="eng-grid-gestao"></div>
+      </div>
+      <div class="section" style="margin-bottom:20px">
+        <div class="section-header"><div><div class="section-title">Pontos a melhorar</div><div class="section-subtitle">Onboarding, treinamentos e necessidades da rotina</div></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr" id="eng-grid-pontos"></div>
+        <div style="padding:16px 24px;border-top:1px solid var(--gray-100)"><div class="eng-open-label">Do que você sente falta na sua rotina?</div><div id="eng-grid-falta"></div></div>
+      </div>
+      <div class="section" style="margin-bottom:20px">
+        <div class="section-header"><div><div class="section-title">Expectativa profissional</div><div class="section-subtitle">Área de atuação, motivação e fatores de saída</div></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr" id="eng-grid-prof"></div>
+        <div style="padding:16px 24px;border-top:1px solid var(--gray-100)"><div class="eng-open-label">O que mais te motiva a permanecer na empresa?</div><div id="eng-grid-motiva"></div></div>
+        <div style="padding:16px 24px;border-top:1px solid var(--danger-100);background:var(--danger-50)"><div class="eng-open-label" style="color:var(--danger-600)">⚠ O que faria você sair da empresa hoje? · dado sensível</div><div id="eng-grid-sair"></div></div>
+      </div>
+      <div class="section" style="margin-bottom:20px">
+        <div class="section-header"><div><div class="section-title">Experiência BRASAS</div><div class="section-subtitle">Colaboradores alunos do BRASAS</div></div><div class="section-badge" id="eng-bolsistas-badge">—</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr" id="eng-grid-bols"></div>
+      </div>
+    </div><!-- /tab-engajamento -->
+
+    <!-- TAB: HORAS -->
+<div id="tab-horas" class="tab-content">
+  <div class="filters-bar">
+    <div class="filter-group"><label>Ano</label><select id="h-ano" onchange="renderHoras()"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Mês</label><select id="h-mes" onchange="renderHoras()"><option value="">Todos</option></select></div>
+    <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="h-unidade" onchange="renderHoras()"><option value="">Todas</option></select></div>
+    <div class="filter-group"><label>Nível</label><select id="h-nivel" onchange="renderHoras()"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Buscar nome/apelido</label><input type="text" id="h-nome" placeholder="Digite…" oninput="renderHoras()" style="background-image:none"></div>
+    <div class="filter-actions"><button class="btn-clear" onclick="clearHorasFilters()">Limpar</button></div>
+  </div>
+  <div class="kpi-row" id="horas-kpis"></div>
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Detalhamento de Horas</div><div class="section-subtitle">Por professor · período selecionado</div></div>
+      <div class="section-actions">
+        <div class="section-badge" id="horas-badge">0 registros</div>
+        <button class="btn-download" onclick="downloadHorasCSV()">⬇ Exportar CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr>
+          <th>Unidade</th><th>Apelido</th><th>Nome</th><th class="center">Nível</th>
+          <th class="num">Mês</th><th class="num">Ano</th>
+          <th class="num">H. Turmas</th><th class="num">H. Sáb</th>
+          <th class="num">Extras</th><th class="num">Subs</th><th class="num">Subs Outras</th>
+          <th class="num">F. Desc</th><th class="num">F. Abon</th>
+          <th class="num" style="background:var(--navy-50);font-weight:700">Total Horas</th>
+        </tr></thead>
+        <tbody id="tblHoras"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--gray-100)">
+      <div style="font-size:.78rem;color:var(--gray-500)" id="horas-pag-info">—</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-clear" id="horas-pag-prev" onclick="pagHoras(-1)" style="min-height:32px;padding:6px 14px">← Anterior</button>
+        <button class="btn-clear" id="horas-pag-next" onclick="pagHoras(1)" style="min-height:32px;padding:6px 14px">Próxima →</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /tab-horas -->
+
+<!-- TAB: FALTAS -->
+<div id="tab-faltas" class="tab-content">
+  <div class="filters-bar">
+    <div class="filter-group"><label>Ano</label><select id="f2-ano" onchange="renderFaltas()"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Mês</label><select id="f2-mes" onchange="renderFaltas()"><option value="">Todos</option></select></div>
+    <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="f2-unidade" onchange="renderFaltas()"><option value="">Todas</option></select></div>
+    <div class="filter-actions"><button class="btn-clear" onclick="clearFaltasFilters()">Limpar</button></div>
+  </div>
+  <div class="kpi-row" id="faltas-kpis"></div>
+  <div class="charts-grid">
+    <div class="chart-container"><div class="chart-title">Faltas Descontadas por Unidade</div><div class="chart-subtitle">Total de horas descontadas</div><div class="chart-canvas-wrapper"><canvas id="chartFDescUnidade"></canvas></div></div>
+    <div class="chart-container"><div class="chart-title">Faltas Abonadas por Unidade</div><div class="chart-subtitle">Total de horas abonadas</div><div class="chart-canvas-wrapper"><canvas id="chartFAbonUnidade"></canvas></div></div>
+  </div>
+  <div class="section">
+    <div class="section-header"><div class="section-title">🏆 Ranking · Faltas Descontadas</div><div class="section-subtitle">Professores com mais horas descontadas no período</div></div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Apelido</th><th>Nome</th><th>Unidade</th><th class="center">Nível</th><th class="num">H. Descontadas</th><th class="num">Custo (R$)</th></tr></thead>
+        <tbody id="tblRankDesc"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header"><div class="section-title">🏆 Ranking · Faltas Abonadas</div><div class="section-subtitle">Professores com mais horas abonadas no período</div></div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Apelido</th><th>Nome</th><th>Unidade</th><th class="center">Nível</th><th class="num">H. Abonadas</th><th class="num">Custo (R$)</th></tr></thead>
+        <tbody id="tblRankAbon"></tbody>
+      </table>
+    </div>
+  </div>
+</div><!-- /tab-faltas -->
+<!-- TAB: VR -->
+<div id="tab-vr" class="tab-content">
+
+  <!-- SUBTABS -->
+  <div style="display:flex;gap:8px;margin-bottom:20px">
+    <button class="toggle-btn active" id="vrTabAdm" onclick="switchVrTab('adm',this)" style="border-radius:var(--radius-sm);border:1.5px solid var(--gray-200)">VR Administrativo</button>
+    <button class="toggle-btn" id="vrTabDoc" onclick="switchVrTab('doc',this)" style="border-radius:var(--radius-sm);border:1.5px solid var(--gray-200)">VR Docente</button>
+  </div>
+
+  <!-- ADMINISTRATIVO -->
+  <div id="vr-adm-panel">
+    <div class="filters-bar">
+      <div class="filter-group"><label>Unidade</label><select id="vra-unidade" onchange="renderVRAdm()"><option value="">Todas</option></select></div>
+      <div class="filter-group"><label>Mês</label><select id="vra-mes" onchange="renderVRAdm()"><option value="">Todos</option></select></div>
+      <div class="filter-group"><label>Ano</label><select id="vra-ano" onchange="renderVRAdm()"><option value="">Todos</option></select></div>
+      <div class="filter-group" style="flex:2"><label>Nome</label><select id="vra-nome" onchange="renderVRAdm()"><option value="">Todos</option></select></div>
+      <div class="filter-actions"><button class="btn-clear" onclick="clearVRAdm()">Limpar</button></div>
+    </div>
+    <div style="display:flex;gap:16px;margin-bottom:24px">
+      <div class="gift-summary-card" style="flex:1"><div class="gift-summary-label">Valor a Pagar</div><div class="gift-summary-value" id="vra-total-pagar">R$ 0,00</div></div>
+      <div class="gift-summary-card" style="flex:1"><div class="gift-summary-label">Valor a Descontar</div><div class="gift-summary-value" id="vra-total-desc" style="color:var(--danger-600)">R$ 0,00</div></div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div><div class="section-title">VR Administrativo</div><div class="section-subtitle">Dados consolidados por colaborador</div></div>
+        <div class="section-actions">
+          <div class="section-badge" id="vra-badge">0 registros</div>
+          <button class="btn-download" onclick="downloadVRAdmCSV()">⬇ Exportar CSV</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr>
+            <th>Unidade</th><th>Mês</th><th class="num">Ano</th>
+            <th>Matrícula</th><th>Nome</th>
+            <th class="num">Dias Previsto Mês</th>
+            <th class="num">Diferença Mês Anterior (Dias)</th>
+            <th class="num">Dias a Pagar</th>
+            <th class="num">Valor a Pagar</th>
+            <th class="num">Valor a Descontar</th>
+          </tr></thead>
+          <tbody id="tblVRAdm"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCENTE -->
+  <div id="vr-doc-panel" style="display:none">
+    <div class="filters-bar">
+      <div class="filter-group"><label>Unidade</label><select id="vrd-unidade" onchange="renderVRDoc()"><option value="">Todas</option></select></div>
+      <div class="filter-group"><label>Mês</label><select id="vrd-mes" onchange="renderVRDoc()"><option value="">Todos</option></select></div>
+      <div class="filter-group"><label>Ano</label><select id="vrd-ano" onchange="renderVRDoc()"><option value="">Todos</option></select></div>
+      <div class="filter-group" style="flex:2"><label>Docente</label><select id="vrd-nome" onchange="renderVRDoc()"><option value="">Todos</option></select></div>
+      <div class="filter-actions"><button class="btn-clear" onclick="clearVRDoc()">Limpar</button></div>
+    </div>
+    <div style="display:flex;gap:16px;margin-bottom:24px">
+      <div class="gift-summary-card" style="flex:1"><div class="gift-summary-label">Valor a Pagar</div><div class="gift-summary-value" id="vrd-total-pagar">R$ 0,00</div></div>
+      <div class="gift-summary-card" style="flex:1"><div class="gift-summary-label">Valor a Descontar</div><div class="gift-summary-value" id="vrd-total-desc" style="color:var(--danger-600)">R$ 0,00</div></div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div><div class="section-title">VR Docente</div><div class="section-subtitle">Dados consolidados por professor</div></div>
+        <div class="section-actions">
+          <div class="section-badge" id="vrd-badge">0 registros</div>
+          <button class="btn-download" onclick="downloadVRDocCSV()">⬇ Exportar CSV</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr>
+            <th>Unidade</th><th>Mês</th><th class="num">Ano</th>
+            <th>Matrícula</th><th>Docente</th>
+            <th class="num">CH Previsto</th>
+            <th class="num">Diferença Mês Anterior (Horas)</th>
+            <th class="num">Horas a Pagar</th>
+            <th class="num">Valor a Pagar</th>
+            <th class="num">Valor a Descontar</th>
+          </tr></thead>
+          <tbody id="tblVRDoc"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tab-vr -->
+<!-- TAB: COPARTICIPAÇÃO -->
+<div id="tab-copa" class="tab-content">
+  <div class="filters-bar">
+    <div class="filter-group"><label>Unidade</label><select id="cp-unidade" onchange="renderCopa()"><option value="">Todas</option></select></div>
+    <div class="filter-group"><label>Mês/Ano</label><select id="cp-mes" onchange="renderCopa()"><option value="">Todos</option></select></div>
+    <div class="filter-group" style="flex:2"><label>Buscar beneficiário</label><input type="text" id="cp-nome" placeholder="Digite um nome…" oninput="renderCopa()" style="background-image:none"></div>
+    <div class="filter-actions"><button class="btn-clear" onclick="clearCopaFilters()">Limpar</button></div>
+  </div>
+
+  <div class="kpi-row" id="copa-kpis"></div>
+
+  <!-- TABELA COPARTICIPAÇÃO -->
+  <div class="section" style="margin-bottom:24px">
+    <div class="section-header">
+      <div><div class="section-title">Valores a Cobrar · Coparticipação</div><div class="section-subtitle">Agrupado por unidade · mês · matrícula</div></div>
+      <div class="section-actions">
+        <div class="section-badge" id="copa-badge">0 registros</div>
+        <button class="btn-download" onclick="downloadCopaCSV()">⬇ Exportar CSV</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table" id="tblCopa">
+        <thead><tr>
+          <th>Unidade</th>
+          <th>Mês Faturamento</th>
+          <th>Matrícula</th>
+          <th>Beneficiário</th>
+          <th class="num">Valor</th>
+        </tr></thead>
+        <tbody id="tblCopaBody"></tbody>
+      </table>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--gray-100)">
+      <div style="font-size:.78rem;color:var(--gray-500)" id="copa-pag-info">—</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-clear" id="copa-pag-prev" onclick="pagCopa(-1)" style="min-height:32px;padding:6px 14px">← Anterior</button>
+        <button class="btn-clear" id="copa-pag-next" onclick="pagCopa(1)" style="min-height:32px;padding:6px 14px">Próxima →</button>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- TABELA GRATUIDADES -->
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Gratuidades</div><div class="section-subtitle">Coparticipações gratuitas por beneficiário</div></div>
+      <div class="section-badge" id="grat-badge">0 registros</div>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr>
+          <th>Unidade</th>
+          <th>Mês Faturamento</th>
+          <th>Matrícula</th>
+          <th>Beneficiário</th>
+          <th class="num">Gratuidades</th>
+        </tr></thead>
+        <tbody id="tblGratBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div><!-- /tab-copa -->
+  </div><!-- /container -->
+</div><!-- /app -->
+
+<script>
+// GLOBAIS
+var TOKEN=null, USER_INFO=null;
+var ALL_EMP=[], FILTERED=[];
+var ENG_DATA=[];
+var ALL_BRINDES=[];
+var ALL_TURMAS=[];
+var ENG_COLORS={pos:'#22c55e',neg:'#ef4444',neu:'#f59e0b',def:'#3d6b99'};
+var CHARTS={};
+var SORT_EMP={col:'nome',dir:1};
+var SORT_UNIT={col:'ativos',dir:-1};
+var SELECTED_UNITS=[];
+var ROT_VIEW='anual';
+var EMP_PAGE=0;
+var EMP_PAGE_SIZE=50;
+var PALETTE=['#2a4d76','#3d6b99','#5a8aba','#89afd4','#c0d4e9','#22c55e','#f59e0b','#8b5cf6','#ef4444','#0d9488','#f97316','#06b6d4','#84cc16','#ec4899','#6366f1'];
+var NIVEL_ORDER=['A','B','1.1','1.2','1.3','1.4','2.1','2.2','2.3','2.4','3.1','3.2','3.3','3.4'];
+var MONTHS_PT=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+var BRINDE_SEL={'mdBrindeLocal':[],'mdBrindeTipo':[]}; 
+
+var ROLE_TABS={
+  'admin':   ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
+  'viewer':  ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
+  'brindes': ['brindes'],
+  'diretor': ['geral','people','horas','faltas','vr'],
+  'dp':      ['geral','people','horas','faltas','vr','copa']
+};
+
+// ACESSO
+function applyRoleAccess(){
+  var role=USER_INFO?USER_INFO.role:'viewer';
+  var allowed=ROLE_TABS[role]||ROLE_TABS['viewer'];
+  document.querySelectorAll('.cockpit-tab').forEach(function(btn){
+    var match=(btn.getAttribute('onclick')||'').match(/switchTab\('([^']+)'/);
+    if(!match) return;
+    btn.style.display=allowed.indexOf(match[1])>=0?'':'none';
+  });
+  if(allowed.length===1&&allowed[0]==='brindes'){
+    switchTab('brindes',document.querySelector('.tab-brindes-nav'));
+  }
+}
+function canAccess(tabId){
+  var role=USER_INFO?USER_INFO.role:'viewer';
+  return (ROLE_TABS[role]||ROLE_TABS['viewer']).indexOf(tabId)>=0;
+}
+
+// ENGAJAMENTO VARS
+var ENG_COLOR={
+  'excelente':'pos','bom':'pos','regular':'neu','precisa melhorar':'neg',
+  'sim':'pos','não':'neg','nao':'neg',
+  'sim, tenho abertura para me expressar':'pos','sim, tenho abertura':'pos',
+  'não teve tempo direcionado para troca':'neg','a sua sugestão não foi colocada em prática':'neg',
+  'sua opinião foi desconsiderada':'neg','ainda não teve abertura':'neg',
+  'as opiniões são interpretadas de forma errada':'neg','não tem abertura':'neg','depende':'neu',
+  'leve':'pos','respeitoso':'pos','razoável':'neu','tóxico':'neg',
+  'todos os dias':'pos','3 vezes':'pos','2 vezes':'neu','1 vez':'neu','nunca':'neg',
+  'por enquanto nada':'pos','de nada até o momento':'pos',
+};
+var ENG_SCORE={'excelente':4,'bom':3,'regular':2,'precisa melhorar':1,'leve':4,'respeitoso':3,'razoável':2,'tóxico':1,'todos os dias':4,'3 vezes':3,'2 vezes':2,'1 vez':1,'nunca':0};
+var COLOR_MOTIVA={
+  'plano de carreira':'pos','salários e benefícios':'pos','salário e benefícios':'pos',
+  'qualidade de vida':'pos','algo muito pessoal':'pos','adaptação (gestão | metodologia e rotina)':'pos',
+  'logística':'neu','não trocar o certo pelo duvidoso':'pos','todas as opções anteriores':'pos',
+  'falta de perspectiva de crescimento':'neg','ambiente acolhedor':'pos','relacionamento interpessoal':'pos',
+};
+var COLOR_SAIR={
+  'plano de carreira':'neg','salários e benefícios':'neg','salário e benefícios':'neg',
+  'qualidade de vida':'neg','relacionamento interpessoal':'neg','ambiente acolhedor':'neg',
+  'logística':'neg','deixar de ser um ambiente respeitoso/agradável':'neg',
+  'dedicação aos estudos':'neu','falta de perspectiva de crescimento':'neg',
+  'por enquanto nada':'pos','todas as opções anteriores':'neg','algo muito pessoal':'neu',
+  'adaptação (gestão | metodologia e rotina)':'neu',
+};
+
+function engColor(val){
+  var v=String(val||'').toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,''); // remove acentos
+  // lookup no ENG_COLOR também normalizado
+  var normalized={};
+  Object.keys(ENG_COLOR).forEach(function(k){
+    var kn=k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    normalized[kn]=ENG_COLOR[k];
+  });
+  if(normalized[v]) return normalized[v];
+
+  var pos=['excelente','bom','otimo','sempre','sim','positivo','acolhido',
+           'abertura','ouvido','respeitoso','leve','fluida','boa','aberta',
+           'nada','nunca sairia','por enquanto nada','de nada'];
+  var neg=['ruim','pessimo','toxico','nunca','nao','desconsiderada',
+           'ignorado','errada','fechada','precisa melhorar',
+           'sair','faria sair','falta'];
+  var neu=['regular','razoavel','as vezes','depende','talvez','neutro','media'];
+
+  if(pos.some(function(p){ return v.includes(p); })) return 'pos';
+  if(neg.some(function(p){ return v.includes(p); })) return 'neg';
+  if(neu.some(function(p){ return v.includes(p); })) return 'neu';
+  return 'def';
+}
+function engScore(val){ var k=String(val).toLowerCase().trim(); return ENG_SCORE[k]!==undefined?ENG_SCORE[k]:null; }
+function countField(arr,field,multiSelect){
+  var counts={};
+  arr.forEach(function(r){
+    var raw=String(r[field]||'').trim(); if(!raw) return;
+    var vals=multiSelect?raw.split(', ').filter(Boolean):[raw];
+    vals.forEach(function(v){ counts[v]=(counts[v]||0)+1; });
+  });
+  return Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; });
+}
+function avgScoreField(arr,field){
+  var vals=arr.map(function(r){ return engScore(r[field]); }).filter(function(v){ return v!==null; });
+  return vals.length?vals.reduce(function(s,v){ return s+v; },0)/vals.length:null;
+}
+function avgScoreFields(arr,fields){
+  var scores=fields.map(function(f){ return avgScoreField(arr,f); }).filter(function(v){ return v!==null; });
+  return scores.length?scores.reduce(function(s,v){ return s+v; },0)/scores.length:null;
+}
+function scoreBadge(s,max){
+  if(s===null) return '—';
+  var label=s/max>=0.75?'Bom':s/max>=0.5?'Regular':'Atenção';
+  return s.toFixed(1)+' / '+max+' · '+label;
+}
+function engBarBlock(arr,field,label,opts){
+  opts=opts||{};
+  var multiSelect=opts.multiSelect||false,maxWidth=opts.maxWidth||200,colorMap=opts.colorMap||null;
+  var entries=countField(arr,field,multiSelect);
+  var total=multiSelect?entries.reduce(function(s,e){ return s+e[1]; },0):arr.filter(function(r){ return r[field]&&String(r[field]).trim(); }).length;
+  if(!entries.length) return '<div class="eng-question-cell"><div class="eng-q-label">'+esc(label)+'</div><div style="font-size:.78rem;color:var(--gray-400)">Sem respostas</div></div>';
+  var maxN=entries[0][1];
+  var bars=entries.map(function(e){
+    var opt=e[0],n=e[1],pctV=total?Math.round(n/total*100):0,barW=maxN?Math.round(n/maxN*100):0;
+    var cls=colorMap?(colorMap[String(opt).toLowerCase().trim()]||'def'):engColor(opt);
+    return '<div class="eng-bar-row"><div class="eng-bar-option" style="width:'+maxWidth+'px" title="'+esc(opt)+'">'+esc(opt)+'</div><div class="eng-bar-track"><div class="eng-bar-fill" style="width:'+barW+'%;background:'+(ENG_COLORS[cls]||ENG_COLORS.def)+'"></div></div><div class="eng-bar-n">'+n+'</div><div class="eng-bar-pct">'+pctV+'%</div></div>';
+  }).join('');
+  return '<div class="eng-question-cell"><div class="eng-q-label">'+esc(label)+'</div>'+bars+'</div>';
+}
+function engBarFull(arr,field,containerId,opts){
+  opts=opts||{};
+  var multiSelect=opts.multiSelect||false,colorMap=opts.colorMap||null;
+  var entries=countField(arr,field,multiSelect);
+  var total=multiSelect?entries.reduce(function(s,e){ return s+e[1]; },0):arr.filter(function(r){ return r[field]&&String(r[field]).trim(); }).length;
+  var maxN=entries.length?entries[0][1]:1;
+  var el=document.getElementById(containerId); if(!el) return;
+  el.innerHTML=entries.map(function(e){
+    var opt=e[0],n=e[1],pctV=total?Math.round(n/total*100):0,barW=maxN?Math.round(n/maxN*100):0;
+    var cls=colorMap?(colorMap[String(opt).toLowerCase().trim()]||'def'):engColor(opt);
+    return '<div class="eng-bar-row" style="margin-bottom:6px"><div class="eng-bar-option" style="width:260px" title="'+esc(opt)+'">'+esc(opt)+'</div><div class="eng-bar-track" style="max-width:380px"><div class="eng-bar-fill" style="width:'+barW+'%;background:'+(ENG_COLORS[cls]||ENG_COLORS.def)+'"></div></div><div class="eng-bar-n">'+n+'</div><div class="eng-bar-pct">'+pctV+'%</div></div>';
+  }).join('')||'<div style="font-size:.78rem;color:var(--gray-400)">Sem respostas</div>';
+}
+function loadEngajamento(){
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(!r.ok){ console.warn('Engajamento:',r.error); return; }
+      ENG_DATA=r.rows||[];
+      var units=[];
+      ENG_DATA.forEach(function(r){ if(r.unidade&&units.indexOf(r.unidade)===-1) units.push(r.unidade); });
+      units.sort();
+      var sel=document.getElementById('ef-unidade');
+      if(sel) units.forEach(function(u){ sel.appendChild(new Option(u,u)); });
+      renderEngajamento();
+    })
+    .withFailureHandler(function(e){ console.warn('Engajamento falhou:',e.message); })
+    .getEngagementData(TOKEN);
+}
+function clearEngFilters(){ var el=document.getElementById('ef-unidade'); if(el) el.value=''; renderEngajamento(); }
+function renderEngajamento(){
+  var fUnit=(document.getElementById('ef-unidade')||{}).value||'';
+  var d=fUnit?ENG_DATA.filter(function(r){ return r.unidade===fUnit; }):ENG_DATA;
+  var n=d.length;
+  var bolsistas=d.filter(function(r){ return String(r.eAluno).toLowerCase().trim()==='sim'; });
+  var pctBols=n?Math.round(bolsistas.length/n*100):0;
+  var scoreGestao=avgScoreFields(d,['commInterna','gestao','ambiente']);
+  var ouvidos=d.filter(function(r){ return String(r.seOuvido).toLowerCase().trim()==='sim, tenho abertura para me expressar'; }).length;
+  var naArea=d.filter(function(r){ return String(r.naAreaQueQuis).toLowerCase().trim()==='sim'; }).length;
+  var kpiEl=document.getElementById('eng-kpis');
+  if(kpiEl) kpiEl.innerHTML=
+    '<div class="kpi-card highlight"><div class="kpi-label">Respondentes</div><div class="kpi-value">'+n+'</div><div class="kpi-sub">'+(fUnit||'todas as unidades')+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label" style="display:flex;align-items:center;gap:6px">Score gestão<span class="help-wrap"><button class="help-btn">?</button><div class="help-popup">Média das notas de 3 perguntas:<br>· Comunicação interna<br>· Gestão atual<br>· Ambiente de trabalho<br><br>Excelente=4 · Bom=3<br>Regular=2 · Precisa melhorar=1<br><br>Score máximo = 4,0</div></span></div><div class="kpi-value">'+(scoreGestao!==null?scoreGestao.toFixed(1):'—')+'<span style="font-size:.9rem;font-weight:400"> /4</span></div><div class="kpi-sub">'+(scoreGestao!==null?(scoreGestao>=3?'✅ Bom':scoreGestao>=2?'⚠ Regular':'❌ Atenção'):'—')+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Se sentem ouvidos</div><div class="kpi-value">'+Math.round(ouvidos/Math.max(n,1)*100)+'%</div><div class="kpi-sub">'+ouvidos+' de '+n+' respondentes</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Na área que quiseram</div><div class="kpi-value">'+Math.round(naArea/Math.max(n,1)*100)+'%</div><div class="kpi-sub">'+naArea+' de '+n+' respondentes</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Alunos BRASAS</div><div class="kpi-value">'+pctBols+'%</div><div class="kpi-sub">'+bolsistas.length+' de '+n+' respondentes</div></div>';
+  var sgEl=document.getElementById('eng-score-gestao');
+  if(sgEl) sgEl.textContent=scoreGestao!==null?scoreBadge(scoreGestao,4):'—';
+  var gg=document.getElementById('eng-grid-gestao');
+  if(gg) gg.innerHTML=
+    engBarBlock(d,'seOuvido','Você se sente ouvido no trabalho?',{maxWidth:240})+
+    engBarBlock(d,'commInterna','Comunicação interna do BRASAS',{maxWidth:160})+
+    engBarBlock(d,'gestao','Como você descreve a sua gestão atual?',{maxWidth:120})+
+    engBarBlock(d,'ambiente','Como é o seu ambiente de trabalho?',{maxWidth:120})+
+    engBarBlock(d,'commEquipe','Comunicação na sua equipe',{maxWidth:180})+
+    engBarBlock(d,'trabalhoEquipe','Trabalho em equipe no seu time',{maxWidth:120});
+  var gp=document.getElementById('eng-grid-pontos');
+  if(gp) gp.innerHTML=
+    engBarBlock(d,'achandoBrasas','O que você está achando do BRASAS?',{maxWidth:160})+
+    engBarBlock(d,'onboarding','Como foi o seu onboarding?',{maxWidth:160})+
+    engBarBlock(d,'recebeuTreino','Recebeu algum treinamento?',{maxWidth:60})+
+    engBarBlock(d,'avaliacaoTreino','Como você avalia os treinamentos?',{maxWidth:160})+
+    engBarBlock(d,'seAcolhido','Você se sentiu acolhido na chegada?',{maxWidth:60})+
+    engBarBlock(d,'freqComm','Com que frequência acessa comunicações?',{maxWidth:120});
+  engBarFull(d,'sentaFalta','eng-grid-falta',{multiSelect:false});
+  var gpf=document.getElementById('eng-grid-prof');
+  if(gpf) gpf.innerHTML=engBarBlock(d,'naAreaQueQuis','Você está na área que sempre quis?',{maxWidth:60});
+  engBarFull(d,'motiva','eng-grid-motiva',{multiSelect:false,colorMap:COLOR_MOTIVA});
+  engBarFull(d,'fariasSair','eng-grid-sair',{multiSelect:false,colorMap:COLOR_SAIR});
+  var bbEl=document.getElementById('eng-bolsistas-badge');
+  if(bbEl) bbEl.textContent=bolsistas.length+' alunos · '+pctBols+'%';
+  var gb=document.getElementById('eng-grid-bols');
+  if(gb) gb.innerHTML=
+    engBarBlock(d,'eAluno','Você é aluno do BRASAS?',{maxWidth:60})+
+    engBarBlock(bolsistas,'achandoCurso','Você está gostando do curso e da metodologia?',{maxWidth:160});
+}
+
+// AUTENTICAÇÃO
+function doLogin(){
+  var email=document.getElementById('loginEmail').value.trim();
+  var pass=document.getElementById('loginPass').value;
+  var btn=document.getElementById('loginBtn'),err=document.getElementById('loginErr');
+  if(!email||!pass){ showLoginErr('Preencha e-mail e senha.'); return; }
+  btn.disabled=true; btn.textContent='Entrando…'; err.style.display='none';
+  google.script.run
+    .withSuccessHandler(function(r){
+      btn.disabled=false; btn.textContent='Entrar';
+      if(!r.ok){ showLoginErr(r.error); return; }
+      TOKEN=r.token; USER_INFO={name:r.name,role:r.role,unidade:r.unidade||''};
+      sessionStorage.setItem('rh_token',r.token);
+      sessionStorage.setItem('rh_user',JSON.stringify(USER_INFO));
+      afterLogin();
+    })
+    .withFailureHandler(function(e){ btn.disabled=false; btn.textContent='Entrar'; showLoginErr('Erro: '+e.message); })
+    .login(email,pass);
+}
+function showLoginErr(msg){ var el=document.getElementById('loginErr'); el.textContent=msg; el.style.display='block'; }
+function doLogout(){
+  if(TOKEN) google.script.run.logout(TOKEN);
+  sessionStorage.clear(); TOKEN=null; USER_INFO=null; ALL_EMP=[];
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginOverlay').style.display='flex';
+  document.getElementById('loginPass').value='';
+}
+window.addEventListener('load',function(){
+  var lp=document.getElementById('loginPass');
+  if(lp) lp.addEventListener('keydown',function(e){ if(e.key==='Enter') doLogin(); });
+  var le=document.getElementById('loginEmail');
+  if(le) le.addEventListener('keydown',function(e){ if(e.key==='Enter') document.getElementById('loginPass').focus(); });
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('#mdUnidade'))        closeMd('mdUnidade');
+    if(!e.target.closest('#mdBrindeAno'))      closeMd('mdBrindeAno');
+    if(!e.target.closest('#mdBrindeTipo'))     closeMd('mdBrindeTipo');
+    if(!e.target.closest('#mdBrindeLocal')) closeMd('mdBrindeLocal');
+  });
+  var t=sessionStorage.getItem('rh_token'),u=sessionStorage.getItem('rh_user');
+  if(t&&u){ TOKEN=t; USER_INFO=JSON.parse(u); afterLogin(); }
+});
+function afterLogin(){
+  document.getElementById('loginOverlay').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('navUserName').textContent=USER_INFO.name;
+  applyRoleAccess();
+  loadData();
+}
+
+// CARGA DE DADOS
+function loadData(){
+  document.getElementById('loadingState').style.display='flex';
+  document.querySelectorAll('.tab-content').forEach(function(t){ t.style.display='none'; t.classList.remove('active'); });
+  google.script.run
+    .withSuccessHandler(function(r){
+      document.getElementById('loadingState').style.display='none';
+      if(!r.ok){ alert('Erro: '+r.error); return; }
+      ALL_EMP=r.employees||[];
+      document.getElementById('headerMeta').textContent=ALL_EMP.length+' colaboradores carregados · '+fmtNow();
+      initFilters();
+      var role=USER_INFO?USER_INFO.role:'viewer';
+      var allowed=ROLE_TABS[role]||ROLE_TABS['viewer'];
+      if(allowed.indexOf('geral')>=0)       applyFilters();
+      if(allowed.indexOf('people')>=0)      renderPeople();
+      if(allowed.indexOf('professores')>=0){
+        renderProfessores();
+        setTimeout(function(){ loadTurmasData(); }, 150);
+      }
+      if(allowed.indexOf('cohort')>=0)      renderCohort();
+      if(allowed.indexOf('people')>=0)      renderRotatividade();
+      if(allowed.indexOf('brindes')>=0){
+        google.script.run
+          .withSuccessHandler(function(rb){
+            ALL_BRINDES=rb.ok?rb.rows:[];
+            initBrindesFilters();
+            renderBrindes();
+          })
+          .withFailureHandler(function(){
+            ALL_BRINDES=[];
+            initBrindesFilters();
+            renderBrindes();
+          })
+          .getBrindesConsolidado(TOKEN);
+      }
+      var firstTab=allowed[0];
+      var firstBtn=document.querySelector('.cockpit-tab[onclick*="switchTab(\''+firstTab+'\'"]');
+      switchTab(firstTab,firstBtn);
+      if(allowed.indexOf('engajamento')>=0){
+        setTimeout(function(){ loadEngajamento(); },100);
+      }
+      if(allowed.indexOf('horas')>=0||allowed.indexOf('faltas')>=0){
+        showTabLoading('horas'); showTabLoading('faltas');
+        setTimeout(function(){ loadHorasData(); },200);
+      }
+      if(allowed.indexOf('vr')>=0){
+        showTabLoading('vr');
+        setTimeout(function(){ loadVRData(); },300);
+      }
+
+      if(allowed.indexOf('copa')>=0){
+        showTabLoading('copa');
+        setTimeout(function(){ loadCopaData(); },400);
+      }
+    })
+    .withFailureHandler(function(e){
+      document.getElementById('loadingState').style.display='none';
+      if((e.message||'').includes('expirada')) doLogout();
+      else alert('Erro ao carregar dados: '+e.message);
+    })
+    .getData(TOKEN);
+}
+
+// TAB SWITCHING
+function switchTab(id,btn){
+  if(!canAccess(id)) return;
+  document.querySelectorAll('.tab-content').forEach(function(t){ t.style.display='none'; t.classList.remove('active'); });
+  document.querySelectorAll('.cockpit-tab').forEach(function(b){ b.classList.remove('active'); });
+  var el=document.getElementById('tab-'+id);
+  if(el){ el.style.display='block'; el.classList.add('active','fade-in'); }
+  if(btn) btn.classList.add('active');
+}
+
+// MULTI-SELECT (GENÉRICO)
+function toggleMultiDrop(id){
+  var btn=document.getElementById(id+'Btn'),list=document.getElementById(id+'List');
+  var open=list.classList.contains('open');
+  btn.classList.toggle('open',!open); list.classList.toggle('open',!open);
+}
+function closeMd(id){
+  var btn=document.getElementById(id+'Btn'),list=document.getElementById(id+'List');
+  if(btn) btn.classList.remove('open'); if(list) list.classList.remove('open');
+}
+function handleMdAll(cb){
+  document.querySelectorAll('#mdUnidadeOpts input[type=checkbox]').forEach(function(c){ c.checked=cb.checked; });
+  SELECTED_UNITS=[]; updateMdDisplay(); applyFilters();
+}
+function handleMdUnit(cb){
+  var allCb=document.getElementById('mdAll');
+  var allBoxes=[...document.querySelectorAll('#mdUnidadeOpts input[type=checkbox]')];
+  SELECTED_UNITS=allBoxes.filter(function(c){ return c.checked; }).map(function(c){ return c.value; });
+  allCb.checked=(SELECTED_UNITS.length===0||SELECTED_UNITS.length===allBoxes.length);
+  if(allCb.checked) SELECTED_UNITS=[];
+  updateMdDisplay(); applyFilters();
+}
+function updateMdDisplay(){
+  var btn=document.getElementById('mdUnidadeBtn'),span=document.getElementById('mdUnidadeText');
+  if(SELECTED_UNITS.length===0){ span.textContent='Todas as unidades'; btn.classList.remove('has-sel'); }
+  else if(SELECTED_UNITS.length<=3){ span.textContent=SELECTED_UNITS.join(', '); btn.classList.add('has-sel'); }
+  else{ span.textContent=SELECTED_UNITS.length+' unidades selecionadas'; btn.classList.add('has-sel'); }
+}
+
+// INIT FILTERS
+function initFilters(){
+  var units=[...new Set(ALL_EMP.map(function(e){ return e.unidade; }).filter(Boolean))].sort();
+  // visão geral
+  var optsDiv=document.getElementById('mdUnidadeOpts');
+  if(optsDiv) optsDiv.innerHTML=units.map(function(u){
+    return '<label class="multi-opt"><input type="checkbox" value="'+esc(u)+'" checked onchange="handleMdUnit(this)"><span class="multi-opt-label">'+esc(u)+'</span></label>';
+  }).join('');
+  [...new Set(ALL_EMP.map(function(e){ return e.funcao; }).filter(Boolean))].sort()
+    .forEach(function(f){ document.getElementById('f-funcao').appendChild(new Option(f,f)); });
+  // rotatividade
+  var rU=document.getElementById('r-unidade');
+  if(rU) units.forEach(function(u){ rU.appendChild(new Option(u,u)); });
+  var admYears=[...new Set(ALL_EMP.filter(function(e){ return e.admYear; }).map(function(e){ return e.admYear; }))].sort();
+  var curYear=new Date().getFullYear();
+  var rA=document.getElementById('r-ano');
+  if(rA){
+    var startY=Math.max(Math.min.apply(null,admYears.concat([curYear-5])),curYear-9);
+    for(var y=startY;y<=curYear;y++) rA.appendChild(new Option(y,y));
+    rA.value=curYear;
+  }
+  // professores
+  var fuP=document.getElementById('f-prof-unidade');
+  if(fuP) units.forEach(function(u){ fuP.appendChild(new Option(u,u)); });
+  var nivsArr=[...new Set(ALL_EMP.map(function(e){ return e.nivel; }).filter(Boolean))];
+  nivsArr.sort(function(a,b){ var ia=NIVEL_ORDER.indexOf(a),ib=NIVEL_ORDER.indexOf(b); return(ia===-1?99:ia)-(ib===-1?99:ib); });
+  var fPN=document.getElementById('f-prof-nivel');
+  if(fPN) nivsArr.forEach(function(n){ fPN.appendChild(new Option(n,n)); });
+  // people analytics
+  var pfU=document.getElementById('pf-unidade');
+  if(pfU) units.forEach(function(u){ pfU.appendChild(new Option(u,u)); });
+  var pfF=document.getElementById('pf-funcao');
+  if(pfF) [...new Set(ALL_EMP.map(function(e){ return e.funcao; }).filter(Boolean))].sort()
+    .forEach(function(f){ pfF.appendChild(new Option(f,f)); });
+  var coU=document.getElementById('co-unidade');
+  if(coU) units.forEach(function(u){ coU.appendChild(new Option(u,u)); });
+  var coF=document.getElementById('co-funcao');
+  if(coF) [...new Set(ALL_EMP.map(function(e){ return e.funcao; }).filter(Boolean))].sort()
+    .forEach(function(f){ coF.appendChild(new Option(f,f)); });
+}
+
+// BRINDES FILTERS
+function buildMdOpts(mdId,vals,onchange){
+  var div=document.getElementById(mdId+'Opts');
+  if(!div) return;
+  var searchId=mdId+'Search';
+  var optsId=mdId+'OptsInner';
+  div.innerHTML=
+    '<div style="padding:6px 8px;border-bottom:1px solid var(--gray-100)">' +
+    '<input type="text" id="'+searchId+'" placeholder="Buscar..." ' +
+    'style="width:100%;padding:5px 8px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--font-main);font-size:.82rem;background:var(--gray-50)" ' +
+    'oninput="filterMdOpts(\''+mdId+'\')" autocomplete="off">' +
+    '</div>' +
+    '<div id="'+optsId+'"></div>';
+  renderMdOpts(mdId, vals, onchange);
+  div._vals=vals;
+  div._onchange=onchange;
+}
+
+function renderMdOpts(mdId, vals, onchange){
+  var optsId=mdId+'OptsInner';
+  var inner=document.getElementById(optsId);
+  if(!inner) return;
+  inner.innerHTML=vals.map(function(u){
+    return '<label class="multi-opt"><input type="checkbox" value="'+esc(u)+'" onchange="'+onchange+'"><span class="multi-opt-label">'+esc(u)+'</span></label>';
+  }).join('');
+}
+
+function filterMdOpts(mdId){
+  var searchEl=document.getElementById(mdId+'Search');
+  var div=document.getElementById(mdId+'Opts');
+  if(!searchEl||!div) return;
+  var q=searchEl.value.toLowerCase().trim();
+  var vals=div._vals||[];
+  var onchange=div._onchange||'';
+  // mantém checked dos que já estavam
+  var checked=getMdSel(mdId);
+  var filtered=q?vals.filter(function(u){ return u.toLowerCase().includes(q); }):vals;
+  renderMdOpts(mdId, filtered, onchange);
+  // restaura estado dos checkboxes
+  document.querySelectorAll('#'+mdId+'OptsInner input').forEach(function(c){
+    if(checked.indexOf(c.value)>=0) c.checked=true;
+  });
+}
+function getMdSel(mdId){
+  var vals=[];
+  // busca no inner (quando tem busca) ou direto no Opts
+  var inner=document.getElementById(mdId+'OptsInner');
+  var container=inner||document.getElementById(mdId+'Opts');
+  if(!container) return vals;
+  container.querySelectorAll('input:checked').forEach(function(c){ if(c.value) vals.push(c.value); });
+  return vals;
+}
+function updateMdBrindeDisplay(mdId){
+  var span=document.getElementById(mdId+'Text');
+  if(!span) return;
+  var inner=document.getElementById(mdId+'OptsInner');
+  var container=inner||document.getElementById(mdId+'Opts');
+  if(!container){ span.textContent='Nenhum'; return; }
+  var checked=container.querySelectorAll('input:checked');
+  if(checked.length===0) span.textContent='Nenhum';
+  else if(checked.length<=2) span.textContent=[...checked].map(function(c){ return c.value; }).join(', ');
+  else span.textContent=checked.length+' selecionados';
+  var btn=document.getElementById(mdId+'Btn');
+  if(btn) btn.classList.toggle('has-sel',checked.length>0);
+}
+function isFranquia(tipo){
+  // aceita "FRANQUIA", "Franquia", "franquia"
+  return String(tipo||'').toLowerCase().trim() === 'franquia';
+}
+function initBrindesFilters(){
+  // lista todas as unidades/franquias com prefixo para distinguir visualmente
+  var todos=[...new Set(ALL_BRINDES.map(function(e){ return e.unidade; }).filter(Boolean))].sort();
+  var tipos=[...new Set(ALL_BRINDES.reduce(function(acc,e){
+    [2026,2027,2028].forEach(function(yr){ if(e.giftInfo[yr]) acc.push(e.giftInfo[yr].brinde); });
+    return acc;
+  },[]).filter(Boolean))].sort();
+  buildMdOpts('mdBrindeLocal',todos,'updateMdBrindeDisplay("mdBrindeLocal")');
+  buildMdOpts('mdBrindeTipo',tipos,'updateMdBrindeDisplay("mdBrindeTipo")');
+}
+function clearBrindesFilters(){
+  ['mdBrindeAno','mdBrindeLocal','mdBrindeTipo'].forEach(function(id){
+    document.querySelectorAll('#'+id+'Opts input').forEach(function(c){ c.checked=false; });
+    updateMdBrindeDisplay(id);
+  });
+  // reseta ano para 2026
+  var ano2026=document.querySelector('#mdBrindeAnoOpts input[value="2026"]');
+  if(ano2026){ ano2026.checked=true; updateMdBrindeDisplay('mdBrindeAno'); }
+  document.getElementById('f-brinde-sem').value='';
+  renderBrindes();
+}
+
+function renderBrindes(){
+  // anos selecionados (multi)
+  var anosChecked=getMdSel('mdBrindeAno').map(function(a){ return parseInt(a); });
+  if(!anosChecked.length) anosChecked=[2026];
+  var sem=v('f-brinde-sem');
+  var selTipo=getMdSel('mdBrindeTipo');
+  var selLocal=getMdSel('mdBrindeLocal');
+
+  // expande um registro por (colaborador × ano), para suportar multi-ano
+  var gifts=[];
+  ALL_BRINDES.forEach(function(e){
+    if(!e.ativo) return;
+    anosChecked.forEach(function(ano){
+      if(!e.giftInfo[ano]) return;
+      var fr=isFranquia(e.tipo);
+      if(selLocal.length && selLocal.indexOf(e.unidade)<0) return;
+      var g=Object.assign({},e,e.giftInfo[ano],{ano:ano});
+      if(sem && g.semestre!==sem) return;
+      if(selTipo.length && selTipo.indexOf(g.brinde)<0) return;
+      gifts.push(g);
+    });
+  });
+
+  gifts.sort(function(a,b){
+    return (a.ano-b.ano)||String(a.tipo).localeCompare(String(b.tipo))||
+           String(a.semestre).localeCompare(String(b.semestre))||
+           String(a.unidade).localeCompare(String(b.unidade))||
+           String(a.nome).localeCompare(String(b.nome));
+  });
+
+  var sem1=gifts.filter(function(g){ return g.semestre==='1º Semestre'; }).length;
+  var sem2=gifts.filter(function(g){ return g.semestre==='2º Semestre'; }).length;
+  set('gk-total',gifts.length); set('gk-sem1',sem1); set('gk-sem2',sem2);
+  set('gk-tipos',new Set(gifts.map(function(g){ return g.brinde; })).size);
+  set('brinde-badge',gifts.length+' registros');
+
+  var bT=groupBy(gifts,'brinde'),bU=groupBy(gifts,'unidade');
+  mkChart('chartBrindesTipo','bar',Object.keys(bT),Object.values(bT).map(function(a){ return a.length; }),'Brindes',{colors:['#f59e0b']});
+  mkChart('chartBrindesUnidade','bar',Object.keys(bU),Object.values(bU).map(function(a){ return a.length; }),'Brindes',{indexAxis:'y',barThickness:14,colors:['#2a4d76']});
+
+  document.getElementById('tblBrindes').innerHTML=gifts.length
+    ?gifts.map(function(g){
+        var tipoTag=isFranquia(g.tipo)
+          ?'<span class="badge" style="background:var(--accent-100);color:var(--accent-600)">Franquia</span>'
+          :'<span class="badge" style="background:var(--teal-100);color:var(--teal-600)">Unidade</span>';
+        return '<tr>'+
+          '<td>'+esc(String(g.nome||'').toUpperCase())+'</td>'+
+          '<td>'+esc(g.unidade)+'</td>'+
+          '<td class="center">'+tipoTag+'</td>'+
+          '<td class="num">'+fmtDateBr(g.dataAdm)+'</td>'+
+          '<td class="num" style="font-weight:700">'+g.anos+'</td>'+
+          '<td class="center"><span class="badge '+(g.semestre==='1º Semestre'?'badge-sem1':'badge-sem2')+'">'+g.semestre+'</span></td>'+
+          '<td><span class="badge badge-brinde">🎁 '+esc(g.brinde)+'</span></td>'+
+          '</tr>';
+      }).join('')
+    :'<tr><td colspan="7" class="table-empty">Nenhum brinde encontrado.</td></tr>';
+
+   // tabela resumo por brinde x semestre
+  var brindesDistintos=[...new Set(gifts.map(function(g){ return g.brinde; }))].sort();
+  var thead='<thead><tr>'+
+    '<th style="background:var(--navy-800);color:#fff;width:40%">Brinde</th>'+
+    '<th class="center" style="background:var(--navy-700);color:#fff;width:20%">1º Semestre</th>'+
+    '<th class="center" style="background:var(--navy-700);color:#fff;width:20%">2º Semestre</th>'+
+    '<th class="center" style="background:var(--navy-500);color:#fff;width:20%">Total</th>'+
+    '</tr></thead>';
+  var tbody='<tbody>';
+  brindesDistintos.forEach(function(b){
+    var s1=gifts.filter(function(g){ return g.brinde===b&&g.semestre==='1º Semestre'; }).length;
+    var s2=gifts.filter(function(g){ return g.brinde===b&&g.semestre==='2º Semestre'; }).length;
+    var tot=s1+s2;
+    tbody+='<tr>'+
+      '<td><strong>'+esc(b)+'</strong></td>'+
+      '<td class="center">'+(s1||'-')+'</td>'+
+      '<td class="center">'+(s2||'-')+'</td>'+
+      '<td class="center" style="font-weight:700">'+tot+'</td>'+
+      '</tr>';
+  });
+  // linha total
+  var t1=gifts.filter(function(g){ return g.semestre==='1º Semestre'; }).length;
+  var t2=gifts.filter(function(g){ return g.semestre==='2º Semestre'; }).length;
+  tbody+='<tr class="row-total"><td>Total geral</td>'+
+    '<td class="center">'+t1+'</td>'+
+    '<td class="center">'+t2+'</td>'+
+    '<td class="center">'+gifts.length+'</td>'+
+    '</tr></tbody>';
+  var tblR=document.getElementById('tblBrindeResumo');
+  if(tblR) tblR.innerHTML=thead+tbody; 
+
+
+  window._brindesAtual=gifts;
+}
+
+function downloadBrindesCSV(){
+  var gifts=window._brindesAtual||[];
+  var headers=['Tipo','Nome','Unidade','Data Admissão','Anos de Casa','Semestre','Brinde'];
+  var rows=gifts.map(function(g){ return [g.tipo,g.nome,g.unidade,fmtDateBr(g.dataAdm),g.anos,g.semestre,g.brinde]; });
+  var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c||'').replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='brindes_brasas_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function applyFilters(){
+  var fS=v('f-status'),fF=v('f-funcao'),fX=v('f-sexo'),fN=v('f-nome','').trim().toLowerCase();
+  var admDe=v('f-adm-de'),admAte=v('f-adm-ate'),desDe=v('f-des-de'),desAte=v('f-des-ate');
+  FILTERED=ALL_EMP.filter(function(e){
+    if(SELECTED_UNITS.length&&!e.todasUnidades.some(function(u){ return SELECTED_UNITS.includes(u); })) return false;
+    if(fS&&e.status!==fS) return false;
+    if(fF&&e.funcao!==fF) return false;
+    if(fX&&e.sexo!==fX) return false;
+    if(fN&&!e.nome.toLowerCase().includes(fN)) return false;
+    var admIso=toISO(e.dataAdm);
+    if(admDe&&admIso&&admIso<admDe) return false;
+    if(admAte&&admIso&&admIso>admAte) return false;
+    if(admDe&&!admIso) return false;
+    var desISO=toISO(e.dataDeslig);
+    if(desDe&&desISO&&desISO<desDe) return false;
+    if(desAte&&desISO&&desISO>desAte) return false;
+    return true;
+  });
+  EMP_PAGE=0;
+  renderGeral();
+}
+function clearFilters(){
+  SELECTED_UNITS=[];
+  document.getElementById('mdAll').checked=true;
+  document.querySelectorAll('#mdUnidadeOpts input[type=checkbox]').forEach(function(c){ c.checked=true; });
+  updateMdDisplay();
+  ['f-status','f-funcao','f-sexo'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['f-nome','f-adm-de','f-adm-ate','f-des-de','f-des-ate'].forEach(function(id){ document.getElementById(id).value=''; });
+  applyFilters();
+}
+
+// RENDER: VISÃO GERAL
+function renderGeral(){
+  var ativos=FILTERED.filter(function(e){ return e.ativo; });
+  var inativos=FILTERED.filter(function(e){ return !e.ativo; });
+  var unitsSet=[...new Set(ativos.map(function(e){ return e.unidade; }).filter(Boolean))];
+  set('ins-total',fmt(FILTERED.length)); set('ins-ativos',fmt(ativos.length));
+  set('ins-inativos',fmt(inativos.length)); set('ins-unidades',unitsSet.length);
+  set('ins-total-d','no filtro atual');
+  set('ins-ativos-d',pct(ativos.length,FILTERED.length)+'% do total');
+  set('ins-inativos-d',pct(inativos.length,FILTERED.length)+'% do total');
+  set('kpi-retencao',(FILTERED.length?pct(ativos.length,FILTERED.length):0)+'%');
+  var tempos=ativos.map(function(e){ return e.tenureYears; }).filter(function(t){ return t!==null&&t!==undefined&&!isNaN(t)&&isFinite(t); });
+  set('kpi-tempo-medio',tempos.length?avg(tempos).toFixed(1):'—');
+  var comTenure=ativos.filter(function(e){ return validNum(e.tenureYears); }).sort(function(a,b){ return b.tenureYears-a.tenureYears; });
+  if(comTenure.length){
+    var oldest=comTenure[0];
+    set('kpi-mais-antigo',oldest.tenureYears+' anos'); set('kpi-mais-antigo-nome',oldest.nome);
+    set('kpi-mais-antigo-d',(oldest.funcao||'—')+' · '+(oldest.unidade||'—'));
+  } else { set('kpi-mais-antigo','—'); set('kpi-mais-antigo-nome',''); set('kpi-mais-antigo-d',''); }
+  var byAdm=[...ativos].filter(function(e){ return e.admYear; }).sort(function(a,b){
+    return new Date(b.admYear,(b.admMonth||1)-1,b.admDay||1)-new Date(a.admYear,(a.admMonth||1)-1,a.admDay||1);
+  });
+  if(byAdm.length){
+    var rec=byAdm[0];
+    set('kpi-mais-recente',validNum(rec.tenureYears)?rec.tenureYears+' anos':'—');
+    set('kpi-mais-recente-nome',rec.nome);
+    set('kpi-mais-recente-d',(rec.funcao||'—')+' · '+(rec.unidade||'—'));
+  } else { set('kpi-mais-recente','—'); set('kpi-mais-recente-nome',''); set('kpi-mais-recente-d',''); }
+  var comPlano=ativos.filter(function(e){ return e.planoSaude&&e.planoSaude!=='-'&&e.planoSaude!==''; }).length;
+  set('kpi-plano',fmt(comPlano));
+  set('kpi-dep',fmt(ativos.reduce(function(s,e){ return s+(e.numDep||0); },0)));
+  renderFuncPyramid(ativos); renderUnitTable(); renderEmpsTable();
+}
+function renderFuncPyramid(ativos){
+  var byFunc=groupBy(ativos,'funcao');
+  var entries=Object.entries(byFunc).sort(function(a,b){ return b[1].length-a[1].length; });
+  var total=ativos.length,maxN=entries.length?entries[0][1].length:1;
+  set('func-chart-badge',entries.length+' funções · '+total+' ativos');
+  document.getElementById('funcPyramid').innerHTML=entries.map(function(e,i){
+    var fn=e[0],emps=e[1],n=emps.length;
+    var pctV=total?(n/total*100).toFixed(1):0,barW=Math.round(n/maxN*100);
+    return '<div class="func-row"><div class="func-row-label" title="'+esc(fn)+'">'+esc(fn)+'</div><div class="func-bar-wrap"><div class="func-bar-fill" style="width:'+barW+'%;background:'+PALETTE[i%PALETTE.length]+'"></div></div><div class="func-meta"><strong>'+n+'</strong> · '+pctV+'%</div></div>';
+  }).join('');
+}
+var unitRows=[];
+function renderUnitTable(){
+  var byUnit=groupBy(FILTERED,'unidade');
+  unitRows=Object.entries(byUnit).map(function(e){
+    var u=e[0],emp=e[1];
+    return {u,ativos:emp.filter(function(e){ return e.ativo; }).length,inativos:emp.filter(function(e){ return !e.ativo; }).length,total:emp.length,ret:emp.length?pct(emp.filter(function(e){ return e.ativo; }).length,emp.length):0};
+  });
+  unitRows.sort(function(a,b){ var sc=SORT_UNIT,va=a[sc.col],vb=b[sc.col]; return(typeof va==='string'?va.localeCompare(vb):va-vb)*sc.dir; });
+  set('tbl-unit-badge',unitRows.length+' unidades');
+  var maxA=Math.max.apply(null,unitRows.map(function(r){ return r.ativos; }).concat([1]));
+  document.getElementById('tblUnidadeBody').innerHTML=unitRows.map(function(r){
+    return '<tr><td><strong>'+esc(r.u)+'</strong></td><td class="num"><span class="badge badge-ativo">'+r.ativos+'</span></td><td class="num"><span class="badge badge-inativo">'+r.inativos+'</span></td><td class="num">'+r.total+'</td><td class="num">'+r.ret+'%</td><td><div class="progress-bar-wrap" style="min-width:80px"><div class="progress-bar-fill" style="width:'+Math.round(r.ativos/maxA*100)+'%"></div></div></td></tr>';
+  }).join('')+'<tr class="row-total"><td>TOTAL</td><td class="num">'+FILTERED.filter(function(e){ return e.ativo; }).length+'</td><td class="num">'+FILTERED.filter(function(e){ return !e.ativo; }).length+'</td><td class="num">'+FILTERED.length+'</td><td class="num">'+pct(FILTERED.filter(function(e){ return e.ativo; }).length,FILTERED.length)+'%</td><td></td></tr>';
+}
+function sortUnit(col){ SORT_UNIT.dir=SORT_UNIT.col===col?-SORT_UNIT.dir:-1; SORT_UNIT.col=col; renderUnitTable(); }
+function renderEmpsTable(){
+  var sc=SORT_EMP;
+  var sorted=[...FILTERED].sort(function(a,b){
+    var va=a[sc.col],vb=b[sc.col];
+    if(sc.col==='dataAdm'||sc.col==='dataDeslig'){ va=toISO(va)||''; vb=toISO(vb)||''; }
+    if(va===null||va===undefined) va=''; if(vb===null||vb===undefined) vb='';
+    return(typeof va==='string'?va.localeCompare(vb):va-vb)*sc.dir;
+  });
+  var total=sorted.length,pages=Math.max(1,Math.ceil(total/EMP_PAGE_SIZE));
+  if(EMP_PAGE>=pages) EMP_PAGE=pages-1;
+  var start=EMP_PAGE*EMP_PAGE_SIZE,shown=sorted.slice(start,start+EMP_PAGE_SIZE);
+  set('tbl-emp-badge',total+' registros');
+  var infoEl=document.getElementById('pag-info');
+  if(infoEl) infoEl.textContent='Exibindo '+(start+1)+'–'+Math.min(start+EMP_PAGE_SIZE,total)+' de '+total;
+  var prevEl=document.getElementById('pag-prev'),nextEl=document.getElementById('pag-next');
+  if(prevEl) prevEl.disabled=EMP_PAGE===0;
+  if(nextEl) nextEl.disabled=EMP_PAGE>=pages-1;
+  document.getElementById('tblEmpsBody').innerHTML=shown.map(function(e){
+    return '<tr><td>'+esc(e.nome)+'</td><td>'+esc(e.unidade)+(e.unidadeSec?'<br><small style="color:var(--gray-400)">+'+esc(e.unidadeSec)+'</small>':'')+'</td><td>'+(esc(e.funcao)||'—')+'</td><td class="center"><span class="badge '+(e.sexo==='F'?'badge-f':'badge-m')+'">'+(e.sexo||'—')+'</span></td><td class="center"><span class="badge '+(e.ativo?'badge-ativo':'badge-inativo')+'">'+e.status+'</span></td><td class="num">'+(e.dataAdm||'—')+'</td><td class="num">'+(validNum(e.tenureYears)?e.tenureYears+' a':'—')+'</td><td class="num">'+(e.dataDeslig||'—')+'</td><td><a class="email-link" href="mailto:'+esc(e.emailBrasas||e.email)+'">'+(esc(e.emailBrasas||e.email||'—'))+'</a></td></tr>';
+  }).join('');
+  document.querySelectorAll('#tblEmps thead th[data-col]').forEach(function(th){
+    th.classList.remove('sort-asc','sort-desc');
+    if(th.dataset.col===sc.col) th.classList.add(sc.dir===1?'sort-asc':'sort-desc');
+  });
+}
+function pagEmps(dir){ EMP_PAGE+=dir; renderEmpsTable(); }
+function sortEmps(col){ SORT_EMP.dir=SORT_EMP.col===col?-SORT_EMP.dir:1; SORT_EMP.col=col; EMP_PAGE=0; renderEmpsTable(); }
+function downloadCSV(){
+  var headers=['Nome','Unidade','Unidade Sec','Função','Sexo','Status','Data Admissão','Anos de Casa','Data Deslig.','E-mail BRASAS','E-mail','Plano de Saúde','Num. Dependentes','CPF'];
+  var rows=FILTERED.map(function(e){ return [e.nome,e.unidade,e.unidadeSec,e.funcao,e.sexo,e.status,e.dataAdm,validNum(e.tenureYears)?e.tenureYears:'',e.dataDeslig,e.emailBrasas,e.email,e.planoSaude,e.numDep,e.cpf]; });
+  var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c===null||c===undefined?'':c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='colaboradores_brasas_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ROTATIVIDADE
+function setRotView(mode,btn){
+  ROT_VIEW=mode;
+  document.querySelectorAll('.toggle-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('r-ano').style.display=mode==='mensal'?'':'none';
+  renderRotatividade();
+}
+function renderRotatividade(){
+  var unitSel=v('r-unidade');
+  var emps=unitSel?ALL_EMP.filter(function(e){ return e.todasUnidades.includes(unitSel); }):ALL_EMP;
+  if(ROT_VIEW==='anual') renderRotAnual(emps);
+  else renderRotMensal(emps,parseInt(v('r-ano')||new Date().getFullYear()));
+}
+function empAdm(e){ if(!e.admYear) return null; return new Date(e.admYear,(e.admMonth||1)-1,e.admDay||1); }
+function empDeslig(e){ if(!e.desligYear) return null; return new Date(e.desligYear,(e.desligMonth||1)-1,e.desligDay||1); }
+function isActiveAt(e,d){
+  var ad=empAdm(e),dd=empDeslig(e);
+  if(!ad||ad>d) return false;
+  if(dd&&dd<=d) return false;
+  return true;
+}
+function computePeriod(emps,from,to){
+  var saldoInicio=emps.filter(function(e){ return isActiveAt(e,from); }).length;
+  var saldoFim=emps.filter(function(e){ return isActiveAt(e,to); }).length;
+  var contrat=emps.filter(function(e){ return e.admYear&&empAdm(e)>=from&&empAdm(e)<to; }).length;
+  var demiss=emps.filter(function(e){ return e.desligYear&&empDeslig(e)>=from&&empDeslig(e)<to; }).length;
+  var rot=contrat+demiss,variacao=saldoFim-saldoInicio;
+  var media=(saldoInicio+saldoFim)/2||1;
+  var taxaVar=saldoInicio?variacao/saldoInicio:0;
+  var turnover=rot/media,taxaAdm=contrat/media,taxaDem=demiss/media;
+  var deslig6m=emps.filter(function(e){
+    if(!e.desligYear) return false;
+    var dd=empDeslig(e); if(!dd||dd<from||dd>=to) return false;
+    var ad=empAdm(e); if(!ad) return false;
+    return (dd-ad)<6*30.44*24*3600*1000;
+  }).length;
+  return {saldoInicio,contrat,demiss,rot,saldoFim,variacao,taxaVar,turnover,taxaAdm,taxaDem,deslig6m,taxa6m:deslig6m/media};
+}
+function renderRotAnual(emps){
+  var curYear=new Date().getFullYear();
+  var admYears=emps.filter(function(e){ return e.admYear; }).map(function(e){ return e.admYear; });
+  if(!admYears.length){ document.getElementById('tblRotBody').innerHTML='<tr><td colspan="10" class="table-empty">Sem dados.</td></tr>'; return; }
+  var startY=Math.max(Math.min.apply(null,admYears),2022);
+  var years=[]; for(var y=startY;y<=curYear;y++) years.push(y);
+  var periods=years.map(function(yr){ return {y:yr,d:computePeriod(emps,new Date(yr,0,1),new Date(yr+1,0,1))}; });
+  var totContrat=periods.reduce(function(s,p){ return s+p.d.contrat; },0);
+  var totDemiss=periods.reduce(function(s,p){ return s+p.d.demiss; },0);
+  var totRot=totContrat+totDemiss,tot6m=periods.reduce(function(s,p){ return s+p.d.deslig6m; },0);
+  var firstSaldo=periods[0]?periods[0].d.saldoInicio:0,lastSaldo=periods[periods.length-1]?periods[periods.length-1].d.saldoFim:0;
+  var totMedia=(firstSaldo+lastSaldo)/2||1,totVar=lastSaldo-firstSaldo;
+  var totTaxaVar=firstSaldo?totVar/firstSaldo:0,totTO=totRot/totMedia;
+  var totTaxaAdm=totContrat/totMedia,totTaxaDem=totDemiss/totMedia,totTaxa6m=tot6m/totMedia;
+  var acumTO=0,acumTOs=periods.map(function(p){ acumTO+=p.d.turnover; return acumTO; });
+  var acum6m=0,acum6ms=periods.map(function(p){ acum6m+=p.d.deslig6m; return acum6m; });
+  var TH='<th class="rot-label">Métrica</th>'+periods.map(function(p){ return '<th>'+p.y+'</th>'; }).join('')+'<th class="rot-total">Total Período</th>';
+  var row=function(label,vals,totVal,cls,fmt_){
+    cls=cls||''; var f=fmt_||function(x){ return x===null?'<span class="rot-dash">—</span>':String(x); };
+    return '<tr class="'+cls+'"><td class="rot-label">'+label+'</td>'+vals.map(function(x){ return '<td>'+f(x)+'</td>'; }).join('')+'<td class="rot-total">'+f(totVal)+'</td></tr>';
+  };
+  var html='<thead><tr>'+TH+'</tr></thead><tbody>';
+  html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
+  html+=row('(a) Saldo início',periods.map(function(p){ return p.d.saldoInicio; }),firstSaldo,'rot-bold',fmt);
+  html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
+  html+=row('(b) Contratações',periods.map(function(p){ return p.d.contrat; }),totContrat,'',fmt);
+  html+=row('(c) Demissões',periods.map(function(p){ return p.d.demiss; }),totDemiss,'',fmt);
+  html+=row('(=) Rotatividade',periods.map(function(p){ return p.d.rot; }),totRot,'rot-bold',fmt);
+  html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
+  html+=row('(d) Saldo fim',periods.map(function(p){ return p.d.saldoFim; }),lastSaldo,'rot-bold',fmt);
+  html+=row('(=) Variação',periods.map(function(p){ return p.d.variacao; }),totVar,'',function(x){ return x===null?'—':x>0?'+'+fmt(x):fmt(x); });
+  html+=row('Taxa de Variação',periods.map(function(p){ return p.d.taxaVar; }),totTaxaVar,'rot-bold',fmtPct);
+  html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
+  html+=row('Turnover | Rotatividade',periods.map(function(p){ return p.d.turnover; }),totTO,'rot-highlight',fmtPct);
+  html+=row('Turnover | Acumulado Anual',acumTOs,totTO,'rot-sub',fmtPct);
+  html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
+  html+=row('Taxa | Rotatividade Admissional',periods.map(function(p){ return p.d.taxaAdm; }),totTaxaAdm,'rot-sub',fmtPct);
+  html+=row('Taxa | Rotatividade Demissional',periods.map(function(p){ return p.d.taxaDem; }),totTaxaDem,'rot-sub',fmtPct);
+  html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
+  html+=row('Desligamentos (&lt;6m)',periods.map(function(p){ return p.d.deslig6m; }),tot6m,'',fmt);
+  html+=row('Taxa | Rotatividade (&lt;6m)',periods.map(function(p){ return p.d.taxa6m; }),totTaxa6m,'rot-sub',fmtPct);
+  html+=row('Rotatividade (&lt;6m) | Acumulado',acum6ms,tot6m,'rot-sub',fmt);
+  html+='</tbody>';
+  document.getElementById('tblRotatividade').innerHTML=html;
+}
+function renderRotMensal(emps,year){
+  var months=Array.from({length:12},function(_,i){ return i+1; });
+  var periods=months.map(function(m){ return {m,d:computePeriod(emps,new Date(year,m-1,1),new Date(year,m,1))}; });
+  var totd=computePeriod(emps,new Date(year,0,1),new Date(year+1,0,1));
+  var acumTO=0,acumTOs=periods.map(function(p){ acumTO+=p.d.turnover; return acumTO; });
+  var TH='<th class="rot-label">Métrica</th>'+months.map(function(m){ return '<th>'+MONTHS_PT[m-1]+'</th>'; }).join('')+'<th class="rot-total">'+year+'</th>';
+  var row=function(label,vals,totVal,cls,fmt_){
+    cls=cls||''; var f=fmt_||function(x){ return x===null?'<span class="rot-dash">—</span>':String(x); };
+    return '<tr class="'+cls+'"><td class="rot-label">'+label+'</td>'+vals.map(function(x){ return '<td>'+f(x)+'</td>'; }).join('')+'<td class="rot-total">'+f(totVal)+'</td></tr>';
+  };
+  var html='<thead><tr>'+TH+'</tr></thead><tbody>';
+  html+=row('(a) Saldo início',periods.map(function(p){ return p.d.saldoInicio; }),totd.saldoInicio,'rot-bold',fmt);
+  html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
+  html+=row('(b) Contratações',periods.map(function(p){ return p.d.contrat; }),totd.contrat,'',fmt);
+  html+=row('(c) Demissões',periods.map(function(p){ return p.d.demiss; }),totd.demiss,'',fmt);
+  html+=row('(=) Rotatividade',periods.map(function(p){ return p.d.rot; }),totd.rot,'rot-bold',fmt);
+  html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
+  html+=row('(d) Saldo fim',periods.map(function(p){ return p.d.saldoFim; }),totd.saldoFim,'rot-bold',fmt);
+  html+=row('(=) Variação',periods.map(function(p){ return p.d.variacao; }),totd.variacao,'',function(x){ return x===null?'—':x>0?'+'+fmt(x):'<span class="'+(x<0?'rot-neg':'')+'">'+fmt(x)+'</span>'; });
+  html+=row('Taxa de Variação',periods.map(function(p){ return p.d.taxaVar; }),totd.taxaVar,'rot-bold',fmtPct);
+  html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
+  html+=row('Turnover | Rotatividade',periods.map(function(p){ return p.d.turnover; }),totd.turnover,'rot-highlight',fmtPct);
+  html+=row('Turnover | Acumulado no Ano',acumTOs,totd.turnover,'rot-sub',fmtPct);
+  html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
+  html+=row('Taxa | Rotatividade Admissional',periods.map(function(p){ return p.d.taxaAdm; }),totd.taxaAdm,'rot-sub',fmtPct);
+  html+=row('Taxa | Rotatividade Demissional',periods.map(function(p){ return p.d.taxaDem; }),totd.taxaDem,'rot-sub',fmtPct);
+  html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
+  html+=row('Desligamentos (&lt;6m)',periods.map(function(p){ return p.d.deslig6m; }),totd.deslig6m,'',fmt);
+  html+=row('Taxa | Rotatividade (&lt;6m)',periods.map(function(p){ return p.d.taxa6m; }),totd.taxa6m,'rot-sub',fmtPct);
+  html+='</tbody>';
+  document.getElementById('tblRotatividade').innerHTML=html;
+}
+function fmtPct(x){
+  if(x===null||x===undefined) return '<span class="rot-dash">—</span>';
+  var vv=(x*100).toFixed(1)+'%';
+  return x<0?'<span class="rot-neg">'+vv+'</span>':vv;
+}
+
+// RENDER: PEOPLE ANALYTICS
+function renderPeople(){
+  var fUn=v('pf-unidade'),fSt=v('pf-status'),fSx=v('pf-sexo'),fFn=v('pf-funcao');
+  var base=ALL_EMP.filter(function(e){
+    if(fUn&&e.unidade!==fUn) return false;
+    if(fSt==='ativo'&&!e.ativo) return false;
+    if(fSt==='inativo'&&e.ativo) return false;
+    if(fSx&&e.sexo!==fSx) return false;
+    if(fFn&&e.funcao!==fFn) return false;
+    return true;
+  });
+  var ativos=base.filter(function(e){ return e.ativo; });
+  var idadeArr=base.filter(function(e){ return validNum(e.ageYears); }).map(function(e){ return e.ageYears; });
+  var tenureArr=ativos.filter(function(e){ return validNum(e.tenureYears); }).map(function(e){ return e.tenureYears; });
+  var masc=base.filter(function(e){ return e.sexo==='M'; }).length;
+  var fem=base.filter(function(e){ return e.sexo==='F'; }).length;
+  var pctFem=base.length?Math.round(fem/base.length*100):0;
+  document.getElementById('people-kpis').innerHTML=
+    '<div class="kpi-card highlight"><div class="kpi-label">Total no Filtro</div><div class="kpi-value">'+fmt(base.length)+'</div><div class="kpi-sub">colaboradores</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Idade Média</div><div class="kpi-value">'+(idadeArr.length?avg(idadeArr).toFixed(1):'—')+'</div><div class="kpi-sub">anos</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Tempo Médio de Casa</div><div class="kpi-value">'+(tenureArr.length?avg(tenureArr).toFixed(1):'—')+'</div><div class="kpi-sub">anos · ativos</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">% Feminino</div><div class="kpi-value">'+pctFem+'%</div><div class="kpi-sub">'+fem+' colaboradoras</div></div>';
+  mkChart('chartGenero','doughnut',['Masculino','Feminino'],[masc,fem],'Colaboradores',{colors:['#2a4d76','#8b5cf6']});
+  var ageBuckets=[{l:'< 25',fn:function(a){ return a<25; }},{l:'25–34',fn:function(a){ return a>=25&&a<35; }},{l:'35–44',fn:function(a){ return a>=35&&a<45; }},{l:'45–54',fn:function(a){ return a>=45&&a<55; }},{l:'55+',fn:function(a){ return a>=55; }}];
+  mkChart('chartIdade','bar',ageBuckets.map(function(b){ return b.l; }),ageBuckets.map(function(b){ return idadeArr.filter(b.fn).length; }),'Colaboradores');
+  var tBuckets=[{l:'<1',fn:function(t){ return t<1; }},{l:'1–2',fn:function(t){ return t>=1&&t<3; }},{l:'3–5',fn:function(t){ return t>=3&&t<6; }},{l:'6–10',fn:function(t){ return t>=6&&t<11; }},{l:'11–15',fn:function(t){ return t>=11&&t<16; }},{l:'16–20',fn:function(t){ return t>=16&&t<21; }},{l:'21–30',fn:function(t){ return t>=21&&t<31; }},{l:'30+',fn:function(t){ return t>=31; }}];
+  mkChart('chartTempoAtivos','bar',tBuckets.map(function(b){ return b.l+' anos'; }),tBuckets.map(function(b){ return tenureArr.filter(b.fn).length; }),'Colaboradores');
+  var planos=groupBy(ativos.filter(function(e){ return e.planoSaude&&e.planoSaude!=='-'&&e.planoSaude!==''; }),'planoSaude');
+  mkChart('chartPlano','doughnut',Object.keys(planos),Object.values(planos).map(function(a){ return a.length; }),'Colaboradores');
+  var admY=groupBy(ALL_EMP.filter(function(e){ return e.admYear&&e.admYear>=2022; }),'admYear');
+  var yrL=Object.keys(admY).sort();
+  mkChart('chartAdmAno','bar',yrL,yrL.map(function(y){ return admY[y].length; }),'Admissões',{colors:['#3d6b99']});
+  var funcs=[...new Set(base.map(function(e){ return e.funcao; }).filter(Boolean))].sort();
+  document.getElementById('tblGeneroFuncao').innerHTML=funcs.map(function(f){
+    var s=base.filter(function(e){ return e.funcao===f; });
+    return '<tr><td>'+esc(f)+'</td><td class="num">'+s.filter(function(e){ return e.sexo==='M'; }).length+'</td><td class="num">'+s.filter(function(e){ return e.sexo==='F'; }).length+'</td><td class="num">'+s.length+'</td><td class="num">'+pct(s.length,base.length)+'%</td></tr>';
+  }).join('')+'<tr class="row-total"><td>TOTAL</td><td class="num">'+masc+'</td><td class="num">'+fem+'</td><td class="num">'+base.length+'</td><td class="num">100%</td></tr>';
+}
+function clearPeopleFilters(){
+  ['pf-unidade','pf-status','pf-sexo','pf-funcao'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value=id==='pf-status'?'ativo':'';
+  });
+  renderPeople();
+}
+
+// RENDER: PROFESSORES 
+function renderProfessores(){
+  var fSt=v('f-prof-status'),fUn=v('f-prof-unidade'),fNiv=v('f-prof-nivel');
+  var profs=ALL_EMP.filter(function(e){ return e.funcao&&e.funcao.toUpperCase().includes('PROFESSOR'); });
+  if(fSt) profs=profs.filter(function(e){ return e.status===fSt; });
+  if(fUn) profs=profs.filter(function(e){ return e.unidade===fUn; });
+  if(fNiv) profs=profs.filter(function(e){ return e.nivel===fNiv; });
+  profs.sort(function(a,b){ var ia=NIVEL_ORDER.indexOf(a.nivel),ib=NIVEL_ORDER.indexOf(b.nivel); return(ia===-1?99:ia)-(ib===-1?99:ib)||a.unidade.localeCompare(b.unidade); });
+  set('prof-badge',profs.length+' registros');
+  var ativ=profs.filter(function(e){ return e.ativo; }).length;
+  var mediaAnos=profs.filter(function(e){ return e.ativo&&validNum(e.tenureYears); }).map(function(e){ return e.tenureYears; });
+  var avancados=profs.filter(function(e){ return e.ativo&&e.nivel&&e.nivel.startsWith('3'); }).length;
+  var pctAvancado=ativ?Math.round(avancados/ativ*100):0;
+  document.getElementById('prof-kpis').innerHTML=
+    '<div class="kpi-card highlight"><div class="kpi-label">Total Professores</div><div class="kpi-value">'+profs.length+'</div><div class="kpi-sub">no filtro</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Média Anos de Casa</div><div class="kpi-value">'+(mediaAnos.length?avg(mediaAnos).toFixed(1):'—')+'</div><div class="kpi-sub">anos · professores ativos</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Nível Avançado (3.x)</div><div class="kpi-value">'+pctAvancado+'%</div><div class="kpi-sub">'+avancados+' de '+ativ+' ativos</div></div>';
+  var byNv={};
+  NIVEL_ORDER.forEach(function(n){ var c=profs.filter(function(e){ return e.nivel===n; }).length; if(c>0) byNv[n]=c; });
+  mkChart('chartNivel','bar',Object.keys(byNv),Object.values(byNv),'Professores',{colors:['#0d9488'],barThickness:28});
+  var byUn=groupBy(profs,'unidade');
+  var uL=Object.keys(byUn).sort(function(a,b){ return byUn[b].length-byUn[a].length; }).slice(0,15);
+  mkChart('chartProfUnidade','bar',uL,uL.map(function(u){ return byUn[u].length; }),'Professores',{indexAxis:'y',barThickness:14,colors:['#2a4d76']});
+  document.getElementById('tblProfessores').innerHTML=profs.length
+    ?profs.map(function(e){ return '<tr><td><strong>'+(esc(e.apelido)||'—')+'</strong></td><td>'+esc(e.nome)+'</td><td>'+esc(e.unidade)+(e.unidadeSec?' / '+esc(e.unidadeSec):'')+'</td><td class="center"><span class="badge badge-nivel">'+esc(e.nivel)+'</span></td><td class="center"><span class="badge '+(e.ativo?'badge-ativo':'badge-inativo')+'">'+e.status+'</span></td><td class="num">'+(validNum(e.tenureYears)?e.tenureYears+' a':'—')+'</td><td style="font-size:.78rem;color:var(--gray-500)">'+(esc(e.emailBrasas||e.email||'—'))+'</td></tr>'; }).join('')
+    :'<tr><td colspan="7" class="table-empty">Nenhum professor encontrado.</td></tr>';
+    renderProfNivelTable(profs);
+    // gráfico por semestre
+var todosProfs=ALL_EMP.filter(function(e){ return e.funcao&&e.funcao.toUpperCase().includes('PROFESSOR')&&e.admYear&&e.admYear>=2022; });
+var semestres=[];
+for(var sy=2022;sy<=new Date().getFullYear();sy++){
+  semestres.push(sy+'.1');
+  semestres.push(sy+'.2');
+}
+// remove semestres futuros
+var now=new Date();
+semestres=semestres.filter(function(s){
+  var p=s.split('.');
+  var y=parseInt(p[0]),sem=parseInt(p[1]);
+  return y<now.getFullYear()||(y===now.getFullYear()&&(sem===1?now.getMonth()<6:true));
+});
+var totalPorSem=semestres.map(function(s){
+  var p=s.split('.');
+  var y=parseInt(p[0]),sem=parseInt(p[1]);
+  return todosProfs.filter(function(e){
+    return e.admYear===y&&(sem===1?e.admMonth<=6:e.admMonth>6);
+  }).length;
+});
+var ativosPorSem=semestres.map(function(s){
+  var p=s.split('.');
+  var y=parseInt(p[0]),sem=parseInt(p[1]);
+  return todosProfs.filter(function(e){
+    return e.admYear===y&&(sem===1?e.admMonth<=6:e.admMonth>6)&&e.ativo;
+  }).length;
+});
+if(CHARTS['chartProfSemestre']){ CHARTS['chartProfSemestre'].destroy(); delete CHARTS['chartProfSemestre']; }
+var ctxS=document.getElementById('chartProfSemestre');
+if(ctxS) CHARTS['chartProfSemestre']=new Chart(ctxS,{
+  type:'bar',
+  data:{
+    labels:semestres,
+    datasets:[
+      {label:'Admitidos',data:totalPorSem,backgroundColor:'#89afd4',borderRadius:4},
+      {label:'Ainda Ativos',data:ativosPorSem,backgroundColor:'#22c55e',borderRadius:4}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:true,position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:12}},
+      tooltip:{callbacks:{label:function(ctx){
+        if(ctx.datasetIndex===1){
+          var total=ctx.chart.data.datasets[0].data[ctx.dataIndex];
+          var pctV=total?Math.round(ctx.raw/total*100):0;
+          return ' '+ctx.dataset.label+': '+ctx.raw+' ('+pctV+'% dos admitidos)';
+        }
+        return ' '+ctx.dataset.label+': '+ctx.raw;
+      }}}
+    },
+    scales:{
+      x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}}},
+      y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true}
+    }
+  }
+});
+  renderTurmasChart();
+}
+
+function renderProfNivelTable(profs){
+  // expande professores com unidade secundária
+  var rows=[];
+  profs.forEach(function(e){
+    rows.push({unidade:e.unidade, nivel:e.nivel});
+    if(e.unidadeSec) rows.push({unidade:e.unidadeSec, nivel:e.nivel});
+  });
+
+  var niveis=NIVEL_ORDER.filter(function(n){
+    return rows.some(function(r){ return r.nivel===n; });
+  });
+  var unidades=[...new Set(rows.map(function(r){ return r.unidade; }))].sort();
+
+  var header='<tr><th>Unidade</th>'+
+    niveis.map(function(n){ return '<th class="center">'+n+'</th>'; }).join('')+
+    '<th class="num">Total geral</th></tr>';
+
+  var body=unidades.map(function(u){
+    var uRows=rows.filter(function(r){ return r.unidade===u; });
+    var total=uRows.length;
+    var cells=niveis.map(function(n){
+      var c=uRows.filter(function(r){ return r.nivel===n; }).length;
+      return '<td class="center">'+(c||'-')+'</td>';
+    }).join('');
+    return '<tr><td><strong>'+esc(u)+'</strong></td>'+cells+'<td class="num"><strong>'+total+'</strong></td></tr>';
+  }).join('');
+
+  // linha de totais
+  var totRow='<tr class="row-total"><td>Total geral</td>'+
+    niveis.map(function(n){
+      var c=rows.filter(function(r){ return r.nivel===n; }).length;
+      return '<td class="center">'+c+'</td>';
+    }).join('')+
+    '<td class="num">'+rows.length+'</td></tr>';
+
+  var el=document.getElementById('tblProfNivel');
+  if(el) el.innerHTML=header+body+totRow;
+}
+
+function loadTurmasData(){
+  google.script.run
+    .withSuccessHandler(function(r){
+      ALL_TURMAS=r.ok?r.rows:[];
+      renderTurmasChart();
+    })
+    .withFailureHandler(function(e){ console.warn('Turmas falhou:',e.message); })
+    .getTurmasData(TOKEN);
+}
+
+function renderTurmasChart(){
+  var fUn=v('f-prof-unidade');
+  var data=fUn?ALL_TURMAS.filter(function(r){ return r.unidade===fUn; }):ALL_TURMAS;
+  var counts={};
+  data.forEach(function(r){ counts[r.apelido]=(counts[r.apelido]||0)+1; });
+  var sorted=Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; }).slice(0,30);
+  var labels=sorted.map(function(e){ return e[0]; });
+  var values=sorted.map(function(e){ return e[1]; });
+  mkChart('chartTurmasProf','bar',labels,values,'Turmas',{indexAxis:'y',barThickness:14,colors:['#2a4d76']});
+}
+
+// RENDER: COHORT
+function renderCohort(){
+  var fUn=v('co-unidade'),fFn=v('co-funcao');
+  var base=ALL_EMP.filter(function(e){
+    if(fUn&&e.unidade!==fUn) return false;
+    if(fFn&&e.funcao!==fFn) return false;
+    return true;
+  });
+  var ativos=base.filter(function(e){ return e.ativo; });
+  var tempos=ativos.filter(function(e){ return validNum(e.tenureYears); }).map(function(e){ return e.tenureYears; });
+  var sorted=[...tempos].sort(function(a,b){ return a-b; });
+  var med=sorted.length?sorted[Math.floor(sorted.length/2)]:0;
+  document.getElementById('cohort-kpis').innerHTML=
+    '<div class="kpi-card highlight"><div class="kpi-label">Tempo Médio de Casa</div><div class="kpi-value">'+(tempos.length?avg(tempos).toFixed(1):'—')+'</div><div class="kpi-sub">anos · ativos</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Mediana</div><div class="kpi-value">'+med+'</div><div class="kpi-sub">anos</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Acima de 10 anos</div><div class="kpi-value">'+tempos.filter(function(t){ return t>=10; }).length+'</div><div class="kpi-sub">'+pct(tempos.filter(function(t){ return t>=10; }).length,ativos.length)+'% dos ativos</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Acima de 20 anos</div><div class="kpi-value">'+tempos.filter(function(t){ return t>=20; }).length+'</div><div class="kpi-sub">'+pct(tempos.filter(function(t){ return t>=20; }).length,ativos.length)+'% dos ativos</div></div>';
+
+  var tBuckets=[{l:'< 1',fn:function(t){ return t<1; }},{l:'1–2',fn:function(t){ return t>=1&&t<3; }},{l:'3–5',fn:function(t){ return t>=3&&t<6; }},{l:'6–10',fn:function(t){ return t>=6&&t<11; }},{l:'11–15',fn:function(t){ return t>=11&&t<16; }},{l:'16–20',fn:function(t){ return t>=16&&t<21; }},{l:'21–25',fn:function(t){ return t>=21&&t<26; }},{l:'26–30',fn:function(t){ return t>=26&&t<31; }},{l:'30+',fn:function(t){ return t>=31; }}];
+  mkChart('chartCohortDist','bar',tBuckets.map(function(b){ return b.l+' anos'; }),tBuckets.map(function(b){ return tempos.filter(b.fn).length; }),'Colaboradores',{colors:['#2a4d76']});
+
+  var byY=groupBy(base.filter(function(e){ return e.admYear&&e.admYear>=2022; }),'admYear');
+  var yrs=Object.keys(byY).sort();
+  mkChart('chartCohortAdm','bar',yrs,yrs.map(function(y){ return byY[y].length; }),'Admissões',{colors:PALETTE.slice(0,yrs.length)});
+
+  // gráfico admitidos vs ainda ativos (estilo semestre de professores)
+  if(CHARTS['chartCohortAtivos']){ CHARTS['chartCohortAtivos'].destroy(); delete CHARTS['chartCohortAtivos']; }
+  var ctxA=document.getElementById('chartCohortAtivos');
+  if(ctxA) CHARTS['chartCohortAtivos']=new Chart(ctxA,{
+    type:'bar',
+    data:{
+      labels:yrs,
+      datasets:[
+        {label:'Admitidos',data:yrs.map(function(y){ return byY[y].length; }),backgroundColor:'#89afd4',borderRadius:4},
+        {label:'Ainda Ativos',data:yrs.map(function(y){ return base.filter(function(e){ return e.admYear==y&&e.ativo; }).length; }),backgroundColor:'#22c55e',borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:12}},
+        tooltip:{callbacks:{label:function(ctx){
+          if(ctx.datasetIndex===1){
+            var total=ctx.chart.data.datasets[0].data[ctx.dataIndex];
+            var pctV=total?Math.round(ctx.raw/total*100):0;
+            return ' '+ctx.dataset.label+': '+ctx.raw+' ('+pctV+'% dos admitidos)';
+          }
+          return ' '+ctx.dataset.label+': '+ctx.raw;
+        }}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}}},
+        y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true}
+      }
+    }
+  });
+
+  var byYAll=groupBy(base.filter(function(e){ return e.admYear&&e.admYear>=2022; }),'admYear');
+  var yrsAll=Object.keys(byYAll).sort();
+  var maxC=Math.max.apply(null,yrsAll.map(function(y){ return byYAll[y].length; }).concat([1]));
+  document.getElementById('tblCohort').innerHTML=yrsAll.slice().reverse().map(function(y){
+    var all=byYAll[y],act=all.filter(function(e){ return e.ativo; });
+    var ten=act.filter(function(e){ return validNum(e.tenureYears); }).map(function(e){ return e.tenureYears; });
+    return '<tr><td><strong>'+y+'</strong></td><td class="num">'+all.length+'</td><td class="num"><span class="badge badge-ativo">'+act.length+'</span></td><td class="num"><span class="badge badge-inativo">'+(all.length-act.length)+'</span></td><td class="num">'+pct(act.length,all.length)+'%</td><td class="num">'+(ten.length?avg(ten).toFixed(1):'—')+'</td><td><span class="cohort-bar" style="width:'+Math.round(all.length/maxC*80)+'px"></span>'+all.length+'</td></tr>';
+  }).join('');
+}
+
+function clearCohortFilters(){
+  ['co-unidade','co-funcao'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  renderCohort();
+}
+
+// CHART.JS HELPER
+function mkChart(canvasId,type,labels,data,label,opts){
+  opts=opts||{};
+  var ctx=document.getElementById(canvasId); if(!ctx) return;
+  if(CHARTS[canvasId]){ CHARTS[canvasId].destroy(); delete CHARTS[canvasId]; }
+  var colors=opts.colors||PALETTE;
+  var bgColors=type==='doughnut'
+    ?labels.map(function(_,i){ return colors[i%colors.length]; })
+    :(colors.length===1?labels.map(function(){ return colors[0]; }):labels.map(function(_,i){ return colors[i%colors.length]; }));
+  CHARTS[canvasId]=new Chart(ctx,{
+    type,
+    data:{labels,datasets:[{label,data,backgroundColor:bgColors,borderColor:type==='doughnut'?'#fff':bgColors,borderWidth:type==='doughnut'?2:0,borderRadius:type==='bar'?4:0,barThickness:opts.barThickness}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,indexAxis:opts.indexAxis||'x',
+      plugins:{
+        legend:{display:type==='doughnut',position:'right',labels:{font:{family:'DM Sans',size:11},boxWidth:12,padding:12}},
+        tooltip:{callbacks:{label:function(ctx){ return ' '+ctx.dataset.label+': '+fmt(ctx.raw); }}}
+      },
+      scales:type==='doughnut'?{}:{
+        x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}}},
+        y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true}
+      }
+    }
+  });
+}
+
+var ALL_HORAS=[];
+var HORAS_PAGE=0;
+var HORAS_PAGE_SIZE=50;
+
+function loadHorasData(){
+  google.script.run
+    .withSuccessHandler(function(r){
+      hideTabLoading('horas'); hideTabLoading('faltas');
+      if(!r.ok){ console.warn('Horas:',r.error); return; }
+      ALL_HORAS=r.rows||[];
+      console.log('Horas sample:', ALL_HORAS.slice(0,3).map(function(r){ return {ano:r.ano, mes:r.mes, tipo:typeof r.ano}; }));
+      initHorasFilters();
+      renderHoras();
+      renderFaltas();
+    })
+    .withFailureHandler(function(e){ console.warn('Horas falhou:',e.message); })
+    .getHorasData(TOKEN);
+    SpreadsheetApp.flush();
+}
+
+function initHorasFilters(){
+  var anos=[...new Set(ALL_HORAS.map(function(r){ return r.ano; }).filter(Boolean))].sort(function(a,b){ return Number(b)-Number(a); });
+  var meses=[...new Set(ALL_HORAS.map(function(r){ return r.mes; }).filter(Boolean))].sort();
+  var units=[...new Set(ALL_HORAS.map(function(r){ return r.unidade; }).filter(Boolean))].sort();
+  var niveis=[...new Set(ALL_HORAS.map(function(r){ return r.nivel; }).filter(Boolean))].sort();
+
+  ['h-ano','f2-ano'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) anos.forEach(function(a){ el.appendChild(new Option(a,a)); });
+  });
+  ['h-mes','f2-mes'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) meses.forEach(function(m){ el.appendChild(new Option(m,m)); });
+  });
+  ['h-unidade','f2-unidade'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) units.forEach(function(u){ el.appendChild(new Option(u,u)); });
+  });
+  var hN=document.getElementById('h-nivel');
+  if(hN) niveis.forEach(function(n){ hN.appendChild(new Option(n,n)); });
+
+  // seleciona o ano mais recente disponível
+  var anoAtual=String(new Date().getFullYear());
+  ['h-ano','f2-ano'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el||!anos.length) return;
+    el.value=anos.indexOf(anoAtual)>=0?anoAtual:anos[0];
+  });
+}
+
+function filteredHoras(){
+  var ano=v('h-ano'),mes=v('h-mes'),uni=v('h-unidade'),niv=v('h-nivel');
+  var nome=v('h-nome','').trim().toLowerCase();
+  return ALL_HORAS.filter(function(r){
+    if(ano&&r.ano!==ano) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(uni&&r.unidade!==uni) return false;
+    if(niv&&r.nivel!==niv) return false;
+    if(nome&&!r.nome.toLowerCase().includes(nome)&&!r.apelido.toLowerCase().includes(nome)) return false;
+    return true;
+  });
+}
+
+function filteredFaltas(){
+  var ano=v('f2-ano'),mes=v('f2-mes'),uni=v('f2-unidade');
+  return ALL_HORAS.filter(function(r){
+    if(ano&&r.ano!==ano) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(uni&&r.unidade!==uni) return false;
+    return true;
+  });
+}
+
+function renderHoras(){
+  var data=filteredHoras();
+  HORAS_PAGE=0;
+  var totalH=data.reduce(function(s,r){ return s+r.totalHoras; },0);
+  var totalFD=data.reduce(function(s,r){ return s+r.fDesc; },0);
+  var totalFA=data.reduce(function(s,r){ return s+r.fAbon; },0);
+  var custFD=data.reduce(function(s,r){ return s+r.custoFDesc; },0);
+
+  document.getElementById('horas-kpis').innerHTML=
+    '<div class="kpi-card highlight"><div class="kpi-label">Total de Horas</div><div class="kpi-value">'+totalH.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-sub">no período</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Faltas Descontadas</div><div class="kpi-value">'+totalFD.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-sub">horas</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Faltas Abonadas</div><div class="kpi-value">'+totalFA.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-sub">horas</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Custo F. Descontadas</div><div class="kpi-value">R$ '+custFD.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-sub">valor perdido</div></div>';
+
+  set('horas-badge',data.length+' registros');
+  renderHorasTable(data);
+}
+
+function renderHorasTable(data){
+  var pages=Math.max(1,Math.ceil(data.length/HORAS_PAGE_SIZE));
+  if(HORAS_PAGE>=pages) HORAS_PAGE=pages-1;
+  var start=HORAS_PAGE*HORAS_PAGE_SIZE;
+  var shown=data.slice(start,start+HORAS_PAGE_SIZE);
+  var infoEl=document.getElementById('horas-pag-info');
+  if(infoEl) infoEl.textContent='Exibindo '+(start+1)+'-'+Math.min(start+HORAS_PAGE_SIZE,data.length)+' de '+data.length;
+  var prev=document.getElementById('horas-pag-prev'),next=document.getElementById('horas-pag-next');
+  if(prev) prev.disabled=HORAS_PAGE===0;
+  if(next) next.disabled=HORAS_PAGE>=pages-1;
+
+  document.getElementById('tblHoras').innerHTML=shown.map(function(r){
+    return '<tr>'+
+      '<td>'+esc(r.unidade)+'</td>'+
+      '<td><strong>'+esc(String(r.apelido||'').toUpperCase())+'</strong></td>'+
+      '<td>'+esc(String(r.nome||'').toUpperCase())+'</td>'+
+      '<td class="center"><span class="badge badge-nivel">'+esc(r.nivel)+'</span></td>'+
+      '<td class="num">'+esc(r.mes)+'</td>'+
+      '<td class="num">'+esc(r.ano)+'</td>'+
+      '<td class="num">'+r.hTurmas.toFixed(2)+'</td>'+
+      '<td class="num">'+r.hTurmasSab.toFixed(2)+'</td>'+
+      '<td class="num">'+r.extras.toFixed(2)+'</td>'+
+      '<td class="num">'+r.subs.toFixed(2)+'</td>'+
+      '<td class="num">'+r.subsOutras.toFixed(2)+'</td>'+
+      '<td class="num">'+(r.fDesc>0?'<span style="color:var(--danger-600);font-weight:700">'+r.fDesc.toFixed(2)+'</span>':r.fDesc.toFixed(2))+'</td>'+
+      '<td class="num">'+(r.fAbon>0?'<span style="color:var(--warning-600);font-weight:700">'+r.fAbon.toFixed(2)+'</span>':r.fAbon.toFixed(2))+'</td>'+
+      '<td class="num" style="font-weight:700;background:var(--navy-25)">'+r.totalHoras.toFixed(2)+'</td>'+
+      '</tr>';
+  }).join('')||'<tr><td colspan="14" class="table-empty">Sem dados.</td></tr>';
+}
+
+function pagHoras(dir){ HORAS_PAGE+=dir; renderHorasTable(filteredHoras()); }
+
+function clearHorasFilters(){
+  ['h-ano','h-mes','h-unidade','h-nivel'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('h-nome').value='';
+  renderHoras();
+}
+
+function downloadHorasCSV(){
+  var data=filteredHoras();
+  var headers=['Unidade','Apelido','Nome','Nível','Mês','Ano','H.Turmas','H.Sáb','Extras','Subs','SubsOutras','F.Desc','F.Abon','Total Horas','Custo F.Desc','Custo F.Abon'];
+  var rows=data.map(function(r){ return [r.unidade,r.apelido,r.nome,r.nivel,r.mes,r.ano,r.hTurmas,r.hTurmasSab,r.extras,r.subs,r.subsOutras,r.fDesc,r.fAbon,r.totalHoras,r.custoFDesc,r.custoFAbon]; });
+  var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c===null||c===undefined?'':c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='horas_brasas_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function renderFaltas(){
+  var data=filteredFaltas();
+  var totalFD=data.reduce(function(s,r){ return s+r.fDesc; },0);
+  var totalFA=data.reduce(function(s,r){ return s+r.fAbon; },0);
+  var custFD=data.reduce(function(s,r){ return s+r.custoFDesc; },0);
+  var custFA=data.reduce(function(s,r){ return s+r.custoFAbon; },0);
+
+  document.getElementById('faltas-kpis').innerHTML=
+    '<div class="kpi-card highlight"><div class="kpi-label">Total F. Descontadas</div><div class="kpi-value">'+totalFD.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-sub">horas</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Custo F. Descontadas</div><div class="kpi-value">R$ '+custFD.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-sub">valor descontado</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Total F. Abonadas</div><div class="kpi-value">'+totalFA.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-sub">horas</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Custo F. Abonadas</div><div class="kpi-value">R$ '+custFA.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-sub">custo absorvido</div></div>';
+
+  // gráficos por unidade
+  var byUnit=groupBy(data,'unidade');
+  var units=Object.keys(byUnit);
+  var fdByUnit=units.map(function(u){ return byUnit[u].reduce(function(s,r){ return s+r.fDesc; },0); });
+  var faByUnit=units.map(function(u){ return byUnit[u].reduce(function(s,r){ return s+r.fAbon; },0); });
+  // ordena desc por faltas descontadas
+  var idxDesc=[...fdByUnit.keys()].sort(function(a,b){ return fdByUnit[b]-fdByUnit[a]; });
+  units=idxDesc.map(function(i){ return units[i]; });
+  fdByUnit=idxDesc.map(function(i){ return fdByUnit[i]; });
+  // ordena desc por faltas abonadas
+  var idxAbon=[...faByUnit.keys()].sort(function(a,b){ return faByUnit[b]-faByUnit[a]; });
+  var unitsFAbon=idxAbon.map(function(i){ return Object.keys(byUnit)[i]; });
+  faByUnit=idxAbon.map(function(i){ return faByUnit[i]; });
+  mkChart('chartFDescUnidade','bar',units,fdByUnit,'H. Descontadas',{colors:['#ef4444'],indexAxis:'y',barThickness:14});
+  mkChart('chartFAbonUnidade','bar',unitsFAbon,faByUnit,'H. Abonadas',{colors:['#f59e0b'],indexAxis:'y',barThickness:14});
+
+  // ranking faltas descontadas — agrupa por professor
+  var profMap={};
+  data.forEach(function(r){
+    var k=r.matricula||r.nome;
+    if(!profMap[k]) profMap[k]={apelido:r.apelido,nome:r.nome,unidade:r.unidade,nivel:r.nivel,fDesc:0,fAbon:0,custoFDesc:0,custoFAbon:0};
+    profMap[k].fDesc+=r.fDesc;
+    profMap[k].fAbon+=r.fAbon;
+    profMap[k].custoFDesc+=r.custoFDesc;
+    profMap[k].custoFAbon+=r.custoFAbon;
+  });
+  var profs=Object.values(profMap);
+
+  var rankDesc=[...profs].filter(function(p){ return p.fDesc>0; }).sort(function(a,b){ return b.fDesc-a.fDesc; }).slice(0,20);
+  document.getElementById('tblRankDesc').innerHTML=rankDesc.map(function(p,i){
+    return '<tr>'+
+      '<td style="font-weight:700;color:var(--navy-400)">'+(i+1)+'</td>'+
+      '<td><strong>'+esc(String(p.apelido||'').toUpperCase())+'</strong></td>'+
+      '<td>'+esc(String(p.nome||'').toUpperCase())+'</td>'+
+      '<td>'+esc(p.unidade)+'</td>'+
+      '<td class="center"><span class="badge badge-nivel">'+esc(p.nivel)+'</span></td>'+
+      '<td class="num" style="color:var(--danger-600);font-weight:700">'+p.fDesc.toFixed(2)+'</td>'+
+      '<td class="num">R$ '+p.custoFDesc.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'+
+      '</tr>';
+  }).join('')||'<tr><td colspan="7" class="table-empty">Sem faltas descontadas.</td></tr>';
+
+  var rankAbon=[...profs].filter(function(p){ return p.fAbon>0; }).sort(function(a,b){ return b.fAbon-a.fAbon; }).slice(0,20);
+  document.getElementById('tblRankAbon').innerHTML=rankAbon.map(function(p,i){
+    return '<tr>'+
+      '<td style="font-weight:700;color:var(--navy-400)">'+(i+1)+'</td>'+
+      '<td><strong>'+esc(String(p.apelido||'').toUpperCase())+'</strong></td>'+
+      '<td>'+esc(String(p.nome||'').toUpperCase())+'</td>'+
+      '<td>'+esc(p.unidade)+'</td>'+
+      '<td class="center"><span class="badge badge-nivel">'+esc(p.nivel)+'</span></td>'+
+      '<td class="num" style="color:var(--warning-600);font-weight:700">'+p.fAbon.toFixed(2)+'</td>'+
+      '<td class="num">R$ '+p.custoFAbon.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'+
+      '</tr>';
+  }).join('')||'<tr><td colspan="7" class="table-empty">Sem faltas abonadas.</td></tr>';
+}
+
+function clearFaltasFilters(){
+  ['f2-ano','f2-mes','f2-unidade'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  renderFaltas();
+}
+
+var ALL_VR_ADM=[], ALL_VR_DOC=[];
+
+function loadVRData(){
+  google.script.run
+    .withSuccessHandler(function(r){
+      hideTabLoading('vr');
+      if(!r.ok){ console.warn('VR:',r.error); return; }
+      ALL_VR_ADM=r.adm||[];
+      ALL_VR_DOC=r.doc||[];
+      initVRFilters();
+      renderVRAdm();
+      renderVRDoc();
+    })
+    .withFailureHandler(function(e){ console.warn('VR falhou:',e.message); })
+    .getVRData(TOKEN);
+}
+
+function initVRFilters(){
+  var admUnits=[...new Set(ALL_VR_ADM.map(function(r){ return r.unidade; }).filter(Boolean))].sort();
+  var admMeses=[...new Set(ALL_VR_ADM.map(function(r){ return r.mes; }).filter(Boolean))];
+  var admAnos=[...new Set(ALL_VR_ADM.map(function(r){ return r.ano; }).filter(Boolean))].sort().reverse();
+  var admNomes=[...new Set(ALL_VR_ADM.map(function(r){ return r.nome; }).filter(Boolean))].sort();
+
+  var docUnits=[...new Set(ALL_VR_DOC.map(function(r){ return r.unidade; }).filter(Boolean))].sort();
+  var docMeses=[...new Set(ALL_VR_DOC.map(function(r){ return r.mes; }).filter(Boolean))];
+  var docAnos=[...new Set(ALL_VR_DOC.map(function(r){ return r.ano; }).filter(Boolean))].sort().reverse();
+  var docNomes=[...new Set(ALL_VR_DOC.map(function(r){ return r.nome; }).filter(Boolean))].sort();
+
+  function fill(id, vals){ var el=document.getElementById(id); if(!el) return; vals.forEach(function(v){ el.appendChild(new Option(v,v)); }); }
+  fill('vra-unidade',admUnits); fill('vra-mes',admMeses); fill('vra-ano',admAnos); fill('vra-nome',admNomes);
+  fill('vrd-unidade',docUnits); fill('vrd-mes',docMeses); fill('vrd-ano',docAnos); fill('vrd-nome',docNomes);
+ var vraAno=document.getElementById('vra-ano'); if(vraAno) vraAno.value=String(new Date().getFullYear());
+ var vrdAno=document.getElementById('vrd-ano'); if(vrdAno) vrdAno.value=String(new Date().getFullYear());
+}
+
+function fmtBRL(n){ return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function renderVRAdm(){
+  var uni=v('vra-unidade'),mes=v('vra-mes'),ano=v('vra-ano'),nome=v('vra-nome');
+  var data=ALL_VR_ADM.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var totalP=data.reduce(function(s,r){ return s+r.valorPagar; },0);
+  var totalD=data.reduce(function(s,r){ return s+r.valorDesc; },0);
+  set('vra-badge',data.length+' registros');
+  set('vra-total-pagar',fmtBRL(totalP));
+  set('vra-total-desc',fmtBRL(totalD));
+  document.getElementById('tblVRAdm').innerHTML=data.map(function(r){
+    return '<tr>'+
+      '<td>'+esc(r.unidade)+'</td>'+
+      '<td>'+esc(r.mes)+'</td>'+
+      '<td class="num">'+esc(r.ano)+'</td>'+
+      '<td>'+esc(r.matricula)+'</td>'+
+      '<td>'+esc(String(r.nome||'').toUpperCase())+'</td>'+
+      '<td class="num">'+r.diasPrevisto.toFixed(2)+'</td>'+
+      '<td class="num">'+r.difMesAnt.toFixed(2)+'</td>'+
+      '<td class="num" style="font-weight:700">'+r.diasPagar.toFixed(2)+'</td>'+
+      '<td class="num" style="color:var(--success-600);font-weight:700">'+fmtBRL(r.valorPagar)+'</td>'+
+      '<td class="num" style="color:var(--danger-600);font-weight:700">'+fmtBRL(r.valorDesc)+'</td>'+
+      '</tr>';
+  }).join('')||'<tr><td colspan="10" class="table-empty">Sem dados.</td></tr>';
+}
+
+function renderVRDoc(){
+  var uni=v('vrd-unidade'),mes=v('vrd-mes'),ano=v('vrd-ano'),nome=v('vrd-nome');
+  var data=ALL_VR_DOC.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var totalP=data.reduce(function(s,r){ return s+r.valorPagar; },0);
+  var totalD=data.reduce(function(s,r){ return s+r.valorDesc; },0);
+  set('vrd-badge',data.length+' registros');
+  set('vrd-total-pagar',fmtBRL(totalP));
+  set('vrd-total-desc',fmtBRL(totalD));
+  document.getElementById('tblVRDoc').innerHTML=data.map(function(r){
+    return '<tr>'+
+      '<td>'+esc(r.unidade)+'</td>'+
+      '<td>'+esc(r.mes)+'</td>'+
+      '<td class="num">'+esc(r.ano)+'</td>'+
+      '<td>'+esc(r.matricula)+'</td>'+
+      '<td>'+esc(String(r.nome||'').toUpperCase())+'</td>'+
+      '<td class="num">'+r.chPrevisto.toFixed(2)+'</td>'+
+      '<td class="num">'+r.difMesAnt.toFixed(2)+'</td>'+
+      '<td class="num" style="font-weight:700">'+r.horasPagar.toFixed(2)+'</td>'+
+      '<td class="num" style="color:var(--success-600);font-weight:700">'+fmtBRL(r.valorPagar)+'</td>'+
+      '<td class="num" style="color:var(--danger-600);font-weight:700">'+fmtBRL(r.valorDesc)+'</td>'+
+      '</tr>';
+  }).join('')||'<tr><td colspan="10" class="table-empty">Sem dados.</td></tr>';
+}
+
+function switchVrTab(tab, btn){
+  document.getElementById('vr-adm-panel').style.display=tab==='adm'?'':'none';
+  document.getElementById('vr-doc-panel').style.display=tab==='doc'?'':'none';
+  document.querySelectorAll('#vrTabAdm,#vrTabDoc').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+function clearVRAdm(){
+  ['vra-unidade','vra-mes','vra-ano','vra-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  renderVRAdm();
+}
+function clearVRDoc(){
+  ['vrd-unidade','vrd-mes','vrd-ano','vrd-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  renderVRDoc();
+}
+
+function showTabLoading(tabId){
+  var el=document.getElementById('tab-'+tabId);
+  if(!el) return;
+  if(el.querySelector('.tab-loading-msg')) return;
+  var div=document.createElement('div');
+  div.className='tab-loading-msg loading-overlay';
+  div.innerHTML='<div class="spinner"></div><div class="loading-text">Carregando dados…</div>';
+  el.insertBefore(div,el.firstChild);
+}
+function hideTabLoading(tabId){
+  var el=document.getElementById('tab-'+tabId);
+  if(!el) return;
+  var msg=el.querySelector('.tab-loading-msg');
+  if(msg) msg.remove();
+}
+
+function downloadVRAdmCSV(){
+  var uni=v('vra-unidade'),mes=v('vra-mes'),ano=v('vra-ano'),nome=v('vra-nome');
+  var data=ALL_VR_ADM.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var headers=['Unidade','Mês','Ano','Matrícula','Nome','Dias Previsto Mês','Diferença Mês Anterior (Dias)','Dias a Pagar','Valor a Pagar','Valor a Descontar'];
+  var rows=data.map(function(r){ return [r.unidade,r.mes,r.ano,r.matricula,r.nome,r.diasPrevisto,r.difMesAnt,r.diasPagar,r.valorPagar,r.valorDesc]; });
+  var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c===null||c===undefined?'':c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='vr_administrativo_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function downloadVRDocCSV(){
+  var uni=v('vrd-unidade'),mes=v('vrd-mes'),ano=v('vrd-ano'),nome=v('vrd-nome');
+  var data=ALL_VR_DOC.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var headers=['Unidade','Mês','Ano','Matrícula','Docente','CH Previsto','Diferença Mês Anterior (Horas)','Horas a Pagar','Valor a Pagar','Valor a Descontar'];
+  var rows=data.map(function(r){ return [r.unidade,r.mes,r.ano,r.matricula,r.nome,r.chPrevisto,r.difMesAnt,r.horasPagar,r.valorPagar,r.valorDesc]; });
+  var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c===null||c===undefined?'':c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='vr_docente_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+var ALL_COPA=[];
+var COPA_PAGE=0;
+var COPA_PAGE_SIZE=50;
+
+function loadCopaData(){
+  google.script.run
+    .withSuccessHandler(function(r){
+      hideTabLoading('copa');
+      if(!r.ok){ console.warn('Copa:',r.error); return; }
+      ALL_COPA=r.rows||[];
+      initCopaFilters();
+      renderCopa();
+    })
+    .withFailureHandler(function(e){ console.warn('Copa falhou:',e.message); })
+    .getCopaData(TOKEN);
+}
+
+function initCopaFilters(){
+  var units=[...new Set(ALL_COPA.map(function(r){ return r.unidade; }).filter(Boolean))].sort();
+  var meses=[...new Set(ALL_COPA.map(function(r){ return r.mesAno; }).filter(Boolean))].sort(function(a,b){
+    var pa=a.split('/'),pb=b.split('/');
+    return (Number(pb[1])-Number(pa[1]))||( Number(pb[0])-Number(pa[0]));
+  });
+  var cpU=document.getElementById('cp-unidade');
+  if(cpU) units.forEach(function(u){ cpU.appendChild(new Option(u,u)); });
+  var cpM=document.getElementById('cp-mes');
+  if(cpM) meses.forEach(function(m){ cpM.appendChild(new Option(m,m)); });
+}
+
+function filteredCopa(){
+  var uni=v('cp-unidade'),mes=v('cp-mes'),nome=v('cp-nome','').trim().toLowerCase();
+  return ALL_COPA.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mesAno!==mes) return false;
+    if(nome&&!r.beneficiario.toLowerCase().includes(nome)) return false;
+    return true;
+  });
+}
+
+function renderCopa(){
+  var data=filteredCopa();
+  var totalValor=data.reduce(function(s,r){ return s+r.valor; },0);
+  var totalGrat=data.reduce(function(s,r){ return s+r.gratuidades; },0);
+
+  document.getElementById('copa-kpis').innerHTML=
+    '<div class="kpi-card highlight"><div class="kpi-label">Total a Cobrar</div><div class="kpi-value">'+fmtBRL(totalValor)+'</div><div class="kpi-sub">no filtro</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Total Gratuidades</div><div class="kpi-value">'+totalGrat.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-sub">coparticipações gratuitas</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Beneficiários</div><div class="kpi-value">'+new Set(data.map(function(r){ return r.beneficiario; })).size+'</div><div class="kpi-sub">distintos</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Registros</div><div class="kpi-value">'+data.length+'</div><div class="kpi-sub">linhas no filtro</div></div>';
+
+  set('copa-badge', data.length+' registros');
+
+  // agrupa por unidade > mesAno > matricula para montar tabela hierárquica
+  var html='';
+  var byUnidade=groupBy(data,'unidade');
+  Object.keys(byUnidade).sort().forEach(function(uni){
+    var rowsUni=byUnidade[uni];
+    var byMes=groupBy(rowsUni,'mesAno');
+    Object.keys(byMes).sort().forEach(function(mes){
+      var rowsMes=byMes[mes];
+      var byMat=groupBy(rowsMes,'matricula');
+      var firstMes=true;
+      Object.keys(byMat).sort().forEach(function(mat){
+        var rowsMat=byMat[mat];
+        var totalMat=rowsMat.reduce(function(s,r){ return s+r.valor; },0);
+        var firstMat=true;
+        rowsMat.forEach(function(r){
+          html+='<tr>'+
+            '<td>'+(firstMes?esc(uni):'')+'</td>'+
+            '<td>'+(firstMes?esc(mes):'')+'</td>'+
+            '<td>'+(firstMat?esc(mat):'')+'</td>'+
+            '<td>'+esc(String(r.beneficiario||'').toUpperCase())+'</td>'+
+            '<td class="num">'+fmtBRL(r.valor)+'</td>'+
+            '</tr>';
+          firstMes=false; firstMat=false;
+        });
+        html+='<tr style="background:var(--gray-50)">'+
+          '<td></td><td></td><td></td>'+
+          '<td style="font-weight:700">Total</td>'+
+          '<td class="num" style="font-weight:700">'+fmtBRL(totalMat)+'</td>'+
+          '</tr>';
+      });
+      var totalMesVal=rowsMes.reduce(function(s,r){ return s+r.valor; },0);
+      html+='<tr class="row-total">'+
+        '<td></td><td></td>'+
+        '<td colspan="2">Total '+esc(mes)+'</td>'+
+        '<td class="num">'+fmtBRL(totalMesVal)+'</td>'+
+        '</tr>';
+    });
+  });
+ window._copaRows=html;
+  COPA_PAGE=0;
+  renderCopaPage();
+
+  // tabela gratuidades — apenas quem tem gratuidades > 0
+  var gratData=data.filter(function(r){ return r.gratuidades>0; });
+  set('grat-badge', gratData.length+' registros');
+  document.getElementById('tblGratBody').innerHTML=gratData.length
+    ?gratData.map(function(r){
+        return '<tr>'+
+          '<td>'+esc(r.unidade)+'</td>'+
+          '<td>'+esc(r.mesAno)+'</td>'+
+          '<td>'+esc(r.matricula)+'</td>'+
+          '<td>'+esc(String(r.beneficiario||'').toUpperCase())+'</td>'+
+          '<td class="num" style="font-weight:700">'+r.gratuidades.toFixed(2)+'</td>'+
+          '</tr>';
+      }).join('')
+    :'<tr><td colspan="5" class="table-empty">Sem gratuidades no filtro.</td></tr>';
+}
+
+function renderCopaPage(){
+  var allRows=window._copaRows||'';
+  var parser=new DOMParser();
+  var doc=parser.parseFromString('<table>'+allRows+'</table>','text/html');
+  var trs=[...doc.querySelectorAll('tr')];
+  var total=trs.length;
+  var pages=Math.max(1,Math.ceil(total/COPA_PAGE_SIZE));
+  if(COPA_PAGE>=pages) COPA_PAGE=pages-1;
+  var start=COPA_PAGE*COPA_PAGE_SIZE;
+  var shown=trs.slice(start,start+COPA_PAGE_SIZE).map(function(tr){ return tr.outerHTML; }).join('');
+  document.getElementById('tblCopaBody').innerHTML=shown||'<tr><td colspan="5" class="table-empty">Sem dados.</td></tr>';
+  var info=document.getElementById('copa-pag-info');
+  if(info) info.textContent='Exibindo '+(start+1)+'–'+Math.min(start+COPA_PAGE_SIZE,total)+' de '+total+' linhas';
+  var prev=document.getElementById('copa-pag-prev'),next=document.getElementById('copa-pag-next');
+  if(prev) prev.disabled=COPA_PAGE===0;
+  if(next) next.disabled=COPA_PAGE>=pages-1;
+}
+function pagCopa(dir){ COPA_PAGE+=dir; renderCopaPage(); }
+
+function clearCopaFilters(){
+  ['cp-unidade','cp-mes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('cp-nome').value='';
+  renderCopa();
+}
+
+function downloadCopaCSV(){
+  var data=filteredCopa();
+  var headers=['Unidade','Mês Faturamento','Matrícula','Beneficiário','Valor Coparticipação'];
+  var rows=data.map(function(r){ return [r.unidade,r.mesAno,r.matricula,r.beneficiario,r.valor]; });
+  var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c===null||c===undefined?'':c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='coparticipacao_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// UTILS
+function v(id,def){ def=def||''; var el=document.getElementById(id); return el?(el.value||def):def; }
+function set(id,val){ var el=document.getElementById(id); if(el) el.textContent=val; }
+function fmt(n){ return(n===null||n===undefined)?'—':Number(n).toLocaleString('pt-BR'); }
+function pct(a,b){ return b?Math.round(a/b*100):0; }
+function avg(arr){ return arr.length?arr.reduce(function(s,n){ return s+n; },0)/arr.length:0; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function validNum(x){ return x!==null&&x!==undefined&&!isNaN(x)&&isFinite(x); }
+function fmtNow(){ var n=new Date(); return n.toLocaleDateString('pt-BR')+' às '+n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function groupBy(arr,key){ return arr.reduce(function(acc,e){ var k=e[key]||'(não informado)'; if(!acc[k]) acc[k]=[]; acc[k].push(e); return acc; },{}); }
+function toISO(str){ if(!str||str==='—') return ''; var m=str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); return m?m[3]+'-'+m[2]+'-'+m[1]:''; }
+function fmtDateBr(val){
+  if(!val) return '—';
+  var d=new Date(val);
+  if(isNaN(d.getTime())) return String(val);
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+</script>
+</body>
+</html>

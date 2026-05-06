@@ -1,0 +1,624 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  BRASAS ANALYTICS — DASHBOARD RH  |  Code.gs
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SPREADSHEET_ID     = '1BDiPjv0FqRJp5EwcvLdYXVvEAWesvwdEgbhYdnTlqPY';
+const SHEET_NAME         = 'RJ - UNIDADES';
+const ENGAGEMENT_SHEET_ID   = SPREADSHEET_ID;
+const ENGAGEMENT_SHEET_NAME = 'Questionário';
+const SESSION_TTL        = 8 * 3600;
+
+// Normaliza cabeçalhos: minúsculo, sem acento, sem espaços duplos
+function normalizeH_(h) {
+  return String(h || '').trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function getUsers_() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('USUARIOS');
+    if (!sheet) return {};
+    const raw = sheet.getDataRange().getValues();
+    const users = {};
+    for (let i = 1; i < raw.length; i++) {
+      const row = raw[i];
+      const email = String(row[0]||'').trim().toLowerCase();
+      if (!email) continue;
+      users[email] = {
+        password: String(row[1]||'').trim(),
+        name:     String(row[2]||'').trim(),
+        role:     String(row[3]||'').trim().toLowerCase(),
+        unidade:  String(row[4]||'').trim(),
+      };
+    }
+    return users;
+  } catch(e) {
+    return {};
+  }
+}
+
+const GIFT_TABLE = {
+   5:'CANECA', 10:'QUADRO MENSAGENS', 15:'PLANNER', 20:'MOCHILA', 25:'KINDLE',
+  30:'CANETA METÁLICA + CERTIFICADO', 35:'MALA DE RODINHA',
+  40:'PLACA HOMENAGEM + CERTIFICADO', 45:'RELÓGIO DE LUXO', 50:'INDEFINIDO',
+};
+const GIFT_YEARS = [2025, 2026, 2027];
+
+function doGet() {
+  return HtmlService.createTemplateFromFile('Index')
+    .evaluate()
+    .setTitle('BRASAS Analytics · RH')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function login(email, password) {
+  try {
+    if (!email || !password) return { ok: false, error: 'Preencha e-mail e senha.' };
+    const key = String(email).trim().toLowerCase();
+    const users = getUsers_();
+    const user = users[key];
+    if (!user || user.password !== String(password).trim())
+      return { ok: false, error: 'E-mail ou senha inválidos.' };
+    const token = Utilities.getUuid();
+    CacheService.getScriptCache().put('sess_' + token,
+      JSON.stringify({ email: key, name: user.name, role: user.role, unidade: user.unidade||'' }), SESSION_TTL);
+    return { ok: true, token, name: user.name, role: user.role, unidade: user.unidade||'' };
+  } catch (e) { return { ok: false, error: 'Erro interno: ' + e.message }; }
+}
+
+function logout(token) {
+  try { if (token) CacheService.getScriptCache().remove('sess_' + token); } catch (e) {}
+  return { ok: true };
+}
+
+function checkSession(token) {
+  if (!token) return null;
+  try {
+    const r = CacheService.getScriptCache().get('sess_' + token);
+    return r ? JSON.parse(r) : null;
+  } catch (e) { return null; }
+}
+
+function getData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada. Faça login novamente.' };
+  try {
+    const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return { ok: false, error: 'Aba "' + SHEET_NAME + '" não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: false, error: 'Planilha sem dados.' };
+
+    const col = {};
+    raw[0].forEach((h, i) => { col[String(h).trim()] = i; });
+    const g = (row, name) => { const i = col[name]; return (i !== undefined) ? row[i] : ''; };
+
+    const employees = [];
+    const today = new Date();
+
+    for (let r = 1; r < raw.length; r++) {
+      const row  = raw[r];
+      const nome = String(g(row,'NOME') || '').trim();
+      if (!nome) continue;
+
+      const rawUnit    = String(g(row,'UNIDADE AJUSTADA') || g(row,'UNIDADE') || '').trim();
+      const unitParts  = rawUnit.split('/').map(u => u.trim()).filter(Boolean);
+      const unidade    = unitParts[0] || '';
+      const unidadeSec = String(g(row,'UNIDADE SECUNDÁRIA') || '').trim();
+      const todasUnidades = [...new Set([unidade, unidadeSec].filter(Boolean))];
+      const nivel      = String(g(row,'NÍVEL PROFESSORES') || '').trim().replace(/,/g,'.');
+
+      const admDate   = parseDate_(g(row,'DATA DE ADMISSÃO'));
+      const birthDate = parseDate_(g(row,'DATA DE NASCIMENTO'));
+      const exitDate  = parseDate_(g(row,'DATA DE DESLIGAMENTO'));
+
+      const ativo   = String(g(row,'ATIVO?') || '').trim().toLowerCase() === 'ativo';
+      const refDate = (!ativo && exitDate) ? exitDate : today;
+
+      const tenureYears = admDate   ? diffYears_(admDate, refDate) : null;
+      const ageYears    = birthDate ? diffYears_(birthDate, today) : null;
+      const admYear     = admDate ? admDate.getFullYear()     : null;
+      const admMonth    = admDate ? admDate.getMonth() + 1    : null;
+      const admDay      = admDate ? admDate.getDate()         : null;
+      const admSemester = admMonth ? (admMonth <= 6 ? 1 : 2) : null;
+      const desligYear  = exitDate ? exitDate.getFullYear()    : null;
+      const desligMonth = exitDate ? (exitDate.getMonth() + 1) : null;
+      const desligDay   = exitDate ? exitDate.getDate()        : null;
+
+      const giftInfo = {};
+      if (admDate) {
+        GIFT_YEARS.forEach(yr => {
+          const anos = yr - admDate.getFullYear();
+          if (GIFT_TABLE[anos]) giftInfo[yr] = {
+            anos, brinde: GIFT_TABLE[anos],
+            semestre: admSemester === 1 ? '1º Semestre' : '2º Semestre',
+            admMonthN: admMonth,
+          };
+        });
+      }
+
+      employees.push({
+         unidade, unidadeSec, todasUnidades, nome,
+        sexo:        String(g(row,'SEXO (F/M)') || '').trim().toUpperCase(),
+        dataNasc:    fmtDate_(birthDate),
+        funcao:      String(g(row,'FUNÇÃO') || '').trim(),
+        apelido:     String(g(row,'APELIDO (TEACHER)') || '').trim(),
+        email:       String(g(row,'E-MAIL') || '').trim(),
+        emailBrasas: String(g(row,'E-mail BRASAS') || '').trim(),
+        dataAdm:     fmtDate_(admDate),
+        ativo, status: ativo ? 'Ativo' : 'Inativo',
+        dataDeslig:  fmtDate_(exitDate),
+        planoSaude:  String(g(row,'PLANO DE SAÚDE') || '').trim(),
+        numDep:      toInt_(g(row,'Nº DE DEPENDENTES PLANO DE SAÚDE')),
+        nivel, cpf:  String(g(row,'CPF') || '').trim(),
+        ageYears, tenureYears,
+        admYear, admMonth, admDay, admSemester,
+        desligYear, desligMonth, desligDay,
+        giftInfo,
+      });
+    }
+    const role = session.role;
+    const unidadeSessao = session.unidade || '';
+    const result = (role === 'diretor' && unidadeSessao)
+      ? employees.filter(e => e.todasUnidades.includes(unidadeSessao))
+      : employees;
+    return { ok: true, employees: result, session, ts: new Date().toISOString() };
+  } catch (err) {
+    return { ok: false, error: 'Erro ao carregar dados: ' + err.message };
+  }
+}
+
+function getEngagementData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  try {
+    const cache = CacheService.getScriptCache();
+    const cached = cache.get('eng_data');
+    if (cached) return { ok: true, rows: JSON.parse(cached) };
+
+    const ss    = SpreadsheetApp.openById(ENGAGEMENT_SHEET_ID);
+    const sheet = ss.getSheetByName(ENGAGEMENT_SHEET_NAME);
+    if (!sheet) return { ok: false, error: 'Aba "' + ENGAGEMENT_SHEET_NAME + '" não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 3) return { ok: false, error: 'Sem respostas.' };
+
+    // Usa normalização para tolerar diferenças de acento/case nos cabeçalhos
+    const col = {};
+    raw[1].forEach((h, i) => { col[normalizeH_(h)] = i; });
+    const g = (row, name) => {
+      const i = col[normalizeH_(name)];
+      return i !== undefined ? String(row[i] === null || row[i] === undefined ? '' : row[i]).trim() : '';
+    };
+
+    const rows = [];
+    for (let r = 2; r < raw.length; r++) {
+      const row = raw[r];
+      if (!g(row, 'Nome') && !g(row, 'Unidade')) continue;
+      function norm_(val) {
+        return String(val||'')
+          .replace('Adaptação (gestão, metodologia e rotina)', 'Adaptação (gestão | metodologia e rotina)')
+          .replace('Adaptação(gestão,metodologia e rotina)', 'Adaptação (gestão | metodologia e rotina)')
+          .replace('Por enquanto, nada', 'Por enquanto nada')
+          .replace('De nada, até o momento', 'De nada até o momento')
+          .replace('De nada, até o momento.', 'De nada até o momento');
+      }
+      rows.push({
+        nome:            g(row, 'Nome'),
+        nickname:        g(row, 'Nickname'),
+        unidade:         g(row, 'Unidade'),
+        achandoBrasas:   g(row, 'O que você está achando do BRASAS?'),
+        sentaFalta:  norm_(g(row, 'Do que você sente falta na sua rotina?')),
+        onboarding:      g(row, 'Como foi o seu onboarding?'),
+        recebeuTreino:   g(row, 'Recebeu algum treinamento?'),
+        avaliacaoTreino: g(row, 'Como você avalia os treinamentos recebidos?'),
+        seAcolhido:      g(row, 'Você se sentiu acolhido na sua chegada?'),
+        seOuvido:        g(row, 'Você se sente ouvido no trabalho?'),
+        commInterna:     g(row, 'O que você acha da comunicação interna do BRASAS?'),
+        freqComm:        g(row, 'Com que frequência você acessa às comunicações?'),
+        commEquipe:      g(row, 'Como funciona a comunicação na sua equipe?'),
+        ambiente:        g(row, 'Como é o seu ambiente de trabalho?'),
+        gestao:          g(row, 'Como você descreve a sua gestão atual?'),
+        trabalhoEquipe:  g(row, 'Como tem sido o trabalho em equipe no seu time?'),
+        formacao:        g(row, 'Você tem alguma formação? Se sim, qual?'),
+        naAreaQueQuis:   g(row, 'Você está na área que sempre quis?'),
+        motiva:      norm_(g(row, 'O que mais te motiva a permanecer na empresa?')),
+        fariasSair:  norm_(g(row, 'O que faria você sair da empresa hoje?')),
+        eAluno:          g(row, 'Você é aluno do BRASAS?'),
+        achandoCurso:    g(row, 'Se sim, o que você está achando do curso e da metodologia?'),
+        professor:       g(row, 'Quem é o seu professor?'),
+        observacoes:     g(row, 'Observações'),
+      });
+    }
+
+    try { cache.put('eng_data', JSON.stringify(rows), 300); } catch(e) {}
+    return { ok: true, rows };
+  } catch (err) {
+    return { ok: false, error: 'Erro ao carregar engajamento: ' + err.message };
+  }
+}
+
+function parseDate_(val) {
+  if (!val && val !== 0) return null;
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+  const s = String(val).trim();
+  if (!s) return null;
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+function fmtDate_(d) {
+  if (!d) return '';
+  return String(d.getDate()).padStart(2,'0') + '/' +
+         String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+function diffYears_(from, to) {
+  if (!from || !to || isNaN(from.getTime()) || isNaN(to.getTime())) return null;
+  let y = to.getFullYear() - from.getFullYear();
+  const dm = to.getMonth() - from.getMonth();
+  if (dm < 0 || (dm === 0 && to.getDate() < from.getDate())) y--;
+  return Math.max(0, y);
+}
+function toInt_(val) { const n = parseInt(val,10); return isNaN(n) ? 0 : n; }
+
+function testeMotiva() {
+  var ss    = SpreadsheetApp.openById('19jnZl3xkW_jk6WbFa15_tJTr7iurkk-zKwSToQoNL48');
+  var sheet = ss.getSheetByName('Questionário');
+  var raw   = sheet.getDataRange().getValues();
+  Logger.log(JSON.stringify(raw[1]));
+  Logger.log(JSON.stringify(raw[2]));
+}
+
+function getBrindesConsolidado(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  try {
+    const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('CONSOLIDADO_new');
+    if (!sheet) return { ok: false, error: 'Aba CONSOLIDADO_new não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: false, error: 'Sem dados.' };
+
+    const col = {};
+    raw[0].forEach(function(h, i){ col[String(h).trim()] = i; });
+    const g = function(row, name){ const i = col[name]; return i !== undefined ? String(row[i]||'').trim() : ''; };
+
+    const rows = [];
+    for (let r = 1; r < raw.length; r++) {
+      const row  = raw[r];
+      const nome = g(row, 'NOME');
+      if (!nome) continue;
+
+      const ativo    = g(row, 'ATIVO?').toLowerCase() === 'ativo';
+      const semestre = g(row, 'SEMESTRE');
+      const semFmt   = semestre.charAt(0) === '1' ? '1º Semestre' : '2º Semestre';
+
+      const giftInfo = {};
+
+      const b2026 = g(row, 'BRINDE 2026');
+      const a2026 = parseFloat(g(row, 'ANOS DE BRASAS 2026')) || 0;
+      if (b2026 && b2026 !== 'N/A') {
+        giftInfo[2026] = { brinde: b2026, anos: a2026, semestre: semFmt };
+      }
+
+      const b2027 = g(row, 'BRINDE PROJETADO 2027');
+      const a2027 = parseFloat(g(row, 'ANOS DE BRASAS PROJETADO 2027')) || 0;
+      if (b2027 && b2027 !== 'N/A') {
+        giftInfo[2027] = { brinde: b2027, anos: a2027, semestre: semFmt };
+      }
+
+      const b2028 = g(row, 'BRINDE PROJETADO 2028');
+      const a2028 = parseFloat(g(row, 'ANOS DE BRASAS PROJETADO 2028')) || 0;
+      if (b2028 && b2028 !== 'N/A') {
+        giftInfo[2028] = { brinde: b2028, anos: a2028, semestre: semFmt };
+      }
+
+      rows.push({
+        tipo:    g(row, 'TIPO UNIDADE'),
+        unidade: g(row, 'UNIDADE'),
+        nome,
+        sexo:    g(row, 'SEXO (F/M)').toUpperCase(),
+        funcao:  g(row, 'FUNÇÃO'),
+        ativo,
+        status:  ativo ? 'Ativo' : 'Inativo',
+        dataAdm: g(row, 'DATA DE ADMISSÃO'),
+        giftInfo,
+      });
+    }
+    return { ok: true, rows };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+const HORAS_SPREADSHEET_ID = '1VNeT_tN6dJItg-bZti1zqdQbmz-0silTVH--nJhHZQg';
+const HORAS_SHEET_NAME = 'Horas_2024+';
+
+function getHorasData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  try {
+    const ss    = SpreadsheetApp.openById(HORAS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(HORAS_SHEET_NAME);
+    if (!sheet) return { ok: false, error: 'Aba não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: false, error: 'Sem dados.' };
+
+    const col = {};
+    raw[0].forEach((h, i) => { col[String(h).trim()] = i; });
+    const g = (row, name) => {
+      const i = col[name];
+      return i !== undefined ? row[i] : '';
+    };
+    const num = (row, name) => {
+      const v = g(row, name);
+      const n = parseFloat(String(v).replace(',','.'));
+      return isNaN(n) ? 0 : n;
+    };
+
+    const rows = [];
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      const unidade = String(g(row,'UNIDADE')||'').trim();
+      if (!unidade) continue;
+
+      const htUrmas      = num(row,'HORAS TURMAS');
+      const hturmasSab   = num(row,'HORAS TURMAS SÁBADO');
+      const extras       = num(row,'ATIV. EXTRAS');
+      const subs         = num(row,'SUBS.');
+      const subsOutras   = num(row,'SUBS. EM OUTRAS UNIDADE');
+      const fDesc        = num(row,'FALTAS DESCONTADAS');
+      const fAbon        = num(row,'FALTAS ABONADAS');
+      const salHora      = num(row,'Salário HoraxAula');
+      const totalHoras   = htUrmas + hturmasSab + extras + subs + subsOutras - fDesc;
+
+      rows.push({
+        unidade,
+        mes:       String(g(row,'MÊS')||'').trim(),
+        ano: String(Math.round(Number(g(row,'ANO')||0))||'').replace('.0','').trim(),
+        matricula: String(g(row,'MATRÍCULA')||'').trim(),
+        apelido:   String(g(row,'APELIDO AJUSTADO')||g(row,'APELIDO')||'').trim(),
+        nome:      String(g(row,'NOME')||'').trim(),
+        nivel:     String(g(row,'NÍVEL AJUSTADO')||g(row,'NÍVEL')||'').trim(),
+        hTurmas:   htUrmas,
+        hTurmasSab: hturmasSab,
+        extras,
+        subs,
+        subsOutras,
+        fDesc,
+        fAbon,
+        topSpecial: num(row,'TOP SPECIAL'),
+        salHora,
+        totalHoras,
+        custoFDesc: fDesc * salHora,
+        custoFAbon: fAbon * salHora,
+        data:      String(g(row,'Data')||'').trim(),
+      });
+    }
+
+    const role = session.role;
+    const unidadeSessao = session.unidade || '';
+    const filteredRows = (role === 'diretor' && unidadeSessao)
+      ? rows.filter(r => r.unidade === unidadeSessao)
+      : rows;
+    return { ok: true, rows: filteredRows };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+const VR_SPREADSHEET_ID = '1PgcBeGF9GKmt_jwNBaXijzF8T5jhBmGV2LssXGrsoRg';
+
+function getVRData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  try {
+    const ss = SpreadsheetApp.openById(VR_SPREADSHEET_ID);
+    const numCol = (row, col) => {
+      const i = col;
+      const v = parseFloat(String(row[i]||'').replace(',','.'));
+      return isNaN(v) ? 0 : v;
+    };
+
+    const sheetAdm = ss.getSheetByName('db_administrativo');
+    const rawAdm = sheetAdm ? sheetAdm.getDataRange().getValues() : [];
+    const colAdm = {};
+    if (rawAdm.length) rawAdm[0].forEach((h,i) => { colAdm[String(h).trim()] = i; });
+    const ga = (row, name) => { const i = colAdm[name]; return i !== undefined ? row[i] : ''; };
+    const adm = [];
+    for (let r = 1; r < rawAdm.length; r++) {
+      const row = rawAdm[r];
+      const unidade = String(ga(row,'Unidade')||'').trim();
+      if (!unidade) continue;
+      adm.push({
+        unidade,
+        mes:          String(ga(row,'Mês')||'').trim(),
+        ano:          String(ga(row,'Ano')||'').trim(),
+        matricula:    String(ga(row,'Matrícula')||ga(row,'Matrícula (Extraída)')||'').trim(),
+        nome:         String(ga(row,'Administrativo')||'').trim(),
+        diasPrevisto: numCol(row, colAdm['Dias Previsto Mês']),
+        difMesAnt:    numCol(row, colAdm['Difereça Mês Anterior (em Dias)']),
+        diasPagar:    numCol(row, colAdm['Dias a Pagar (Mês Atual)']),
+        valorPagar:   numCol(row, colAdm['Valor a Pagar']),
+        valorDesc:    numCol(row, colAdm['Valor a Descontar']),
+        permissao: String(ga(row,'Unidade')||'').trim(),
+      });
+    }
+
+    const sheetDoc = ss.getSheetByName('db_docente');
+    const rawDoc = sheetDoc ? sheetDoc.getDataRange().getValues() : [];
+    const colDoc = {};
+    if (rawDoc.length) rawDoc[0].forEach((h,i) => { colDoc[String(h).trim()] = i; });
+    const gd = (row, name) => { const i = colDoc[name]; return i !== undefined ? row[i] : ''; };
+    const doc = [];
+    for (let r = 1; r < rawDoc.length; r++) {
+      const row = rawDoc[r];
+      const unidade = String(gd(row,'Unidade')||'').trim();
+      if (!unidade) continue;
+      doc.push({
+        unidade,
+        mes:        String(gd(row,'Mês')||'').trim(),
+        ano:        String(gd(row,'Ano')||'').trim(),
+        matricula:  String(gd(row,'MatrIcula')||'').trim(),
+        nome:       String(gd(row,'Docente')||'').trim(),
+        chPrevisto: numCol(row, colDoc['CH Previsto']),
+        difMesAnt:  numCol(row, colDoc['Difereça Mês Anterior (em Horas)']),
+        horasPagar: numCol(row, colDoc['Horas a Pagar (Mês Atual)']),
+        valorPagar: numCol(row, colDoc['Valor a Pagar']),
+        valorDesc:  numCol(row, colDoc['Valor a Descontar']),
+        permissao: String(ga(row,'Unidade')||'').trim(),
+      });
+    }
+
+    const role = session.role;
+    const uni = session.unidade || '';
+    const filterUni = (arr) => (role === 'diretor' && uni) ? arr.filter(r => r.unidade === uni) : arr;
+
+    return { ok: true, adm: filterUni(adm), doc: filterUni(doc) };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+const COPA_SPREADSHEET_ID = '1MGlfK7DXbnLpl55zc7AnzJvxDnsEA1umCeAbWRL5HhA';
+const COPA_SHEET_NAME = 'oficial_coparticipação';
+
+function getCopaData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  try {
+    const ss = SpreadsheetApp.openById(COPA_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(COPA_SHEET_NAME);
+    if (!sheet) return { ok: false, error: 'Aba não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: false, error: 'Sem dados.' };
+
+    // Normaliza cabeçalhos para tolerar diferenças de case/acento
+    const col = {};
+    raw[0].forEach((h, i) => { col[normalizeH_(h)] = i; });
+    const g = (row, name) => { const i = col[normalizeH_(name)]; return i !== undefined ? row[i] : ''; };
+    const num = (row, name) => {
+      const v = g(row, name);
+      const n = parseFloat(String(v).replace(',','.'));
+      return isNaN(n) ? 0 : n;
+    };
+
+    const rows = [];
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      const unidade = String(g(row,'UNIDADE')||'').trim();
+      if (!unidade) continue;
+
+      // Normaliza mesAno sempre para "MM/YYYY" com zero-padding
+      const mesAnoRaw = g(row,'Mês/Ano');
+      let mesStr;
+      if (mesAnoRaw instanceof Date && !isNaN(mesAnoRaw.getTime())) {
+        mesStr = String(mesAnoRaw.getMonth()+1).padStart(2,'0') + '/' + mesAnoRaw.getFullYear();
+      } else if (typeof mesAnoRaw === 'number' && mesAnoRaw > 0) {
+        // Número serial OA (Excel/Sheets) → converte para Date
+        const d = new Date(Math.round((mesAnoRaw - 25569) * 86400 * 1000));
+        mesStr = String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+      } else {
+        const s = String(mesAnoRaw||'').trim();
+        const m3 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); // DD/MM/YYYY
+        if (m3) {
+          mesStr = String(m3[2]).padStart(2,'0') + '/' + m3[3]; // extrai MM/YYYY
+        } else {
+          const m2 = s.match(/^(\d{1,2})\/(\d{4})$/);           // MM/YYYY direto
+          mesStr = m2 ? String(m2[1]).padStart(2,'0') + '/' + m2[2] : s;
+        }
+      }
+
+      rows.push({
+        unidade,
+        matricula:    String(g(row,'Matrícula')||'').trim(),
+        beneficiario: String(g(row,'Beneficiário')||'').trim(),
+        mesAno:       mesStr,
+        valor:        num(row,'Valor coparticipação'),
+        gratuidades:  String(g(row,'GRATUIDADES')||'').trim().toLowerCase()==='gratuita'
+                        ? num(row,'Valor') : 0,
+      });
+    }
+
+    const role = session.role;
+    const uni = session.unidade || '';
+    const result = (role === 'diretor' && uni) ? rows.filter(r => r.unidade === uni) : rows;
+    return { ok: true, rows: result };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ─── TURMAS POR PROFESSOR ────────────────────────────────────────────────────
+const TURMAS_SPREADSHEET_ID = '1O5mYkfiFKpSd0aFxWVWjXJFxlbw6jYnDZX0SbiDda5M';
+const TURMAS_SHEET_NAME = 'db_max';
+
+function getTurmasData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  try {
+    const ss = SpreadsheetApp.openById(TURMAS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(TURMAS_SHEET_NAME);
+    if (!sheet) return { ok: false, error: 'Aba "' + TURMAS_SHEET_NAME + '" não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: false, error: 'Sem dados.' };
+
+    // Cada linha do db_max é uma turma. Agrupa-se no frontend por APELIDO AJUSTADO.
+    const col = {};
+    raw[0].forEach((h, i) => { col[normalizeH_(h)] = i; });
+    const gs = (row, name) => {
+      const i = col[normalizeH_(name)];
+      return i !== undefined ? String(row[i] || '').trim() : '';
+    };
+    const gRaw = (row, name) => {
+      const i = col[normalizeH_(name)];
+      return i !== undefined ? row[i] : null;
+    };
+
+    const today = new Date();
+    const rows = [];
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      const apelido = gs(row, 'APELIDO AJUSTADO');
+      if (!apelido) continue;
+
+      // Filtra turmas ativas: TERMINO ausente ou >= hoje
+      const terminoRaw = gRaw(row, 'TERMINO');
+      if (terminoRaw) {
+        let termino = null;
+        if (terminoRaw instanceof Date && !isNaN(terminoRaw.getTime())) {
+          termino = terminoRaw;
+        } else {
+          const s = String(terminoRaw).trim();
+          if (s) {
+            // suporta "dd/mm/yyyy" e "dd/mm/yyyy HH:MM"
+            const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            termino = m ? new Date(+m[3], +m[2]-1, +m[1]) : new Date(s);
+          }
+        }
+        if (termino && !isNaN(termino.getTime()) && termino < today) continue;
+      }
+
+      const numF = (v) => { const n = parseFloat(String(v||'').replace(',','.')); return isNaN(n) ? 0 : n; };
+      rows.push({
+        apelido,
+        unidade:  gs(row, 'UNIDADE AJUSTADA') || gs(row, 'UNIDADE'),
+        alVigente: numF(gRaw(row, 'AL_VIGENTE')),
+        alMaximo:  numF(gRaw(row, 'AL_MAXIMO')),
+      });
+    }
+
+    const role = session.role;
+    const uni = session.unidade || '';
+    const filtered = (role === 'diretor' && uni) ? rows.filter(r => r.unidade === uni) : rows;
+    return { ok: true, rows: filtered };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
