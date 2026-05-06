@@ -512,20 +512,26 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
      </div>
       <div class="charts-grid" style="margin-bottom:24px">
         <div class="chart-container full">
-          <div class="chart-title">Top 35 — Professores com Mais Turmas Ativas</div>
-          <div class="chart-subtitle">Linha vermelha = média BRASAS Geral · turmas ativas, sem testes incompletos</div>
-          <div class="chart-canvas-wrapper" id="wrapTurmasTop35" style="height:320px">
-            <canvas id="chartTurmasTop35"></canvas>
+          <div class="chart-title">Top 15 com Mais e Menos Turmas Ativas</div>
+          <div class="chart-subtitle">Azul = mais turmas · Âmbar = menos turmas · Linha tracejada = média BRASAS Geral</div>
+          <div class="chart-canvas-wrapper" id="wrapTurmasComb" style="height:440px">
+            <canvas id="chartTurmasComb"></canvas>
           </div>
         </div>
       </div>
-      <div class="charts-grid" style="margin-bottom:24px">
-        <div class="chart-container full">
-          <div class="chart-title">Top 20 — Professores com Menos Turmas Ativas</div>
-          <div class="chart-subtitle">Unidade | Apelido · turmas ativas, sem testes incompletos</div>
-          <div class="chart-canvas-wrapper" id="wrapTurmasBot20" style="height:320px">
-            <canvas id="chartTurmasBot20"></canvas>
-          </div>
+      <div class="section" style="margin-bottom:24px">
+        <div class="section-header">
+          <div><div class="section-title">Histórico — Turmas e Alunos por Professor</div><div class="section-subtitle">Último snapshot de cada mês · 12 meses</div></div>
+        </div>
+        <div class="filters-bar" style="padding:16px 24px 16px;border-bottom:1px solid var(--gray-100)">
+          <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="hist-unidade" onchange="onHistUnidadeChange()"><option value="">Todas as unidades</option></select></div>
+          <div class="filter-group" style="min-width:220px;flex:2"><label>Professor</label><select id="hist-professor" onchange="renderHistorico()"><option value="">Selecione um professor</option></select></div>
+        </div>
+        <div class="kpi-row" id="hist-kpis" style="padding:16px 24px 0"></div>
+        <div style="padding:16px 24px 24px">
+          <div id="hist-loading" style="display:none;text-align:center;padding:40px 0;color:var(--gray-400);font-size:.9rem">Carregando dados...</div>
+          <div id="hist-empty" style="text-align:center;padding:40px 0;color:var(--gray-400);font-size:.9rem">Selecione uma unidade e um professor para ver o histórico.</div>
+          <div class="chart-canvas-wrapper" id="wrapHistorico" style="height:360px;display:none"><canvas id="chartHistorico"></canvas></div>
         </div>
       </div>
       <div class="section"><div class="section-header"><div><div class="section-title">Lista de Professores</div><div class="section-subtitle">Teachers com nível cadastrado</div></div><div class="section-badge" id="prof-badge">0 registros</div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Apelido</th><th>Nome Completo</th><th>Unidade</th><th class="center">Nível</th><th class="center">Status</th><th class="num">Anos de Casa</th><th>E-mail BRASAS</th></tr></thead><tbody id="tblProfessores"></tbody></table></div><div style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--gray-100)"><div style="font-size:.78rem;color:var(--gray-500)" id="prof-pag-info">—</div><div style="display:flex;gap:8px"><button class="btn-clear" id="prof-pag-prev" onclick="pagProf(-1)" style="min-height:32px;padding:6px 14px">← Anterior</button><button class="btn-clear" id="prof-pag-next" onclick="pagProf(1)" style="min-height:32px;padding:6px 14px">Próxima →</button></div></div></div>
@@ -821,6 +827,7 @@ var ALL_EMP=[], FILTERED=[];
 var ENG_DATA=[];
 var ALL_BRINDES=[];
 var ALL_TURMAS=[];
+var ALL_HISTORICO=[];
 var ENG_COLORS={pos:'#22c55e',neg:'#ef4444',neu:'#f59e0b',def:'#3d6b99'};
 var CHARTS={};
 var SORT_EMP={col:'nome',dir:1};
@@ -1226,8 +1233,10 @@ function initFilters(){
     rA.value=curYear;
   }
   // professores
+  var EXCL_PROF_UNITS=['EDITORA','MÉTODOS','EC NEW'];
   var fuP=document.getElementById('f-prof-unidade');
-  if(fuP) units.forEach(function(u){ fuP.appendChild(new Option(u,u)); });
+  if(fuP) units.filter(function(u){ return EXCL_PROF_UNITS.indexOf(u)<0; })
+    .forEach(function(u){ fuP.appendChild(new Option(u,u)); });
   var nivsArr=[...new Set(ALL_EMP.map(function(e){ return e.nivel; }).filter(Boolean))];
   nivsArr.sort(function(a,b){ var ia=NIVEL_ORDER.indexOf(a),ib=NIVEL_ORDER.indexOf(b); return(ia===-1?99:ia)-(ib===-1?99:ib); });
   var fPN=document.getElementById('f-prof-nivel');
@@ -1506,13 +1515,21 @@ function renderGeral(){
 }
 function renderFuncPyramid(ativos){
   var byFunc=groupBy(ativos,'funcao');
-  var entries=Object.entries(byFunc).sort(function(a,b){ return b[1].length-a[1].length; });
-  var total=ativos.length,maxN=entries.length?entries[0][1].length:1;
-  set('func-chart-badge',entries.length+' funções · '+total+' ativos');
-  document.getElementById('funcPyramid').innerHTML=entries.map(function(e,i){
-    var fn=e[0],emps=e[1],n=emps.length;
-    var pctV=total?(n/total*100).toFixed(1):0,barW=Math.round(n/maxN*100);
-    return '<div class="func-row"><div class="func-row-label" title="'+esc(fn)+'">'+esc(fn)+'</div><div class="func-bar-wrap"><div class="func-bar-fill" style="width:'+barW+'%;background:'+PALETTE[i%PALETTE.length]+'"></div></div><div class="func-meta"><strong>'+n+'</strong> · '+pctV+'%</div></div>';
+  var all=Object.entries(byFunc).sort(function(a,b){ return b[1].length-a[1].length; });
+  var total=ativos.length,maxN=all.length?all[0][1].length:1;
+  var shown=all.slice(0,15);
+  var rest=all.slice(15);
+  if(rest.length>0){
+    var outrosEmps=rest.reduce(function(acc,e){ return acc.concat(e[1]); },[]);
+    shown.push(['Outros ('+rest.length+' funções)',outrosEmps]);
+  }
+  set('func-chart-badge',all.length+' funções · '+total+' ativos');
+  document.getElementById('funcPyramid').innerHTML=shown.map(function(e,i){
+    var fn=e[0],n=e[1].length;
+    var pctV=total?(n/total*100).toFixed(1):0;
+    var barW=Math.min(100,Math.round(n/maxN*100));
+    var color=i<15?PALETTE[i%PALETTE.length]:'#94a3b8';
+    return '<div class="func-row"><div class="func-row-label" title="'+esc(fn)+'">'+esc(fn)+'</div><div class="func-bar-wrap"><div class="func-bar-fill" style="width:'+barW+'%;background:'+color+'"></div></div><div class="func-meta"><strong>'+n+'</strong> · '+pctV+'%</div></div>';
   }).join('');
 }
 var unitRows=[];
@@ -1841,11 +1858,12 @@ function renderProfPage(){
 function pagProf(dir){ PROF_PAGE+=dir; renderProfPage(); }
 
 function renderProfNivelTable(profs){
-  // expande professores com unidade secundária
+  // expande professores com unidade secundária, excluindo unidades não-operacionais
+  var EXCL_PROF_UNITS=['EDITORA','MÉTODOS','EC NEW'];
   var rows=[];
   profs.forEach(function(e){
-    rows.push({unidade:e.unidade, nivel:e.nivel});
-    if(e.unidadeSec) rows.push({unidade:e.unidadeSec, nivel:e.nivel});
+    if(EXCL_PROF_UNITS.indexOf(e.unidade)<0) rows.push({unidade:e.unidade, nivel:e.nivel});
+    if(e.unidadeSec&&EXCL_PROF_UNITS.indexOf(e.unidadeSec)<0) rows.push({unidade:e.unidadeSec, nivel:e.nivel});
   });
 
   var niveis=NIVEL_ORDER.filter(function(n){
@@ -1853,18 +1871,20 @@ function renderProfNivelTable(profs){
   });
   var unidades=[...new Set(rows.map(function(r){ return r.unidade; }))].sort();
 
-  var header='<tr><th>Unidade</th>'+
-    niveis.map(function(n){ return '<th class="center">'+n+'</th>'; }).join('')+
-    '<th class="num">Total geral</th></tr>';
+  var hStyle='style="background:var(--navy-700);color:#fff"';
+  var header='<tr '+hStyle+'><th '+hStyle+'>Unidade</th>'+
+    niveis.map(function(n){ return '<th class="center" '+hStyle+'>'+n+'</th>'; }).join('')+
+    '<th class="num" '+hStyle+'>Total geral</th></tr>';
 
-  var body=unidades.map(function(u){
+  var body=unidades.map(function(u,i){
+    var rowBg=i%2===0?'background:var(--gray-50)':'';
     var uRows=rows.filter(function(r){ return r.unidade===u; });
     var total=uRows.length;
     var cells=niveis.map(function(n){
       var c=uRows.filter(function(r){ return r.nivel===n; }).length;
       return '<td class="center">'+(c||'-')+'</td>';
     }).join('');
-    return '<tr><td><strong>'+esc(u)+'</strong></td>'+cells+'<td class="num"><strong>'+total+'</strong></td></tr>';
+    return '<tr style="'+rowBg+'"><td><strong>'+esc(u)+'</strong></td>'+cells+'<td class="num"><strong>'+total+'</strong></td></tr>';
   }).join('');
 
   // linha de totais
@@ -1884,6 +1904,7 @@ function loadTurmasData(){
     .withSuccessHandler(function(r){
       ALL_TURMAS=r.ok?r.rows:[];
       renderTurmasChart();
+      loadHistoricoData();
     })
     .withFailureHandler(function(e){ console.warn('Turmas falhou:',e.message); })
     .getTurmasData(TOKEN);
@@ -1893,86 +1914,249 @@ function renderTurmasChart(){
   var fUn=v('f-prof-unidade');
   var data=fUn?ALL_TURMAS.filter(function(r){ return r.unidade===fUn; }):ALL_TURMAS;
 
-  // Agrupa por chaveMatricula; guarda apelido, chave (unidade|apelido) e nível
-  var counts={},apelidoMap={},chaveMap={},nivelMap={};
+  var counts={},apelidoMap={},unidadeMap={},nivelMap={};
   data.forEach(function(r){
     var key=r.chaveMatricula||r.apelido;
     counts[key]=(counts[key]||0)+1;
     if(!apelidoMap[key]) apelidoMap[key]=r.apelido;
-    if(!chaveMap[key])   chaveMap[key]=r.chave||r.apelido;
+    if(!unidadeMap[key]) unidadeMap[key]=r.unidade||'';
     if(!nivelMap[key]&&r.nivel) nivelMap[key]=r.nivel;
   });
 
   var allEntries=Object.entries(counts);
-  var totalProfs=allEntries.length;
-  var totalTurmas=allEntries.reduce(function(s,e){ return s+e[1]; },0);
-  var avg=totalProfs>0?Math.round((totalTurmas/totalProfs)*10)/10:0;
 
-  // ── Chart 1: Top 35 com mais turmas + linha de média ──────────────────────
-  var top35=allEntries.slice().sort(function(a,b){ return b[1]-a[1]; }).slice(0,35);
-  var labelsTop=top35.map(function(e){ return apelidoMap[e[0]]||e[0]; });
-  var valuesTop=top35.map(function(e){ return e[1]; });
-  var w1=document.getElementById('wrapTurmasTop35');
-  if(w1) w1.style.height='440px';
-  var ctx1=document.getElementById('chartTurmasTop35');
-  if(ctx1){
-    if(CHARTS['chartTurmasTop35']){ CHARTS['chartTurmasTop35'].destroy(); delete CHARTS['chartTurmasTop35']; }
-    CHARTS['chartTurmasTop35']=new Chart(ctx1,{
+  // Média calculada sempre sobre TODOS os professores (ignora filtro de unidade)
+  var globalCounts={};
+  ALL_TURMAS.forEach(function(r){
+    var key=r.chaveMatricula||r.apelido;
+    globalCounts[key]=(globalCounts[key]||0)+1;
+  });
+  var globalVals=Object.values(globalCounts);
+  var avg=globalVals.length>0?Math.round((globalVals.reduce(function(s,v){ return s+v; },0)/globalVals.length)*10)/10:0;
+
+  // Top 15 mais turmas (decrescente)
+  var top15=allEntries.slice().sort(function(a,b){ return b[1]-a[1]; }).slice(0,15);
+  var top15keys=top15.reduce(function(m,e){ m[e[0]]=true; return m; },{});
+
+  // Bottom 15 menos turmas (crescente, sem overlap com top15)
+  var bot15=allEntries.slice().sort(function(a,b){ return a[1]-b[1]; })
+    .filter(function(e){ return !top15keys[e[0]]; }).slice(0,15);
+
+  var combined=top15.concat(bot15);
+  var labels=combined.map(function(e){
+    var key=e[0];
+    var ap=apelidoMap[key]||key;
+    var un=unidadeMap[key]||'';
+    var nv=nivelMap[key]||'';
+    var line2=un+(un&&nv?' · ':'')+nv;
+    return line2?[ap,line2]:ap;
+  });
+  var n=combined.length;
+
+  // Dois datasets separados para ter legenda correta
+  var topVals=combined.map(function(e,i){ return i<top15.length?e[1]:null; });
+  var botVals=combined.map(function(e,i){ return i>=top15.length?e[1]:null; });
+  var avgVals=labels.map(function(){ return avg; });
+
+  var w=document.getElementById('wrapTurmasComb');
+  if(w) w.style.height='440px';
+  var ctx=document.getElementById('chartTurmasComb');
+  if(ctx){
+    if(CHARTS['chartTurmasComb']){ CHARTS['chartTurmasComb'].destroy(); delete CHARTS['chartTurmasComb']; }
+    CHARTS['chartTurmasComb']=new Chart(ctx,{
       data:{
-        labels:labelsTop,
+        labels:labels,
         datasets:[
-          {type:'bar',label:'Turmas Ativas',data:valuesTop,backgroundColor:'#2a4d76',borderRadius:4,barThickness:14,order:2},
-          {type:'line',label:'Média BRASAS ('+avg+')',data:labelsTop.map(function(){ return avg; }),
-           borderColor:'#e05c2a',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+          {type:'bar',label:'Mais turmas',data:topVals,backgroundColor:'#2a4d76',borderRadius:4,barThickness:16,order:2},
+          {type:'bar',label:'Menos turmas',data:botVals,backgroundColor:'#c9a227',borderRadius:4,barThickness:16,order:2},
+          {type:'line',label:'Média BRASAS ('+avg+')',data:avgVals,borderColor:'#e05c2a',borderWidth:2,
+           borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
         ]
       },
       options:{
         responsive:true,maintainAspectRatio:false,
         plugins:{
           legend:{display:true,position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:12,padding:12}},
-          tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+fmt(c.raw); }}}
+          tooltip:{callbacks:{label:function(c){ return c.raw!=null?' '+c.dataset.label+': '+fmt(c.raw):''; }}}
         },
         scales:{
           x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:10},maxRotation:90,minRotation:45,autoSkip:false}},
           y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true}
         }
       }
+    });
+  }
+}
+
+// HISTÓRICO TURMAS/ALUNOS
+function loadHistoricoData(){
+  var ld=document.getElementById('hist-loading');
+  var em=document.getElementById('hist-empty');
+  if(ld){ ld.style.display='block'; }
+  if(em){ em.style.display='none'; }
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(ld) ld.style.display='none';
+      if(!r.ok){ console.warn('Histórico:',r.error); if(em) em.style.display='block'; return; }
+      ALL_HISTORICO=r.meses||[];
+      initHistoricoFilters();
+    })
+    .withFailureHandler(function(e){
+      if(ld) ld.style.display='none';
+      if(em){ em.textContent='Erro ao carregar histórico.'; em.style.display='block'; }
+      console.warn('Histórico falhou:',e.message);
+    })
+    .getHistoricoTurmas(TOKEN);
+}
+
+function initHistoricoFilters(){
+  var EXCL=['EDITORA','MÉTODOS','EC NEW'];
+  // Unidades vêm das colunas de acesso dos professores ativos em ALL_EMP
+  var profs=ALL_EMP.filter(function(e){
+    return e.ativo && e.funcao && e.funcao.toUpperCase().includes('PROFESSOR');
+  });
+  var units=[...new Set(
+    profs.flatMap(function(e){ return [e.unidadeAcesso,e.unidadeSecAcesso]; }).filter(Boolean)
+  )].sort();
+  var sel=document.getElementById('hist-unidade');
+  if(sel){
+    while(sel.options.length>1) sel.remove(1);
+    units.filter(function(u){ return EXCL.indexOf(u)<0; })
+      .forEach(function(u){ sel.appendChild(new Option(u,u)); });
+  }
+}
+
+function mesLabel_(mesStr){
+  // 'MM/YYYY' → 'Mmm/YY'
+  var p=mesStr.split('/');
+  return MONTHS_PT[parseInt(p[0],10)-1]+'/'+p[1].slice(2);
+}
+
+function onHistUnidadeChange(){
+  var fUn=v('hist-unidade');
+  var sel=document.getElementById('hist-professor');
+  if(!sel) return;
+  while(sel.options.length>1) sel.remove(1);
+
+  // Fonte de verdade: professores ativos de ALL_EMP filtrados pelas colunas de acesso
+  var profs=ALL_EMP.filter(function(e){
+    return e.ativo && e.funcao && e.funcao.toUpperCase().includes('PROFESSOR');
+  });
+  if(fUn){
+    profs=profs.filter(function(e){
+      return e.unidadeAcesso===fUn || e.unidadeSecAcesso===fUn;
     });
   }
 
-  // ── Chart 2: Bottom 20 com menos turmas (chave + nível como label) ────────
-  var bot20=allEntries.slice().sort(function(a,b){ return a[1]-b[1]; }).slice(0,20);
-  var labelsBot=bot20.map(function(e){
-    var key=e[0];
-    var chave=chaveMap[key]||e[0];
-    var nivel=nivelMap[key];
-    return nivel?[chave,'('+nivel+')']:chave;
-  });
-  var valuesBot=bot20.map(function(e){ return e[1]; });
-  var w2=document.getElementById('wrapTurmasBot20');
-  if(w2) w2.style.height='460px';
-  var ctx2=document.getElementById('chartTurmasBot20');
-  if(ctx2){
-    if(CHARTS['chartTurmasBot20']){ CHARTS['chartTurmasBot20'].destroy(); delete CHARTS['chartTurmasBot20']; }
-    CHARTS['chartTurmasBot20']=new Chart(ctx2,{
-      type:'bar',
-      data:{
-        labels:labelsBot,
-        datasets:[{label:'Turmas Ativas',data:valuesBot,backgroundColor:'#c9a227',borderRadius:4,barThickness:14}]
-      },
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{
-          legend:{display:false},
-          tooltip:{callbacks:{label:function(c){ return ' Turmas Ativas: '+fmt(c.raw); }}}
-        },
-        scales:{
-          x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:10},maxRotation:90,minRotation:45,autoSkip:false}},
-          y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true}
-        }
-      }
+  // Índice apelido → chaveMatricula construído a partir de todos os meses do histórico
+  var apelidoToChave={};
+  ALL_HISTORICO.forEach(function(m){
+    m.rows.forEach(function(r){
+      if(!apelidoToChave[r.apelido]) apelidoToChave[r.apelido]=r.chaveMatricula;
     });
+  });
+
+  var seen={};
+  profs.slice().sort(function(a,b){ return a.apelido.localeCompare(b.apelido); })
+    .forEach(function(e){
+      var ap=e.apelido; if(!ap||seen[ap]) return;
+      seen[ap]=true;
+      // valor = chaveMatricula para match no gráfico; fallback = apelido
+      sel.appendChild(new Option(ap, apelidoToChave[ap]||ap));
+    });
+
+  renderHistorico();
+}
+
+function renderHistorico(){
+  var chave=v('hist-professor');
+  var empty=document.getElementById('hist-empty');
+  var wrap=document.getElementById('wrapHistorico');
+  if(!chave){
+    if(empty) empty.style.display='block';
+    if(wrap) wrap.style.display='none';
+    set('hist-kpis','');
+    if(CHARTS['chartHistorico']){ CHARTS['chartHistorico'].destroy(); delete CHARTS['chartHistorico']; }
+    return;
   }
+  if(empty) empty.style.display='none';
+  if(wrap) wrap.style.display='block';
+
+  var xLabels=ALL_HISTORICO.map(function(m){ return mesLabel_(m.mes); });
+
+  // Séries do professor selecionado
+  var profTurmas=ALL_HISTORICO.map(function(m){
+    return m.rows.filter(function(r){ return r.chaveMatricula===chave; }).length;
+  });
+  var profAlunos=ALL_HISTORICO.map(function(m){
+    return m.rows.filter(function(r){ return r.chaveMatricula===chave; })
+      .reduce(function(s,r){ return s+(r.alunos||0); },0);
+  });
+
+  // Médias BRASAS por mês (todos os professores, sem filtro de unidade)
+  var avgTurmas=ALL_HISTORICO.map(function(m){
+    var uP={};
+    m.rows.forEach(function(r){ uP[r.chaveMatricula]=true; });
+    var n=Object.keys(uP).length;
+    return n>0?Math.round((m.rows.length/n)*10)/10:0;
+  });
+  var avgAlunos=ALL_HISTORICO.map(function(m){
+    var uP={};
+    m.rows.forEach(function(r){ uP[r.chaveMatricula]=true; });
+    var n=Object.keys(uP).length;
+    var tot=m.rows.reduce(function(s,r){ return s+(r.alunos||0); },0);
+    return n>0?Math.round((tot/n)*10)/10:0;
+  });
+
+  // KPIs
+  var last=ALL_HISTORICO.length-1;
+  var curT=profTurmas[last]||0, oldT=profTurmas[0]||0;
+  var curA=profAlunos[last]||0, oldA=profAlunos[0]||0;
+  var avgCurT=avgTurmas[last]||0;
+  var diffT=curT-oldT, diffA=curA-oldA;
+  var vsAvg=Math.round((curT-avgCurT)*10)/10;
+  function dl(n){ return (n>=0?'+':'')+n; }
+  function hKpi(label,val,sub,good){
+    var clr=good===null?'var(--navy-900)':good?'var(--success-600)':'var(--danger-600)';
+    return '<div class="kpi-card"><div class="kpi-label">'+label+'</div><div class="kpi-value" style="color:'+clr+'">'+val+'</div><div class="kpi-sub">'+sub+'</div></div>';
+  }
+  var firstMes=ALL_HISTORICO.length?mesLabel_(ALL_HISTORICO[0].mes):'—';
+  var kpiEl=document.getElementById('hist-kpis');
+  if(kpiEl) kpiEl.innerHTML=
+    hKpi('Turmas (mês atual)',curT,dl(diffT)+' vs. '+firstMes,diffT>=0)+
+    hKpi('Alunos (mês atual)',curA,dl(diffA)+' vs. '+firstMes,diffA>=0)+
+    hKpi('vs. Média BRASAS',dl(vsAvg)+' turmas','média atual: '+avgCurT,vsAvg>=0);
+
+  // Gráfico
+  var ctx=document.getElementById('chartHistorico');
+  if(!ctx) return;
+  if(CHARTS['chartHistorico']){ CHARTS['chartHistorico'].destroy(); delete CHARTS['chartHistorico']; }
+  CHARTS['chartHistorico']=new Chart(ctx,{
+    data:{
+      labels:xLabels,
+      datasets:[
+        {type:'line',label:'Turmas do professor',data:profTurmas,borderColor:'#2a4d76',backgroundColor:'rgba(42,77,118,.1)',borderWidth:2.5,pointRadius:4,fill:true,tension:.3,yAxisID:'yT',order:1},
+        {type:'line',label:'Média BRASAS turmas',data:avgTurmas,borderColor:'#89afd4',borderWidth:1.5,borderDash:[5,4],pointRadius:2,fill:false,tension:.3,yAxisID:'yT',order:2},
+        {type:'line',label:'Alunos do professor',data:profAlunos,borderColor:'#0d9488',backgroundColor:'rgba(13,148,136,.08)',borderWidth:2.5,pointRadius:4,fill:true,tension:.3,yAxisID:'yA',order:1},
+        {type:'line',label:'Média BRASAS alunos',data:avgAlunos,borderColor:'#5eead4',borderWidth:1.5,borderDash:[5,4],pointRadius:2,fill:false,tension:.3,yAxisID:'yA',order:2}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:true,position:'top',labels:{font:{family:'DM Sans',size:11},boxWidth:12,padding:12}},
+        tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+fmt(c.raw); }}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}}},
+        yT:{position:'left',grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true,
+            title:{display:true,text:'Turmas',color:'#2a4d76',font:{family:'DM Sans',size:11}}},
+        yA:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true,
+            title:{display:true,text:'Alunos',color:'#0d9488',font:{family:'DM Sans',size:11}}}
+      }
+    }
+  });
 }
 
 // RENDER: COHORT

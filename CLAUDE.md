@@ -175,27 +175,72 @@ As abas **Horas, Faltas, VR e Coparticipação** foram removidas da barra de nav
 
 Variáveis globais: `PROF_PAGE`, `PROF_PAGE_SIZE=40`, `PROF_ROWS`. A função `renderProfessores()` preenche `PROF_ROWS` e chama `renderProfPage()`. Controles de navegação: `pagProf(dir)` e elementos `#prof-pag-prev`, `#prof-pag-next`, `#prof-pag-info`.
 
-### Professores — gráficos de Turmas por Professor (dois gráficos)
+### Professores — gráfico combinado de Turmas (`chartTurmasComb`)
 
-O gráfico único foi substituído por dois gráficos de barras **verticais**.
+Os dois gráficos separados (Top35 + Bottom20) foram substituídos por **um único gráfico combinado**: Top 15 com mais turmas (azul) + Top 15 com menos turmas (âmbar), com linha de média BRASAS Geral tracejada.
 
 **Campos retornados pelo backend (`getTurmasData`):**
-- `chaveMatricula` — coluna Z (`APELIDO | MATRÍCULA`): chave única para agrupar professores com mesmo apelido
-- `chave` — coluna Y (`UNIDADE | APELIDO`): label com unidade visível, usado no gráfico de baixo
-- `nivel` — coluna AC (`NÍVEL`): nível do professor, exibido como segunda linha do label no gráfico de baixo
-- Filtro de teste: turmas cujo nome (coluna B) bate com `/testes?\s+inc/i` são ignoradas
+- `chaveMatricula` — (`APELIDO | MATRÍCULA`): chave única para agrupar professores com mesmo apelido
+- `chave` — (`UNIDADE | APELIDO`): label com unidade
+- `nivel` — (`NÍVEL`): nível do professor
+- `unidade` — (`UNIDADE AJUSTADA`): unidade do professor
+- `alVigente`, `alMaximo` — alunos vigentes e máximos da turma
+- Filtro de teste: turmas cujo nome (col B) bate com `/testes?\s+inc/i` são ignoradas
+- Filtro de ativas: `TERMINO` ausente ou >= hoje
 
-**Chart 1 — `chartTurmasTop35` (Top 35 com mais turmas):**
-- Barras verticais azul-navy (`#2a4d76`), labels = apelido, rotação 45–90°
-- Linha de referência tracejada laranja (`#e05c2a`) mostrando a **média BRASAS Geral** (total turmas ÷ total professores únicos, sobre todos os dados antes do filtro de unidade)
-- Gráfico misto (`type:'bar'` + `type:'line'` no mesmo dataset) criado diretamente com `new Chart(...)` (não usa `mkChart`)
-- Canvas `#chartTurmasTop35`, wrapper `#wrapTurmasTop35`, altura fixa `440px`
+**`renderTurmasChart()`:**
+- Reage ao filtro `f-prof-unidade` — barras mostram professores da unidade selecionada
+- **Média BRASAS sempre calculada sobre ALL_TURMAS inteiro** (ignora filtro de unidade) via `globalCounts`
+- Top 15 (desc) → dataset azul `#2a4d76`; Bottom 15 (asc, sem overlap) → dataset âmbar `#c9a227`
+- Linha tracejada laranja `#e05c2a` para a média
+- Labels em 2 linhas: `[apelido, 'UNIDADE · NÍVEL']` via array (Chart.js multi-linha)
+- Canvas `#chartTurmasComb`, wrapper `#wrapTurmasComb`, altura `440px`
 
-**Chart 2 — `chartTurmasBot20` (Top 20 com menos turmas):**
-- Barras verticais âmbar (`#c9a227`), rotação 45–90°
-- Label em 2 linhas: `['UNIDADE | APELIDO', '(NÍVEL)']` — Chart.js renderiza arrays como multi-linha
-- Canvas `#chartTurmasBot20`, wrapper `#wrapTurmasBot20`, altura fixa `460px`
-- Criado diretamente com `new Chart(...)` para controle de rotação dos ticks
+**Unidades excluídas** de filtro e tabela de Professores por Unidade/Nível:
+- `EXCL_PROF_UNITS = ['EDITORA', 'MÉTODOS', 'EC NEW']`
+
+**Tabela Professores por Unidade e Nível:**
+- Header com `background:var(--navy-700); color:#fff`
+- Linhas ímpares com `background:var(--gray-50)` (zebra striping)
+
+---
+
+### Professores — Histórico de Turmas e Alunos (`getHistoricoTurmas`)
+
+Seção abaixo do gráfico combinado com evolução mensal de turmas e alunos por professor.
+
+**Backend — `getHistoricoTurmas(token)`:**
+- Lê a aba `db` da mesma planilha `TURMAS_SPREADSHEET_ID`
+- Coluna V = data de atualização (`DATA DE ATUALIZAÇÃO` / `DATA ATUALIZACAO`)
+- Coluna F = `AL_VIGENTE` (alunos)
+- Pega apenas a **última data de cada mês** (último snapshot — não é cumulativo)
+- Exclui testes incompletos: `/testes?\s+inc/i` no nome da turma (col B)
+- Datas parseadas com `getUTCMonth()`/`getUTCDate()` (mesmo padrão do bug de fuso corrigido)
+- 12 meses para trás a partir de hoje
+- Role `diretor` vê só a própria unidade
+- Retorna: `{ ok: true, meses: [{mes: 'MM/YYYY', rows: [{apelido, chaveMatricula, unidade, alunos}]}] }`
+
+**Frontend — filtros e gráfico:**
+- Global `ALL_HISTORICO = []` (preenchido por `loadHistoricoData()`, chamado após `loadTurmasData()`)
+- Filtro cascata: Unidade → Professor
+- **Professores ativos** vêm de `ALL_EMP` (funcao inclui 'PROFESSOR', ativo = true), usando colunas `unidadeAcesso` (col AJ) e `unidadeSecAcesso` (col AK) da planilha principal — professores podem ter duas unidades simultaneamente
+- Mesmas unidades excluídas (`EXCL_PROF_UNITS`)
+- **Loading indicator** `#hist-loading` aparece durante o carregamento (a requisição é lenta)
+- Gráfico dual-axis: turmas no eixo esquerdo (azul/azul-claro), alunos no eixo direito (teal)
+- 4 linhas: turmas do professor, alunos do professor, média BRASAS turmas, média BRASAS alunos
+- Médias calculadas sobre TODOS os professores de TODOS os meses (sem filtro de unidade)
+- 3 KPI cards: Turmas (mês atual) + delta, Alunos (mês atual) + delta, vs Média BRASAS
+- KPIs renderizados com `innerHTML` diretamente (não usar `set()` — essa função usa `textContent` e escapa HTML)
+
+**Campos `getData()` adicionados:**
+- `unidadeAcesso` — col AJ (`UNIDADE ACESSO`): unidade primária do professor
+- `unidadeSecAcesso` — col AK (`UNIDADE SEC ACESSO`): unidade secundária
+
+---
+
+### Professores — Distribuição por Função (cap em 15)
+
+`renderFuncPyramid()` agrupa funções excedentes: as 15 primeiras aparecem individualmente; as demais viram **"Outros (N funções)"** em cinza `#94a3b8`.
 
 ---
 

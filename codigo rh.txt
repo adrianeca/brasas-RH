@@ -142,22 +142,24 @@ function getData(token) {
 
       employees.push({
          unidade, unidadeSec, todasUnidades, nome,
-        sexo:        String(g(row,'SEXO (F/M)') || '').trim().toUpperCase(),
-        dataNasc:    fmtDate_(birthDate),
-        funcao:      String(g(row,'FUNÇÃO') || '').trim(),
-        apelido:     String(g(row,'APELIDO (TEACHER)') || '').trim(),
-        email:       String(g(row,'E-MAIL') || '').trim(),
-        emailBrasas: String(g(row,'E-mail BRASAS') || '').trim(),
-        dataAdm:     fmtDate_(admDate),
+        sexo:             String(g(row,'SEXO (F/M)') || '').trim().toUpperCase(),
+        dataNasc:         fmtDate_(birthDate),
+        funcao:           String(g(row,'FUNÇÃO') || '').trim(),
+        apelido:          String(g(row,'APELIDO (TEACHER)') || '').trim(),
+        email:            String(g(row,'E-MAIL') || '').trim(),
+        emailBrasas:      String(g(row,'E-mail BRASAS') || '').trim(),
+        dataAdm:          fmtDate_(admDate),
         ativo, status: ativo ? 'Ativo' : 'Inativo',
-        dataDeslig:  fmtDate_(exitDate),
-        planoSaude:  String(g(row,'PLANO DE SAÚDE') || '').trim(),
-        numDep:      toInt_(g(row,'Nº DE DEPENDENTES PLANO DE SAÚDE')),
-        nivel, cpf:  String(g(row,'CPF') || '').trim(),
+        dataDeslig:       fmtDate_(exitDate),
+        planoSaude:       String(g(row,'PLANO DE SAÚDE') || '').trim(),
+        numDep:           toInt_(g(row,'Nº DE DEPENDENTES PLANO DE SAÚDE')),
+        nivel, cpf:       String(g(row,'CPF') || '').trim(),
         ageYears, tenureYears,
         admYear, admMonth, admDay, admSemester,
         desligYear, desligMonth, desligDay,
         giftInfo,
+        unidadeAcesso:    String(g(row,'UNIDADE ACESSO') || '').trim(),
+        unidadeSecAcesso: String(g(row,'UNIDADE SEC ACESSO') || '').trim(),
       });
     }
     const role = session.role;
@@ -637,6 +639,107 @@ function getTurmasData(token) {
     const filtered = (role === 'diretor' && uni) ? rows.filter(r => r.unidade === uni) : rows;
     return { ok: true, rows: filtered };
   } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+const HISTORICO_SHEET_NAME = 'db';
+
+function getHistoricoTurmas(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  try {
+    const ss = SpreadsheetApp.openById(TURMAS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(HISTORICO_SHEET_NAME);
+    if (!sheet) return { ok: false, error: 'Aba "' + HISTORICO_SHEET_NAME + '" não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: false, error: 'Sem dados.' };
+
+    const col = {};
+    raw[0].forEach((h, i) => { col[normalizeH_(h)] = i; });
+    const gs = (row, name) => {
+      const i = col[normalizeH_(name)];
+      return i !== undefined ? String(row[i] || '').trim() : '';
+    };
+    const gRaw = (row, name) => {
+      const i = col[normalizeH_(name)];
+      return i !== undefined ? row[i] : null;
+    };
+
+    // Coluna V = data de atualização (índice 21 como fallback)
+    const dateColIdx = col[normalizeH_('DATA DE ATUALIZAÇÃO')]
+                    ?? col[normalizeH_('DATA ATUALIZACAO')]
+                    ?? 21;
+
+    // Últimos 12 meses
+    const today = new Date();
+    const curYear = today.getFullYear(), curMonth = today.getMonth();
+    const months = [];
+    for (let i = 0; i < 12; i++) {
+      let m = curMonth - (11 - i), y = curYear;
+      while (m < 0) { m += 12; y--; }
+      months.push({
+        year: y, month: m,
+        key: y + '-' + String(m + 1).padStart(2, '0'),
+        mesStr: String(m + 1).padStart(2, '0') + '/' + y,
+      });
+    }
+    const monthKeySet = new Set(months.map(m => m.key));
+
+    // Parse de data com UTC (mesmo fix do getCopaData)
+    const pd = (rawVal) => {
+      if (!rawVal) return null;
+      if (rawVal instanceof Date) return isNaN(rawVal.getTime()) ? null : rawVal;
+      const s = String(rawVal).trim();
+      const mt = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (mt) return new Date(Date.UTC(+mt[3], +mt[2] - 1, +mt[1]));
+      const d = new Date(s); return isNaN(d.getTime()) ? null : d;
+    };
+    const mk_ = (d) => d ? d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') : null;
+    const dk_ = (d) => d ? mk_(d) + '-' + String(d.getUTCDate()).padStart(2, '0') : null;
+    const numF = (v) => { const n = parseFloat(String(v || '').replace(',', '.')); return isNaN(n) ? 0 : n; };
+
+    // Passo 1: data máxima por mês (último snapshot do mês)
+    const maxDk = {};
+    for (let r = 1; r < raw.length; r++) {
+      const d = pd(raw[r][dateColIdx]);
+      if (!d) continue;
+      const mKey = mk_(d);
+      if (!monthKeySet.has(mKey)) continue;
+      const dKey = dk_(d);
+      if (!maxDk[mKey] || dKey > maxDk[mKey]) maxDk[mKey] = dKey;
+    }
+
+    // Passo 2: coletar linhas somente da data máxima de cada mês
+    const monthRows = {};
+    months.forEach(m => { monthRows[m.key] = []; });
+
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      const apelido = gs(row, 'APELIDO AJUSTADO');
+      if (!apelido) continue;
+      // Exclui testes incompletos (col B)
+      if (/testes?\s+inc/i.test(String(row[1] || '').trim())) continue;
+      const d = pd(row[dateColIdx]);
+      if (!d) continue;
+      const mKey = mk_(d);
+      if (!monthKeySet.has(mKey) || dk_(d) !== maxDk[mKey]) continue;
+      monthRows[mKey].push({
+        apelido,
+        chaveMatricula: gs(row, 'CHAVE MATRÍCULA') || apelido,
+        unidade: gs(row, 'UNIDADE AJUSTADA') || gs(row, 'UNIDADE'),
+        alunos: numF(gRaw(row, 'AL_VIGENTE')),
+      });
+    }
+
+    const role = session.role, uni = session.unidade || '';
+    const result = months.map(m => {
+      let rows = monthRows[m.key] || [];
+      if (role === 'diretor' && uni) rows = rows.filter(r => r.unidade === uni);
+      return { mes: m.mesStr, rows };
+    });
+    return { ok: true, meses: result };
+  } catch (e) {
     return { ok: false, error: e.message };
   }
 }
