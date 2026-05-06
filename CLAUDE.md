@@ -130,6 +130,35 @@ mesStr = String(mesAnoRaw.getUTCMonth()+1).padStart(2,'0') + '/' + mesAnoRaw.get
 
 > **Regra geral:** ao trabalhar com datas vindas de `sheet.getValues()` no Apps Script, sempre usar `getUTCMonth()` / `getUTCFullYear()` para extrair mês e ano. Nunca usar `getMonth()` / `getFullYear()` pois dependem do fuso do servidor, que é imprevisível.
 
+### Formatação de valores na aba Coparticipação
+
+O KPI "Total Gratuidades" e a coluna de valores da tabela de gratuidades devem usar `fmtBRL()` (formato `R$ X.XXX,XX`). Não usar `.toFixed(2)` direto.
+
+---
+
+### Aba DP — menu dropdown na navbar
+
+As abas **Horas, Faltas, VR e Coparticipação** foram removidas da barra de navegação principal e agrupadas em um botão **👤 DP** com menu dropdown flutuante.
+
+**Estrutura HTML (nav):**
+- `<div class="dp-nav-wrap" id="dp-nav-wrap">` envolve o botão e o menu
+- O botão `#dp-nav-btn` chama `toggleDpDropdown(event)`
+- O menu `#dp-nav-menu` contém 4 itens `.dp-nav-item` que chamam `selectDpSub('id', this)`
+
+**CSS relevante:** `.dp-nav-wrap`, `.dp-nav-menu`, `.dp-nav-item`, `.dp-chevron`, `.dp-nav-btn-open`
+
+**Funções JS:**
+- `toggleDpDropdown(e)` — abre/fecha o menu, rotaciona a seta
+- `selectDpSub(id, menuItem)` — fecha o menu, mostra o tab-content correspondente, marca o botão DP e o item como ativos
+- `document.addEventListener('click', ...)` — fecha o menu ao clicar fora
+
+**`applyRoleAccess`:** o wrapper `#dp-nav-wrap` é mostrado/ocultado com base em se qualquer uma das 4 sub-abas está no `ROLE_TABS` do usuário.
+
+**ROLE_TABS relevantes:**
+- `dp` → `['geral','people','horas','faltas','vr','copa']`
+- `diretor` → `['geral','people','horas','faltas','vr']` (sem copa)
+- `admin`/`viewer` → acesso completo incluindo as 4
+
 ---
 
 ## Fluxo de trabalho no Git

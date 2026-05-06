@@ -217,6 +217,14 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .eng-bar-fill.def{background:var(--navy-400)!important}
 .eng-bar-n{font-size:.72rem;color:var(--gray-400);width:24px;text-align:right;flex-shrink:0;font-family:var(--font-mono)}
 .eng-bar-pct{font-size:.72rem;color:var(--gray-400);width:36px;text-align:right;flex-shrink:0;font-family:var(--font-mono)}
+.dp-nav-wrap{position:relative;display:inline-flex}
+.dp-chevron{font-size:.55rem;margin-left:4px;transition:transform .2s;opacity:.7}
+.dp-nav-btn-open .dp-chevron{transform:rotate(180deg)}
+.dp-nav-menu{display:none;position:absolute;top:calc(100% + 1px);left:0;min-width:190px;background:var(--navy-800);border:1px solid rgba(255,255,255,.1);border-radius:0 0 var(--radius-sm) var(--radius-sm);box-shadow:var(--shadow-lg);z-index:600;padding:4px 0}
+.dp-nav-menu.open{display:block;animation:fadeIn .15s ease}
+.dp-nav-item{display:flex;align-items:center;gap:9px;width:100%;padding:10px 18px;background:none;border:none;color:var(--navy-200);font-family:var(--font-main);font-size:.78rem;font-weight:600;cursor:pointer;text-align:left;transition:background .12s,color .12s;white-space:nowrap}
+.dp-nav-item:hover{background:rgba(255,255,255,.07);color:var(--white)}
+.dp-nav-item.active{color:var(--white);background:rgba(255,255,255,.06);border-left:2px solid var(--navy-300)}
 @media(max-width:900px){
   .container{padding:16px}.charts-grid{grid-template-columns:1fr}
   .insight-banner{grid-template-columns:1fr 1fr}
@@ -253,12 +261,19 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       <button class="cockpit-tab" onclick="switchTab('people',this)"><span class="tab-icon">📊</span> People Analytics</button>
       <button class="cockpit-tab tab-brindes-nav" onclick="switchTab('brindes',this)"><span class="tab-icon">🎁</span> Brindes</button>
       <button class="cockpit-tab" onclick="switchTab('professores',this)"><span class="tab-icon">🎓</span> Professores</button>
-      <button class="cockpit-tab" onclick="switchTab('horas',this)"><span class="tab-icon">⏱</span> Horas</button>
-      <button class="cockpit-tab" onclick="switchTab('faltas',this)"><span class="tab-icon">📉</span> Faltas</button>
-      <button class="cockpit-tab" onclick="switchTab('vr',this)"><span class="tab-icon">💳</span> VR</button>
       <button class="cockpit-tab" onclick="switchTab('cohort',this)"><span class="tab-icon">📈</span> Cohort</button>
       <button class="cockpit-tab" onclick="switchTab('engajamento',this)"><span class="tab-icon">💬</span> Engajamento</button>
-      <button class="cockpit-tab" onclick="switchTab('copa',this)"><span class="tab-icon">🏥</span> Coparticipação</button>
+      <div class="dp-nav-wrap" id="dp-nav-wrap">
+        <button class="cockpit-tab" id="dp-nav-btn" onclick="toggleDpDropdown(event)">
+          <span class="tab-icon">👤</span> DP <span class="dp-chevron">▾</span>
+        </button>
+        <div class="dp-nav-menu" id="dp-nav-menu">
+          <button class="dp-nav-item" onclick="selectDpSub('horas',this)"><span>⏱</span> Horas</button>
+          <button class="dp-nav-item" onclick="selectDpSub('faltas',this)"><span>📉</span> Faltas</button>
+          <button class="dp-nav-item" onclick="selectDpSub('vr',this)"><span>💳</span> VR</button>
+          <button class="dp-nav-item" onclick="selectDpSub('copa',this)"><span>🏥</span> Coparticipação</button>
+        </div>
+      </div>
       <div class="cockpit-nav-right">
         <div class="nav-user">👤 <strong id="navUserName">—</strong></div>
         <button class="logout-btn" onclick="doLogout()">Sair</button>
@@ -780,6 +795,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
     </div>
   </div>
 </div><!-- /tab-copa -->
+
   </div><!-- /container -->
 </div><!-- /app -->
 
@@ -820,6 +836,9 @@ function applyRoleAccess(){
     if(!match) return;
     btn.style.display=allowed.indexOf(match[1])>=0?'':'none';
   });
+  var dpAllowed=['horas','faltas','vr','copa'].some(function(t){ return allowed.indexOf(t)>=0; });
+  var dpWrap=document.getElementById('dp-nav-wrap');
+  if(dpWrap) dpWrap.style.display=dpAllowed?'':'none';
   if(allowed.length===1&&allowed[0]==='brindes'){
     switchTab('brindes',document.querySelector('.tab-brindes-nav'));
   }
@@ -1092,7 +1111,6 @@ function loadData(){
         showTabLoading('vr');
         setTimeout(function(){ loadVRData(); },300);
       }
-
       if(allowed.indexOf('copa')>=0){
         showTabLoading('copa');
         setTimeout(function(){ loadCopaData(); },400);
@@ -1115,6 +1133,32 @@ function switchTab(id,btn){
   if(el){ el.style.display='block'; el.classList.add('active','fade-in'); }
   if(btn) btn.classList.add('active');
 }
+function toggleDpDropdown(e){
+  e.stopPropagation();
+  var menu=document.getElementById('dp-nav-menu');
+  var btn=document.getElementById('dp-nav-btn');
+  var isOpen=menu.classList.contains('open');
+  menu.classList.toggle('open',!isOpen);
+  btn.classList.toggle('dp-nav-btn-open',!isOpen);
+}
+function selectDpSub(id,menuItem){
+  if(!canAccess(id)) return;
+  document.getElementById('dp-nav-menu').classList.remove('open');
+  document.getElementById('dp-nav-btn').classList.remove('dp-nav-btn-open');
+  document.querySelectorAll('.tab-content').forEach(function(t){ t.style.display='none'; t.classList.remove('active'); });
+  document.querySelectorAll('.cockpit-tab').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.dp-nav-item').forEach(function(b){ b.classList.remove('active'); });
+  var el=document.getElementById('tab-'+id);
+  if(el){ el.style.display='block'; el.classList.add('active','fade-in'); }
+  document.getElementById('dp-nav-btn').classList.add('active');
+  if(menuItem) menuItem.classList.add('active');
+}
+document.addEventListener('click',function(){
+  var menu=document.getElementById('dp-nav-menu');
+  var btn=document.getElementById('dp-nav-btn');
+  if(menu) menu.classList.remove('open');
+  if(btn) btn.classList.remove('dp-nav-btn-open');
+});
 
 // MULTI-SELECT (GENÉRICO)
 function toggleMultiDrop(id){
@@ -2347,7 +2391,7 @@ function renderCopa(){
 
   document.getElementById('copa-kpis').innerHTML=
     '<div class="kpi-card highlight"><div class="kpi-label">Total a Cobrar</div><div class="kpi-value">'+fmtBRL(totalValor)+'</div><div class="kpi-sub">no filtro</div></div>'+
-    '<div class="kpi-card"><div class="kpi-label">Total Gratuidades</div><div class="kpi-value">'+totalGrat.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-sub">coparticipações gratuitas</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Total Gratuidades</div><div class="kpi-value">'+fmtBRL(totalGrat)+'</div><div class="kpi-sub">coparticipações gratuitas</div></div>'+
     '<div class="kpi-card"><div class="kpi-label">Beneficiários</div><div class="kpi-value">'+new Set(data.map(function(r){ return r.beneficiario; })).size+'</div><div class="kpi-sub">distintos</div></div>'+
     '<div class="kpi-card"><div class="kpi-label">Registros</div><div class="kpi-value">'+data.length+'</div><div class="kpi-sub">linhas no filtro</div></div>';
 
@@ -2405,7 +2449,7 @@ function renderCopa(){
           '<td>'+esc(r.mesAno)+'</td>'+
           '<td>'+esc(r.matricula)+'</td>'+
           '<td>'+esc(String(r.beneficiario||'').toUpperCase())+'</td>'+
-          '<td class="num" style="font-weight:700">'+r.gratuidades.toFixed(2)+'</td>'+
+          '<td class="num" style="font-weight:700">'+fmtBRL(r.gratuidades)+'</td>'+
           '</tr>';
       }).join('')
     :'<tr><td colspan="5" class="table-empty">Sem gratuidades no filtro.</td></tr>';
