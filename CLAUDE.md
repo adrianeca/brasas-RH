@@ -161,6 +161,28 @@ As abas **Horas, Faltas, VR e Coparticipação** foram removidas da barra de nav
 
 ---
 
+### Engajamento — tooltip em respostas cortadas
+
+`.eng-bar-option` tem `text-overflow:ellipsis`. Para exibir o texto completo ao hover, foi adicionado um tooltip via CSS (`::after` com `content:attr(title)`), mais confiável que `title` nativo em iframes do Apps Script. Ambas as funções de renderização (`engBarBlock` e `engBarFull`) já geram `title="..."` em cada opção.
+
+### Engajamento — layout "Expectativa profissional"
+
+"O que mais te motiva a permanecer na empresa?" foi movido para ficar ao lado de "Você está na área que sempre quis?" em um grid de 2 colunas. O `id="eng-grid-motiva"` permanece o mesmo — só a posição no HTML mudou.
+
+### Professores — paginação da lista (40/página)
+
+Variáveis globais: `PROF_PAGE`, `PROF_PAGE_SIZE=40`, `PROF_ROWS`. A função `renderProfessores()` preenche `PROF_ROWS` e chama `renderProfPage()`. Controles de navegação: `pagProf(dir)` e elementos `#prof-pag-prev`, `#prof-pag-next`, `#prof-pag-info`.
+
+### Professores — gráfico Turmas por Professor
+
+**Chave única:** o backend (`getTurmasData`) agora retorna `chaveMatricula` (coluna Z da planilha `db_max`). O frontend agrupa por `chaveMatricula` para diferenciar professores com mesmo apelido, mas exibe apenas o apelido no gráfico.
+
+**Filtro de turmas de teste:** no backend, turmas cujo nome (coluna B da planilha `db_max`) bate com `/testes?\s+inc/i` são ignoradas antes de chegar ao frontend. Cobre: "Teste Incompleto", "Testes Incompletos", "Teste Incomp.", "Testes Incom." e variações de maiúsculas.
+
+**Visual:** altura dinâmica (26px × nº de barras), limitado a 40 barras, ordenado por quantidade decrescente.
+
+---
+
 ## Fluxo de trabalho no Git
 
 Esse projeto não tem CI nem deploy automático. As alterações são:

@@ -598,6 +598,11 @@ function getTurmasData(token) {
       const apelido = gs(row, 'APELIDO AJUSTADO');
       if (!apelido) continue;
 
+      // Ignora turmas de teste/incompletas (col B): "Teste Incompleto", "Testes Incompletos",
+      // "Teste Incomp.", "Testes Incom." e variações
+      const turmaNome = String(row[1] || '').trim();
+      if (/testes?\s+inc/i.test(turmaNome)) continue;
+
       // Filtra turmas ativas: TERMINO ausente ou >= hoje
       const terminoRaw = gRaw(row, 'TERMINO');
       if (terminoRaw) {
@@ -618,6 +623,7 @@ function getTurmasData(token) {
       const numF = (v) => { const n = parseFloat(String(v||'').replace(',','.')); return isNaN(n) ? 0 : n; };
       rows.push({
         apelido,
+        chaveMatricula: gs(row, 'CHAVE MATRÍCULA') || apelido,
         unidade:  gs(row, 'UNIDADE AJUSTADA') || gs(row, 'UNIDADE'),
         alVigente: numF(gRaw(row, 'AL_VIGENTE')),
         alMaximo:  numF(gRaw(row, 'AL_MAXIMO')),

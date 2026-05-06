@@ -208,7 +208,8 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .eng-q-label{font-size:.72rem;color:var(--gray-400);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .eng-open-label{font-size:.72rem;color:var(--gray-400);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .eng-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.eng-bar-option{font-size:.78rem;color:var(--navy-700);width:220px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eng-bar-option{font-size:.78rem;color:var(--navy-700);width:220px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help;position:relative}
+.eng-bar-option[title]:hover::after{content:attr(title);position:absolute;left:0;top:calc(100% + 4px);background:var(--navy-900);color:#fff;padding:6px 10px;border-radius:6px;font-size:.74rem;white-space:normal;max-width:320px;line-height:1.45;z-index:999;box-shadow:var(--shadow-md);pointer-events:none;font-weight:400}
 .eng-bar-track{flex:1;background:var(--gray-100);border-radius:3px;height:8px;overflow:hidden;min-width:40px}
 .eng-bar-fill{height:100%;border-radius:3px;transition:width .5s cubic-bezier(.4,0,.2,1)}
 .eng-bar-fill.pos{background:var(--success-500)!important}
@@ -518,7 +519,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
           </div>
         </div>
       </div>
-      <div class="section"><div class="section-header"><div><div class="section-title">Lista de Professores</div><div class="section-subtitle">Teachers com nível cadastrado</div></div><div class="section-badge" id="prof-badge">0 registros</div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Apelido</th><th>Nome Completo</th><th>Unidade</th><th class="center">Nível</th><th class="center">Status</th><th class="num">Anos de Casa</th><th>E-mail BRASAS</th></tr></thead><tbody id="tblProfessores"></tbody></table></div></div>
+      <div class="section"><div class="section-header"><div><div class="section-title">Lista de Professores</div><div class="section-subtitle">Teachers com nível cadastrado</div></div><div class="section-badge" id="prof-badge">0 registros</div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Apelido</th><th>Nome Completo</th><th>Unidade</th><th class="center">Nível</th><th class="center">Status</th><th class="num">Anos de Casa</th><th>E-mail BRASAS</th></tr></thead><tbody id="tblProfessores"></tbody></table></div><div style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--gray-100)"><div style="font-size:.78rem;color:var(--gray-500)" id="prof-pag-info">—</div><div style="display:flex;gap:8px"><button class="btn-clear" id="prof-pag-prev" onclick="pagProf(-1)" style="min-height:32px;padding:6px 14px">← Anterior</button><button class="btn-clear" id="prof-pag-next" onclick="pagProf(1)" style="min-height:32px;padding:6px 14px">Próxima →</button></div></div></div>
       <div class="section">
       <div class="section-header">
         <div class="section-title">Professores por Unidade e Nível</div>
@@ -564,8 +565,13 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       </div>
       <div class="section" style="margin-bottom:20px">
         <div class="section-header"><div><div class="section-title">Expectativa profissional</div><div class="section-subtitle">Área de atuação, motivação e fatores de saída</div></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr" id="eng-grid-prof"></div>
-        <div style="padding:16px 24px;border-top:1px solid var(--gray-100)"><div class="eng-open-label">O que mais te motiva a permanecer na empresa?</div><div id="eng-grid-motiva"></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;align-items:start">
+          <div id="eng-grid-prof"></div>
+          <div style="border-left:1px solid var(--gray-100);padding:16px 24px">
+            <div class="eng-open-label" style="margin-bottom:10px">O que mais te motiva a permanecer na empresa?</div>
+            <div id="eng-grid-motiva"></div>
+          </div>
+        </div>
         <div style="padding:16px 24px;border-top:1px solid var(--danger-100);background:var(--danger-50)"><div class="eng-open-label" style="color:var(--danger-600)">⚠ O que faria você sair da empresa hoje? · dado sensível</div><div id="eng-grid-sair"></div></div>
       </div>
       <div class="section" style="margin-bottom:20px">
@@ -814,6 +820,9 @@ var SELECTED_UNITS=[];
 var ROT_VIEW='anual';
 var EMP_PAGE=0;
 var EMP_PAGE_SIZE=50;
+var PROF_PAGE=0;
+var PROF_PAGE_SIZE=40;
+var PROF_ROWS=[];
 var PALETTE=['#2a4d76','#3d6b99','#5a8aba','#89afd4','#c0d4e9','#22c55e','#f59e0b','#8b5cf6','#ef4444','#0d9488','#f97316','#06b6d4','#84cc16','#ec4899','#6366f1'];
 var NIVEL_ORDER=['A','B','1.1','1.2','1.3','1.4','2.1','2.2','2.3','2.4','3.1','3.2','3.3','3.4'];
 var MONTHS_PT=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -1743,9 +1752,11 @@ function renderProfessores(){
   var byUn=groupBy(profs,'unidade');
   var uL=Object.keys(byUn).sort(function(a,b){ return byUn[b].length-byUn[a].length; }).slice(0,15);
   mkChart('chartProfUnidade','bar',uL,uL.map(function(u){ return byUn[u].length; }),'Professores',{indexAxis:'y',barThickness:14,colors:['#2a4d76']});
-  document.getElementById('tblProfessores').innerHTML=profs.length
-    ?profs.map(function(e){ return '<tr><td><strong>'+(esc(e.apelido)||'—')+'</strong></td><td>'+esc(e.nome)+'</td><td>'+esc(e.unidade)+(e.unidadeSec?' / '+esc(e.unidadeSec):'')+'</td><td class="center"><span class="badge badge-nivel">'+esc(e.nivel)+'</span></td><td class="center"><span class="badge '+(e.ativo?'badge-ativo':'badge-inativo')+'">'+e.status+'</span></td><td class="num">'+(validNum(e.tenureYears)?e.tenureYears+' a':'—')+'</td><td style="font-size:.78rem;color:var(--gray-500)">'+(esc(e.emailBrasas||e.email||'—'))+'</td></tr>'; }).join('')
-    :'<tr><td colspan="7" class="table-empty">Nenhum professor encontrado.</td></tr>';
+  PROF_ROWS=profs.map(function(e){
+    return '<tr><td><strong>'+(esc(e.apelido)||'—')+'</strong></td><td>'+esc(e.nome)+'</td><td>'+esc(e.unidade)+(e.unidadeSec?' / '+esc(e.unidadeSec):'')+'</td><td class="center"><span class="badge badge-nivel">'+esc(e.nivel)+'</span></td><td class="center"><span class="badge '+(e.ativo?'badge-ativo':'badge-inativo')+'">'+e.status+'</span></td><td class="num">'+(validNum(e.tenureYears)?e.tenureYears+' a':'—')+'</td><td style="font-size:.78rem;color:var(--gray-500)">'+(esc(e.emailBrasas||e.email||'—'))+'</td></tr>';
+  });
+  PROF_PAGE=0;
+  renderProfPage();
     renderProfNivelTable(profs);
     // gráfico por semestre
 var todosProfs=ALL_EMP.filter(function(e){ return e.funcao&&e.funcao.toUpperCase().includes('PROFESSOR')&&e.admYear&&e.admYear>=2022; });
@@ -1808,6 +1819,21 @@ if(ctxS) CHARTS['chartProfSemestre']=new Chart(ctxS,{
   renderTurmasChart();
 }
 
+function renderProfPage(){
+  var total=PROF_ROWS.length;
+  var pages=Math.max(1,Math.ceil(total/PROF_PAGE_SIZE));
+  if(PROF_PAGE>=pages) PROF_PAGE=pages-1;
+  var start=PROF_PAGE*PROF_PAGE_SIZE;
+  var shown=PROF_ROWS.slice(start,start+PROF_PAGE_SIZE);
+  document.getElementById('tblProfessores').innerHTML=shown.length?shown.join(''):'<tr><td colspan="7" class="table-empty">Nenhum professor encontrado.</td></tr>';
+  var info=document.getElementById('prof-pag-info');
+  if(info) info.textContent=total?'Exibindo '+(start+1)+'–'+Math.min(start+PROF_PAGE_SIZE,total)+' de '+total+' professores':'';
+  var prev=document.getElementById('prof-pag-prev'),next=document.getElementById('prof-pag-next');
+  if(prev) prev.disabled=PROF_PAGE===0;
+  if(next) next.disabled=PROF_PAGE>=pages-1;
+}
+function pagProf(dir){ PROF_PAGE+=dir; renderProfPage(); }
+
 function renderProfNivelTable(profs){
   // expande professores com unidade secundária
   var rows=[];
@@ -1860,12 +1886,21 @@ function loadTurmasData(){
 function renderTurmasChart(){
   var fUn=v('f-prof-unidade');
   var data=fUn?ALL_TURMAS.filter(function(r){ return r.unidade===fUn; }):ALL_TURMAS;
-  var counts={};
-  data.forEach(function(r){ counts[r.apelido]=(counts[r.apelido]||0)+1; });
-  var sorted=Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; }).slice(0,30);
-  var labels=sorted.map(function(e){ return e[0]; });
+  // agrupa por chaveMatricula (professores com mesmo apelido mas matrículas diferentes)
+  var counts={},labels={};
+  data.forEach(function(r){
+    var key=r.chaveMatricula||r.apelido;
+    counts[key]=(counts[key]||0)+1;
+    if(!labels[key]) labels[key]=r.apelido; // exibe só o apelido no gráfico
+  });
+  var sorted=Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; }).slice(0,40);
+  var chartLabels=sorted.map(function(e){ return labels[e[0]]||e[0]; });
   var values=sorted.map(function(e){ return e[1]; });
-  mkChart('chartTurmasProf','bar',labels,values,'Turmas',{indexAxis:'y',barThickness:14,colors:['#2a4d76']});
+  // altura dinâmica: 22px por barra + margens
+  var chartHeight=Math.max(300, sorted.length*26+60);
+  var wrapper=document.querySelector('#chartTurmasProf')?.parentElement;
+  if(wrapper) wrapper.style.height=chartHeight+'px';
+  mkChart('chartTurmasProf','bar',chartLabels,values,'Turmas',{indexAxis:'y',barThickness:16,colors:['#2a4d76']});
 }
 
 // RENDER: COHORT
