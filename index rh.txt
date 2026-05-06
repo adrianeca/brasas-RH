@@ -260,10 +260,10 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       <div class="cockpit-nav-logo">🏫 BRASAS Analytics</div>
       <button class="cockpit-tab active" onclick="switchTab('geral',this)"><span class="tab-icon">👥</span> Visão Geral</button>
       <button class="cockpit-tab" onclick="switchTab('people',this)"><span class="tab-icon">📊</span> People Analytics</button>
-      <button class="cockpit-tab tab-brindes-nav" onclick="switchTab('brindes',this)"><span class="tab-icon">🎁</span> Brindes</button>
       <button class="cockpit-tab" onclick="switchTab('professores',this)"><span class="tab-icon">🎓</span> Professores</button>
       <button class="cockpit-tab" onclick="switchTab('cohort',this)"><span class="tab-icon">📈</span> Cohort</button>
       <button class="cockpit-tab" onclick="switchTab('engajamento',this)"><span class="tab-icon">💬</span> Engajamento</button>
+      <button class="cockpit-tab tab-brindes-nav" onclick="switchTab('brindes',this)"><span class="tab-icon">🎁</span> Brindes</button>
       <div class="dp-nav-wrap" id="dp-nav-wrap">
         <button class="cockpit-tab" id="dp-nav-btn" onclick="toggleDpDropdown(event)">
           <span class="tab-icon">👤</span> DP <span class="dp-chevron">▾</span>
@@ -848,7 +848,7 @@ var ROLE_TABS={
   'admin':     ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
   'viewer':    ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
   'marketing': ['geral','brindes'],
-  'diretor':   ['geral','people','horas','faltas','vr'],
+  'diretor':   ['geral','people','brindes','horas','faltas','vr'],
   'dp':        ['geral','people','horas','faltas','vr','copa']
 };
 

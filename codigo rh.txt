@@ -332,7 +332,10 @@ function getBrindesConsolidado(token) {
         giftInfo,
       });
     }
-    return { ok: true, rows };
+    const role = session.role;
+    const uni  = session.unidade || '';
+    const filtered = (role === 'diretor' && uni) ? rows.filter(r => r.unidade === uni) : rows;
+    return { ok: true, rows: filtered };
   } catch(e) {
     return { ok: false, error: e.message };
   }
