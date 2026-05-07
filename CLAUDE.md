@@ -36,8 +36,8 @@ Dashboard interno de RH da rede BRASAS RJ, construído em **Google Apps Script**
 
 - **`admin`** — vê todos os dados de todas as unidades.
 - **`diretor`** — vê apenas os dados da própria unidade (filtro aplicado no backend).
-- **`marketing`** — acesso às abas Visão Geral e Brindes (antes chamado `brindes`, que dava acesso só a Brindes).
-- **`dp`** — acesso às abas Visão Geral, People, Horas, Faltas, VR e Coparticipação.
+- **`marketing`** — acesso às abas Visão Geral e Brindes.
+- **`dp`** — acesso às abas Visão Geral, People, Desligamentos, Horas, Faltas, VR e Coparticipação.
 
 ### Funções principais
 
@@ -54,6 +54,7 @@ Dashboard interno de RH da rede BRASAS RJ, construído em **Google Apps Script**
 | `getVRData(token)` | Carrega dados de VR (administrativo e docente) |
 | `getCopaData(token)` | Carrega coparticipação do plano de saúde |
 | `getTurmasData(token)` | Carrega turmas ativas por professor |
+| `getDesligamentosData(token)` | Carrega respostas da entrevista de desligamento |
 
 ### Tabela de brindes por anos de casa
 
@@ -100,6 +101,7 @@ Anos calculados: 2025, 2026, 2027 (constante `GIFT_YEARS`).
 | `vr` | VR | Vale-refeição — administrativo e docente |
 | `cohort` | Cohort | Análise de cohort de colaboradores |
 | `engajamento` | Engajamento | Respostas do questionário de engajamento |
+| `desligamentos` | Desligamentos | Análise das entrevistas de desligamento |
 | `copa` | Coparticipação | Coparticipação do plano de saúde |
 
 ### Sistema de design (variáveis CSS)
@@ -214,7 +216,7 @@ Os dois gráficos separados (Top35 + Bottom20) foram substituídos por **um úni
 ### Brindes — acesso do role `diretor`
 - `diretor` agora tem acesso à aba Brindes (`ROLE_TABS['diretor']` inclui `'brindes'`)
 - `getBrindesConsolidado` filtra pelo campo `unidade` do session quando `role === 'diretor'`
-- Brindes foi movido para depois de Engajamento na navbar
+- **Brindes é o último item da navbar**, depois do dropdown DP
 
 ---
 
@@ -254,6 +256,64 @@ Seção abaixo do gráfico combinado com evolução mensal de turmas e alunos po
 ### Professores — Distribuição por Função (cap em 15)
 
 `renderFuncPyramid()` agrupa funções excedentes: as 15 primeiras aparecem individualmente; as demais viram **"Outros (N funções)"** em cinza `#94a3b8`.
+
+---
+
+---
+
+### Aba Desligamentos (`getDesligamentosData`)
+
+Acesso restrito a `admin` e `dp`. Lê a planilha de entrevistas de desligamento.
+
+**Constantes no backend:**
+- `DESLIG_SPREADSHEET_ID = '1ZDvSlEsZOHUdPO7y2YexSoA4TqO_nltCF9TlqpMFRN8'`
+- Aba localizada pelo GID `121305848` (mais confiável que nome) com fallback para `'Respostas Estrevista de Desligamento'`
+
+**Campo `motivoSaida` em `getData()`:**
+- Lê a coluna `INATIVOS` (coluna AG) da aba `RJ - UNIDADES`
+- Usado no frontend para cruzar pedidos de demissão com entrevistas realizadas
+- `getData()` usa match exato de coluna (não `normalizeH_`) — o cabeçalho deve ser exatamente `INATIVOS`
+
+**Frontend — estrutura da aba:**
+- Filtros: Ano (multi-seleção via checkboxes), Unidade, Setor
+- Filtro de ano limitado a 2023+; piso de 2023 aplicado em `getDlFiltered()`
+- KPIs: Total Desligamentos, Taxa de Cobertura, Foram p/ Outra Empresa, Principal Motivo, Imagem Positiva BRASAS
+- **Taxa de Cobertura** = entrevistas realizadas ÷ pedidos de demissão no período (de `ALL_EMP`)
+
+**Gráfico "Entrevistas de Desligamento por Período"** (full-width, linha 1):
+- Duas barras agrupadas: "Pedidos de Demissão" (navy `#2a4d76`) vs "Entrevistas Realizadas" (âmbar `#f59e0b`)
+- Toggle Mensal/Trimestral/Anual (`DL_PERIODO_VIEW`)
+- Pedidos vêm de `ALL_EMP` filtrado por `motivoSaida.includes('pedido de demiss')` + `!ativo` + ano ≥ 2023
+- Entrevistas vêm de `ALL_DESLIG` (já filtrado por `getDlFiltered()`)
+
+**Layout dos gráficos:**
+- Linha 1 (full-width): Período/crossover
+- Linha 2: Motivos de Desligamento + Perfil por Cargo
+- Linha 3: Tempo de Empresa + Mobilidade Salarial
+- Linha 4: Percepção Salarial
+
+**Avaliações de Saída (`renderDlAvaliacoes`):**
+- 4 grupos: Benefícios, Comunicação Interna, Relacionamento, Empresa
+- Cards de nota média (1–4) — card com menor nota recebe borda âmbar e badge `⚠ ponto crítico`
+- Constante `DL_AVAL_GROUPS` define os grupos, `DL_AVAL_COLORS` define as cores por rating
+
+**Análise dos Comentários (`renderDlInsights`):**
+- Análise de frequência de temas nos comentários livres
+- Constante `DL_COMMENT_THEMES` define 7 temas com palavras-chave (normaliza acentos para match)
+- Temas: Liderança/Gestão, Salário/Benefícios, Clima/Equipe, Crescimento/Carreira, Carga/Pressão, Proposta Externa, Comunicação
+
+**Filtro de ano multi-seleção:**
+- Global `DL_ANOS_SEL = []` (vazio = todos os anos)
+- Dropdown customizado com checkboxes (`.multisel-btn`, `.multisel-menu`, `.multisel-item`)
+- Funções: `toggleAnoMenu(e)`, `toggleDlAno(ano, cb)`
+- Fecha ao clicar fora — tratado no `document.addEventListener('click', ...)` existente
+
+---
+
+### Visão Geral — Detalhamento por Unidade
+
+- **Unidades MD e CT excluídas** da tabela (`EXCL_UNIT_TABLE = ['MD','CT']` em `renderUnitTable`)
+- **Coluna "Distribuição"** tem tooltip explicativo via CSS `::after` com `content:attr(data-tip)` (classe `.th-tip`). Padrão igual ao tooltip da aba Engajamento — mais confiável que `title` nativo em iframes.
 
 ---
 

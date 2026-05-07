@@ -160,6 +160,7 @@ function getData(token) {
         giftInfo,
         unidadeAcesso:    String(g(row,'UNIDADE ACESSO') || '').trim(),
         unidadeSecAcesso: String(g(row,'UNIDADE SEC ACESSO') || '').trim(),
+        motivoSaida:      String(g(row,'INATIVOS') || '').trim(),
       });
     }
     const role = session.role;
@@ -566,6 +567,83 @@ function getCopaData(token) {
     const result = (role === 'diretor' && uni) ? rows.filter(r => r.unidade === uni) : rows;
     return { ok: true, rows: result };
   } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ─── DESLIGAMENTOS ────────────────────────────────────────────────────────────
+const DESLIG_SPREADSHEET_ID = '1ZDvSlEsZOHUdPO7y2YexSoA4TqO_nltCF9TlqpMFRN8';
+const DESLIG_SHEET_NAME = 'Respostas Estrevista de Desligamento';
+
+function getDesligamentosData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  const role = session.role;
+  if (role !== 'admin' && role !== 'dp') return { ok: false, error: 'Sem permissão.' };
+  try {
+    const ss = SpreadsheetApp.openById(DESLIG_SPREADSHEET_ID);
+    // Busca pela aba: tenta pelo GID numérico primeiro, depois pelo nome
+    const DESLIG_GID = 121305848;
+    const sheet = ss.getSheets().find(s => s.getSheetId() === DESLIG_GID)
+               || ss.getSheetByName(DESLIG_SHEET_NAME);
+    if (!sheet) return { ok: false, error: 'Aba de desligamentos não encontrada. Abas disponíveis: ' + ss.getSheets().map(s => s.getName()).join(', ') };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: false, error: 'Sem respostas.' };
+
+    const col = {};
+    raw[0].forEach((h, i) => { col[normalizeH_(h)] = i; });
+    const g = (row, name) => {
+      const i = col[normalizeH_(name)];
+      return i !== undefined ? String(row[i] === null || row[i] === undefined ? '' : row[i]).trim() : '';
+    };
+
+    const rows = [];
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      const nome = g(row, 'Nome Completo');
+      if (!nome) continue;
+
+      const dataDesligRaw = row[col[normalizeH_('Selecione a Data do Desligamento')]];
+      const dataDeslig = parseDate_(dataDesligRaw);
+
+      const motivosRaw = g(row, 'Quais o(s) motivo(s) que o levaram a pedir demissão?');
+      const motivos = motivosRaw
+        ? motivosRaw.split(', - ').map(m => m.replace(/^-\s*/, '').trim()).filter(Boolean)
+        : [];
+
+      rows.push({
+        nome,
+        unidade:      g(row, 'Selecione sua Unidade Principal'),
+        dataDeslig:   fmtDate_(dataDeslig),
+        desligAno:    dataDeslig ? dataDeslig.getFullYear() : null,
+        desligMes:    dataDeslig ? dataDeslig.getMonth() + 1 : null,
+        sexo:         g(row, 'Sexo'),
+        cargo:        g(row, 'Seu Cargo'),
+        setor:        g(row, 'Setor'),
+        tempoEmpresa: g(row, 'Tempo de Empresa:'),
+        motivos,
+        trocaEmpresa: g(row, 'Se está trocando de Empresa, qual a diferença salarial que passará a receber?'),
+        salCompat:    g(row, 'Você considera seu salário compatível com o mercado?'),
+        bSaude:       g(row, 'Qual a sua opinião sobre os benefícios que a empresa oferece? [Plano de Saúde]'),
+        bDental:      g(row, 'Qual a sua opinião sobre os benefícios que a empresa oferece? [Plano Dental]'),
+        bVaVr:        g(row, 'Qual a sua opinião sobre os benefícios que a empresa oferece? [VA ou VR]'),
+        bGympass:     g(row, 'Qual a sua opinião sobre os benefícios que a empresa oferece? [Gympass]'),
+        cEmail:       g(row, 'Como você avalia a comunicação interna da empresa: [E-mail]'),
+        cIntranet:    g(row, 'Como você avalia a comunicação interna da empresa: [Intranet]'),
+        cWhatsapp:    g(row, 'Como você avalia a comunicação interna da empresa: [Whatsapp]'),
+        cRedes:       g(row, 'Como você avalia a comunicação interna da empresa: [Redes Sociais]'),
+        rLideranca:     g(row, 'Relacionamento [Como você avalia a liderança de seu superior imediato?]'),
+        rColegasArea:   g(row, 'Relacionamento [Como era o seu relacionamento profissional com seus colegas de área?]'),
+        rColegasOutros: g(row, 'Relacionamento [Como era o seu relacionamento profissional com seus colegas de outros setores?]'),
+        eInfra:       g(row, 'Empresa [Como você avalia a infra-estrutura da empresa?]'),
+        eFerramentas: g(row, 'Empresa [Como você avalia as ferramentas de trabalho disponibilizadas pela a empresa?]'),
+        eImagem:      g(row, 'Empresa [Que imagem você leva do BRASAS?]'),
+        comentario:   g(row, 'Fique à vontade para comentar o que desejar:'),
+        motivoOutros: g(row, 'Se marcou a opção Outros, conte aqui o principal motivo que o levou a pedir demissão:'),
+      });
+    }
+    return { ok: true, rows };
+  } catch (e) {
     return { ok: false, error: e.message };
   }
 }

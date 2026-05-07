@@ -75,6 +75,13 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .filter-group select,.filter-group input[type=text],.filter-group input[type=date]{padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.85rem;color:var(--navy-800);background:var(--gray-50);min-height:38px;transition:border-color .2s;appearance:none;-webkit-appearance:none;width:100%}
 .filter-group select{padding-right:32px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 .filter-group select:focus,.filter-group input:focus{outline:none;border-color:var(--navy-400);box-shadow:0 0 0 3px rgba(42,77,118,.1)}
+.multisel-wrap{position:relative;display:block}
+.multisel-btn{padding:9px 32px 9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.85rem;color:var(--navy-800);background:var(--gray-50) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;min-height:38px;width:100%;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:border-color .2s}
+.multisel-btn:focus{outline:none;border-color:var(--navy-400);box-shadow:0 0 0 3px rgba(42,77,118,.1)}
+.multisel-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:100%;background:var(--white);border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);box-shadow:var(--shadow-md);z-index:300;padding:4px 0;max-height:240px;overflow-y:auto}
+.multisel-item{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:.83rem;color:var(--navy-800);cursor:pointer;white-space:nowrap;user-select:none}
+.multisel-item:hover{background:var(--navy-25)}
+.multisel-item input[type=checkbox]{accent-color:var(--navy-500);width:14px;height:14px;cursor:pointer;flex-shrink:0}
 .date-range-wrap{display:flex;gap:6px;align-items:center}
 .date-range-wrap input{flex:1;min-width:0}
 .date-range-sep{font-size:.72rem;color:var(--gray-400);white-space:nowrap}
@@ -142,6 +149,8 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .data-table thead th.sortable:hover{color:var(--navy-600);background:var(--navy-25)}
 .data-table thead th.sort-asc::after{content:' ↑';color:var(--navy-400)}
 .data-table thead th.sort-desc::after{content:' ↓';color:var(--navy-400)}
+.th-tip{position:relative;cursor:help}
+.th-tip:hover::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 4px);background:var(--navy-900);color:#fff;padding:8px 12px;border-radius:6px;font-size:.74rem;white-space:normal;min-width:260px;line-height:1.5;z-index:999;box-shadow:var(--shadow-lg);pointer-events:none;font-weight:400}
 .data-table tbody td{padding:11px 16px;border-bottom:1px solid var(--gray-100);color:var(--navy-800);vertical-align:middle}
 .data-table tbody td.num{text-align:right;font-family:var(--font-mono);font-size:.8rem}
 .data-table tbody td.center{text-align:center}
@@ -226,6 +235,16 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .dp-nav-item{display:flex;align-items:center;gap:9px;width:100%;padding:10px 18px;background:none;border:none;color:var(--navy-200);font-family:var(--font-main);font-size:.78rem;font-weight:600;cursor:pointer;text-align:left;transition:background .12s,color .12s;white-space:nowrap}
 .dp-nav-item:hover{background:rgba(255,255,255,.07);color:var(--white)}
 .dp-nav-item.active{color:var(--white);background:rgba(255,255,255,.06);border-left:2px solid var(--navy-300)}
+.dl-aval-group{margin-bottom:24px}
+.dl-aval-group-title{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-500);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--gray-100)}
+.dl-aval-row{display:grid;grid-template-columns:160px 1fr 40px;align-items:center;gap:10px;padding:4px 0}
+.dl-aval-label{font-size:.8rem;color:var(--navy-700);font-weight:500}
+.dl-aval-bar-wrap{height:22px;background:var(--gray-100);border-radius:4px;overflow:hidden;display:flex}
+.dl-aval-score{font-family:var(--font-mono);font-size:.73rem;font-weight:700;text-align:right}
+.dl-comment-card{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px}
+.dl-comment-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.dl-comment-badge{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--navy-50);color:var(--navy-600)}
+.dl-comment-text{font-size:.82rem;color:var(--navy-700);line-height:1.6}
 @media(max-width:900px){
   .container{padding:16px}.charts-grid{grid-template-columns:1fr}
   .insight-banner{grid-template-columns:1fr 1fr}
@@ -263,7 +282,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       <button class="cockpit-tab" onclick="switchTab('professores',this)"><span class="tab-icon">🎓</span> Professores</button>
       <button class="cockpit-tab" onclick="switchTab('cohort',this)"><span class="tab-icon">📈</span> Cohort</button>
       <button class="cockpit-tab" onclick="switchTab('engajamento',this)"><span class="tab-icon">💬</span> Engajamento</button>
-      <button class="cockpit-tab tab-brindes-nav" onclick="switchTab('brindes',this)"><span class="tab-icon">🎁</span> Brindes</button>
+      <button class="cockpit-tab" onclick="switchTab('desligamentos',this)"><span class="tab-icon">📋</span> Desligamentos</button>
       <div class="dp-nav-wrap" id="dp-nav-wrap">
         <button class="cockpit-tab" id="dp-nav-btn" onclick="toggleDpDropdown(event)">
           <span class="tab-icon">👤</span> DP <span class="dp-chevron">▾</span>
@@ -275,6 +294,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
           <button class="dp-nav-item" onclick="selectDpSub('copa',this)"><span>🏥</span> Coparticipação</button>
         </div>
       </div>
+      <button class="cockpit-tab tab-brindes-nav" onclick="switchTab('brindes',this)"><span class="tab-icon">🎁</span> Brindes</button>
       <div class="cockpit-nav-right">
         <div class="nav-user">👤 <strong id="navUserName">—</strong></div>
         <button class="logout-btn" onclick="doLogout()">Sair</button>
@@ -350,7 +370,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       </div>
       <div class="section">
         <div class="section-header"><div><div class="section-title">Detalhamento por Unidade</div><div class="section-subtitle">Ativos, inativos e taxa de retenção por unidade</div></div><div class="section-badge" id="tbl-unit-badge">0 unidades</div></div>
-        <div class="table-scroll"><table class="data-table"><thead><tr><th class="sortable" onclick="sortUnit('u')">Unidade</th><th class="num sortable" onclick="sortUnit('ativos')">Ativos</th><th class="num sortable" onclick="sortUnit('inativos')">Inativos</th><th class="num sortable" onclick="sortUnit('total')">Total</th><th class="num sortable" onclick="sortUnit('ret')">% Retenção</th><th>Distribuição</th></tr></thead><tbody id="tblUnidadeBody"></tbody></table></div>
+        <div class="table-scroll"><table class="data-table"><thead><tr><th class="sortable" onclick="sortUnit('u')">Unidade</th><th class="num sortable" onclick="sortUnit('ativos')">Ativos</th><th class="num sortable" onclick="sortUnit('inativos')">Inativos</th><th class="num sortable" onclick="sortUnit('total')">Total</th><th class="num sortable" onclick="sortUnit('ret')">% Retenção</th><th class="th-tip" data-tip="Proporção de ativos: cada barra representa os colaboradores ativos da unidade em relação à unidade com mais ativos. Quanto maior a barra, maior o volume relativo de ativos.">Distribuição <span style="font-size:.7rem;opacity:.55;font-weight:400">ℹ</span></th></tr></thead><tbody id="tblUnidadeBody"></tbody></table></div>
       </div>
       <div class="section">
         <div class="section-header">
@@ -817,6 +837,84 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   </div>
 </div><!-- /tab-copa -->
 
+
+    <!-- TAB: DESLIGAMENTOS -->
+    <div id="tab-desligamentos" class="tab-content">
+      <div class="filters-bar">
+        <div class="filter-group"><label>Ano</label><div class="multisel-wrap" id="dl-ano-wrap"><button type="button" class="multisel-btn" id="dl-ano-btn" onclick="toggleAnoMenu(event)"><span id="dl-ano-lbl">Todos</span></button><div class="multisel-menu" id="dl-ano-menu"></div></div></div>
+        <div class="filter-group"><label>Unidade</label><select id="dl-unidade" onchange="renderDesligamentos()"><option value="">Todas</option></select></div>
+        <div class="filter-group"><label>Setor</label><select id="dl-setor" onchange="renderDesligamentos()"><option value="">Todos</option></select></div>
+        <div class="filter-actions"><button class="btn-clear" onclick="clearDlFilters()">Limpar</button></div>
+      </div>
+      <div class="kpi-row" id="dl-kpis" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))"></div>
+      <div class="charts-grid">
+        <div class="chart-container full">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+            <div class="chart-title">Entrevistas de Desligamento por Período</div>
+            <div class="toggle-group">
+              <button class="toggle-btn active" id="dl-periodo-mensal" onclick="setDlPeriodo('mensal',this)">Mensal</button>
+              <button class="toggle-btn" id="dl-periodo-trimestral" onclick="setDlPeriodo('trimestral',this)">Trimestral</button>
+              <button class="toggle-btn" id="dl-periodo-anual" onclick="setDlPeriodo('anual',this)">Anual</button>
+            </div>
+          </div>
+          <div class="chart-subtitle" id="dl-tendencia-subtitle">Pedidos de demissão vs. entrevistas realizadas</div>
+          <div class="chart-canvas-wrapper" style="height:280px"><canvas id="chartDlTendencia"></canvas></div>
+        </div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-container">
+          <div class="chart-title">Motivos de Desligamento</div>
+          <div class="chart-subtitle">Frequência por motivo (múltipla escolha)</div>
+          <div id="dl-motivos-bars" style="padding:4px 0"></div>
+        </div>
+        <div class="chart-container">
+          <div class="chart-title">Perfil por Cargo</div>
+          <div class="chart-subtitle">Distribuição dos desligamentos</div>
+          <div id="dl-cargo-bars" style="padding:4px 0"></div>
+        </div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-container">
+          <div class="chart-title">Tempo de Empresa</div>
+          <div class="chart-subtitle">Distribuição por faixa de permanência</div>
+          <div id="dl-tempo-bars" style="padding:4px 0"></div>
+        </div>
+        <div class="chart-container">
+          <div class="chart-title">Mobilidade Salarial</div>
+          <div class="chart-subtitle">Aumento ao sair (quem mudou de empresa)</div>
+          <div class="chart-canvas-wrapper" style="height:220px"><canvas id="chartDlSalario"></canvas></div>
+        </div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-container">
+          <div class="chart-title">Percepção Salarial</div>
+          <div class="chart-subtitle">Considera salário compatível com o mercado?</div>
+          <div id="dl-sal-compat" style="padding:24px 0 16px"></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Avaliações de Saída</span>
+          <span class="section-subtitle">Satisfação com benefícios, comunicação, relacionamento e empresa</span>
+        </div>
+        <div id="dl-aval-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:20px 24px 0"></div>
+        <div style="padding:16px 24px 24px" id="dl-avaliacoes"></div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Análise dos Comentários</span>
+        </div>
+        <div id="dl-insights" style="padding:16px 24px 24px"></div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Comentários</span>
+          <span class="section-badge" id="dl-comments-count">0</span>
+        </div>
+        <div style="padding:16px 24px 24px" id="dl-comments-list"></div>
+      </div>
+    </div><!-- /tab-desligamentos -->
+
   </div><!-- /container -->
 </div><!-- /app -->
 
@@ -828,6 +926,8 @@ var ENG_DATA=[];
 var ALL_BRINDES=[];
 var ALL_TURMAS=[];
 var ALL_HISTORICO=[];
+var ALL_DESLIG=[];
+var DL_ANOS_SEL=[];
 var ENG_COLORS={pos:'#22c55e',neg:'#ef4444',neu:'#f59e0b',def:'#3d6b99'};
 var CHARTS={};
 var SORT_EMP={col:'nome',dir:1};
@@ -845,11 +945,11 @@ var MONTHS_PT=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov'
 var BRINDE_SEL={'mdBrindeLocal':[],'mdBrindeTipo':[]}; 
 
 var ROLE_TABS={
-  'admin':     ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
+  'admin':     ['geral','people','brindes','professores','cohort','engajamento','desligamentos','horas','faltas','vr','copa'],
   'viewer':    ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
   'marketing': ['geral','brindes'],
   'diretor':   ['geral','people','brindes','horas','faltas','vr'],
-  'dp':        ['geral','people','horas','faltas','vr','copa']
+  'dp':        ['geral','people','desligamentos','horas','faltas','vr','copa']
 };
 
 // ACESSO
@@ -1072,6 +1172,7 @@ window.addEventListener('load',function(){
     if(!e.target.closest('#mdBrindeAno'))      closeMd('mdBrindeAno');
     if(!e.target.closest('#mdBrindeTipo'))     closeMd('mdBrindeTipo');
     if(!e.target.closest('#mdBrindeLocal')) closeMd('mdBrindeLocal');
+    if(!e.target.closest('#dl-ano-wrap')){ var m=document.getElementById('dl-ano-menu'); if(m) m.style.display='none'; }
   });
   var t=sessionStorage.getItem('rh_token'),u=sessionStorage.getItem('rh_user');
   if(t&&u){ TOKEN=t; USER_INFO=JSON.parse(u); afterLogin(); }
@@ -1136,6 +1237,9 @@ function loadData(){
       if(allowed.indexOf('copa')>=0){
         showTabLoading('copa');
         setTimeout(function(){ loadCopaData(); },400);
+      }
+      if(allowed.indexOf('desligamentos')>=0){
+        setTimeout(function(){ loadDesligamentosData(); },500);
       }
     })
     .withFailureHandler(function(e){
@@ -1535,10 +1639,11 @@ function renderFuncPyramid(ativos){
 var unitRows=[];
 function renderUnitTable(){
   var byUnit=groupBy(FILTERED,'unidade');
+  var EXCL_UNIT_TABLE=['MD','CT'];
   unitRows=Object.entries(byUnit).map(function(e){
     var u=e[0],emp=e[1];
     return {u,ativos:emp.filter(function(e){ return e.ativo; }).length,inativos:emp.filter(function(e){ return !e.ativo; }).length,total:emp.length,ret:emp.length?pct(emp.filter(function(e){ return e.ativo; }).length,emp.length):0};
-  });
+  }).filter(function(r){ return EXCL_UNIT_TABLE.indexOf(r.u.trim().toUpperCase())===-1; });
   unitRows.sort(function(a,b){ var sc=SORT_UNIT,va=a[sc.col],vb=b[sc.col]; return(typeof va==='string'?va.localeCompare(vb):va-vb)*sc.dir; });
   set('tbl-unit-badge',unitRows.length+' unidades');
   var maxA=Math.max.apply(null,unitRows.map(function(r){ return r.ativos; }).concat([1]));
@@ -2819,6 +2924,446 @@ function downloadCopaCSV(){
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a'); a.href=url; a.download='coparticipacao_'+new Date().toISOString().slice(0,10)+'.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ─── DESLIGAMENTOS ────────────────────────────────────────────────────────────
+var DL_PERIODO_VIEW='mensal';
+function setDlPeriodo(view,btn){
+  DL_PERIODO_VIEW=view;
+  ['dl-periodo-mensal','dl-periodo-trimestral','dl-periodo-anual'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.classList.remove('active');
+  });
+  if(btn) btn.classList.add('active');
+  renderDlTendencia(getDlFiltered());
+}
+
+var DL_AVAL_GROUPS=[
+  {title:'Benefícios',items:[
+    {label:'Plano de Saúde',field:'bSaude'},{label:'Plano Dental',field:'bDental'},
+    {label:'VA ou VR',field:'bVaVr'},{label:'Gympass',field:'bGympass'}
+  ]},
+  {title:'Comunicação Interna',items:[
+    {label:'E-mail',field:'cEmail'},{label:'Intranet',field:'cIntranet'},
+    {label:'Whatsapp',field:'cWhatsapp'},{label:'Redes Sociais',field:'cRedes'}
+  ]},
+  {title:'Relacionamento',items:[
+    {label:'Liderança',field:'rLideranca'},{label:'Colegas de Área',field:'rColegasArea'},
+    {label:'Colegas de Outros Setores',field:'rColegasOutros'}
+  ]},
+  {title:'Empresa',items:[
+    {label:'Infraestrutura',field:'eInfra'},{label:'Ferramentas',field:'eFerramentas'},
+    {label:'Imagem BRASAS',field:'eImagem'}
+  ]}
+];
+var DL_TEMPO_ORDER=['0 a 3 meses','3 meses a 1 ano','1 a 3 anos','3 a 5 anos','5 a 10 anos','10 a 20 anos','Mais de 20 anos'];
+var DL_AVAL_COLORS={'Excelente':'#22c55e','Bom':'#3d6b99','Regular':'#f59e0b','Ruim':'#ef4444'};
+var DL_COMMENT_THEMES=[
+  {label:'Liderança / Gestão',   keys:['liderança','lider','chefe','gestor','gerente','superior','diretor','coordenador']},
+  {label:'Salário / Benefícios', keys:['salário','salario','remuner','pagamento','financeiro','benefício','beneficio','plano de saude','plano de saúde','vale refeição','vale alimentação']},
+  {label:'Clima / Equipe',       keys:['clima','ambiente','equipe','colegas','relacionamento','cultura','conviv']},
+  {label:'Crescimento / Carreira',keys:['crescimento','carreira','oportunidad','desenvolvimento','promoção','promocao','aprendizado','evolução','evolucao']},
+  {label:'Carga / Pressão',      keys:['carga','pressão','pressao','estresse','estres','horário','horario','jornada','sobrecarga','esgot']},
+  {label:'Proposta Externa',     keys:['proposta','outra empresa','concorrência','concorrencia','mercado','oferta','emprego']},
+  {label:'Comunicação',          keys:['comunicação','comunicacao','feedback','informação','informacao','transparência','transparencia']},
+];
+
+function toggleAnoMenu(e){
+  e.stopPropagation();
+  var menu=document.getElementById('dl-ano-menu');
+  if(menu) menu.style.display=menu.style.display==='block'?'none':'block';
+}
+function toggleDlAno(ano,cb){
+  var idx=DL_ANOS_SEL.indexOf(ano);
+  if(cb.checked){ if(idx===-1) DL_ANOS_SEL.push(ano); }
+  else { if(idx!==-1) DL_ANOS_SEL.splice(idx,1); }
+  var lbl=document.getElementById('dl-ano-lbl');
+  if(lbl) lbl.textContent=DL_ANOS_SEL.length?DL_ANOS_SEL.slice().sort().join(', '):'Todos';
+  renderDesligamentos();
+}
+
+function loadDesligamentosData(){
+  var kpisEl=document.getElementById('dl-kpis');
+  if(kpisEl) kpisEl.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-label">Carregando dados...</div><div class="spinner" style="margin:8px 0"></div></div>';
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(!r.ok){
+        if(kpisEl) kpisEl.innerHTML='<div class="kpi-card" style="grid-column:1/-1;border-color:var(--danger-100)"><div class="kpi-label" style="color:var(--danger-600)">Erro ao carregar desligamentos</div><div class="kpi-value" style="font-size:.85rem;color:var(--danger-600)">'+esc(r.error||'Erro desconhecido')+'</div></div>';
+        return;
+      }
+      ALL_DESLIG=r.rows||[];
+      initDlFilters();
+      renderDesligamentos();
+    })
+    .withFailureHandler(function(e){
+      if(kpisEl) kpisEl.innerHTML='<div class="kpi-card" style="grid-column:1/-1;border-color:var(--danger-100)"><div class="kpi-label" style="color:var(--danger-600)">Erro de comunicação</div><div class="kpi-value" style="font-size:.85rem;color:var(--danger-600)">'+esc((e&&e.message)||'Falha na chamada ao servidor')+'</div></div>';
+      ALL_DESLIG=[];
+    })
+    .getDesligamentosData(TOKEN);
+}
+
+function initDlFilters(){
+  var anos=[...new Set(ALL_DESLIG.map(function(r){ return r.desligAno; }).filter(function(a){ return a>=2023; }))].sort(function(a,b){ return b-a; });
+  var unis=[...new Set(ALL_DESLIG.map(function(r){ return r.unidade; }).filter(Boolean))].sort();
+  var sets=[...new Set(ALL_DESLIG.map(function(r){ return r.setor; }).filter(Boolean))].sort();
+  var aMenu=document.getElementById('dl-ano-menu');
+  if(aMenu) aMenu.innerHTML=anos.map(function(a){
+    return '<label class="multisel-item"><input type="checkbox" value="'+a+'" onchange="toggleDlAno('+a+',this)"> '+a+'</label>';
+  }).join('');
+  var uSel=document.getElementById('dl-unidade');
+  if(uSel) unis.forEach(function(u){ uSel.appendChild(new Option(u,u)); });
+  var sSel=document.getElementById('dl-setor');
+  if(sSel) sets.forEach(function(s){ sSel.appendChild(new Option(s,s)); });
+}
+
+function getDlFiltered(){
+  var fU=v('dl-unidade'),fS=v('dl-setor');
+  return ALL_DESLIG.filter(function(r){
+    if(!r.desligAno||r.desligAno<2023) return false;
+    if(DL_ANOS_SEL.length&&DL_ANOS_SEL.indexOf(r.desligAno)===-1) return false;
+    if(fU&&r.unidade!==fU) return false;
+    if(fS&&r.setor!==fS) return false;
+    return true;
+  });
+}
+
+function clearDlFilters(){
+  DL_ANOS_SEL=[];
+  document.querySelectorAll('#dl-ano-menu input[type=checkbox]').forEach(function(cb){ cb.checked=false; });
+  var lbl=document.getElementById('dl-ano-lbl'); if(lbl) lbl.textContent='Todos';
+  ['dl-unidade','dl-setor'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  renderDesligamentos();
+}
+
+function renderDesligamentos(){
+  var rows=getDlFiltered();
+  renderDlKPIs(rows);
+  renderDlTendencia(rows);
+  renderDlMotivos(rows);
+  renderDlCargo(rows);
+  renderDlTempo(rows);
+  renderDlSalario(rows);
+  renderDlSalCompat(rows);
+  renderDlAvaliacoes(rows);
+  renderDlInsights(rows);
+  renderDlComentarios(rows);
+}
+
+function renderDlKPIs(rows){
+  var total=rows.length;
+  var outra=rows.filter(function(r){ return r.trocaEmpresa&&r.trocaEmpresa!=='Não estou mudando de Empresa'; }).length;
+  var pctOutra=total?Math.round(outra/total*100):0;
+  var mCounts={};
+  rows.forEach(function(r){ (r.motivos||[]).forEach(function(m){ mCounts[m]=(mCounts[m]||0)+1; }); });
+  var topMotivo=Object.keys(mCounts).sort(function(a,b){ return mCounts[b]-mCounts[a]; })[0]||'—';
+  var posImg=rows.filter(function(r){ return r.eImagem==='Excelente'||r.eImagem==='Bom'; }).length;
+  var pctImg=total?Math.round(posImg/total*100):0;
+  var fU=v('dl-unidade');
+  var demTotal=ALL_EMP.filter(function(e){
+    if(e.ativo) return false;
+    if(!e.motivoSaida||e.motivoSaida.toLowerCase().indexOf('pedido de demiss')===-1) return false;
+    if(!e.desligYear||e.desligYear<2023) return false;
+    if(DL_ANOS_SEL.length&&DL_ANOS_SEL.indexOf(e.desligYear)===-1) return false;
+    if(fU&&e.unidade!==fU) return false;
+    return true;
+  }).length;
+  var coverage=demTotal?Math.round(total/demTotal*100):null;
+  var covColor=coverage===null?'var(--navy-600)':coverage>=80?'var(--success-600)':coverage>=50?'var(--warning-600)':'var(--danger-600)';
+  var el=document.getElementById('dl-kpis'); if(!el) return;
+  el.innerHTML=
+    '<div class="kpi-card"><div class="kpi-label">Total Desligamentos</div><div class="kpi-value">'+total+'</div><div class="kpi-sub">no período selecionado</div></div>'+
+    (coverage!==null?'<div class="kpi-card"><div class="kpi-label">Taxa de Cobertura</div><div class="kpi-value" style="color:'+covColor+'">'+coverage+'%</div><div class="kpi-sub">'+total+' entrevistas · '+demTotal+' pedidos</div></div>':'') +
+    '<div class="kpi-card"><div class="kpi-label">Foram p/ Outra Empresa</div><div class="kpi-value">'+pctOutra+'%</div><div class="kpi-sub">'+outra+' de '+total+' respondentes</div></div>'+
+    '<div class="kpi-card highlight"><div class="kpi-label">Principal Motivo</div><div class="kpi-value">'+(mCounts[topMotivo]||0)+'</div><div class="kpi-sub">'+(topMotivo.length>40?esc(topMotivo.slice(0,38))+'…':esc(topMotivo))+' menções</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Imagem Positiva BRASAS</div><div class="kpi-value">'+pctImg+'%</div><div class="kpi-sub">avaliaram como Excelente ou Bom</div></div>';
+}
+
+function renderDlTendencia(rows){
+  var fU=v('dl-unidade');
+  var periodKey=function(ano,mes){
+    if(DL_PERIODO_VIEW==='anual') return String(ano);
+    if(DL_PERIODO_VIEW==='trimestral') return ano+'-Q'+Math.ceil(mes/3);
+    return ano+'-'+String(mes).padStart(2,'0');
+  };
+
+  // Dataset 1: pedidos de demissão da planilha principal (ALL_EMP), a partir de 2023
+  var demGroups={};
+  ALL_EMP.forEach(function(e){
+    if(e.ativo) return;
+    if(!e.motivoSaida||e.motivoSaida.toLowerCase().indexOf('pedido de demiss')===-1) return;
+    if(!e.desligYear||!e.desligMonth||e.desligYear<2023) return;
+    if(DL_ANOS_SEL.length&&DL_ANOS_SEL.indexOf(e.desligYear)===-1) return;
+    if(fU&&e.unidade!==fU) return;
+    var k=periodKey(e.desligYear,e.desligMonth);
+    demGroups[k]=(demGroups[k]||0)+1;
+  });
+
+  // Dataset 2: entrevistas realizadas (ALL_DESLIG já filtrado por getDlFiltered)
+  var entGroups={};
+  rows.forEach(function(r){
+    if(!r.desligAno||!r.desligMes) return;
+    var k=periodKey(r.desligAno,r.desligMes);
+    entGroups[k]=(entGroups[k]||0)+1;
+  });
+
+  var allKeys=[...new Set([...Object.keys(demGroups),...Object.keys(entGroups)])].sort();
+  var labels=allKeys.map(function(k){
+    if(DL_PERIODO_VIEW==='anual') return k;
+    if(DL_PERIODO_VIEW==='trimestral'){ var p=k.split('-Q'); return 'T'+p[1]+'/'+p[0].slice(2); }
+    var p=k.split('-'); return MONTHS_PT[parseInt(p[1])-1]+'/'+p[0].slice(2);
+  });
+  var demVals=allKeys.map(function(k){ return demGroups[k]||0; });
+  var entVals=allKeys.map(function(k){ return entGroups[k]||0; });
+
+  var ctx=document.getElementById('chartDlTendencia'); if(!ctx) return;
+  if(CHARTS.dlTendencia){ CHARTS.dlTendencia.destroy(); delete CHARTS.dlTendencia; }
+  CHARTS.dlTendencia=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[
+        {label:'Pedidos de Demissão',data:demVals,backgroundColor:'#2a4d76',borderRadius:4},
+        {label:'Entrevistas Realizadas',data:entVals,backgroundColor:'#f59e0b',borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'top',labels:{font:{family:'DM Sans',size:12},boxWidth:14,padding:16}},
+        tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+c.raw; }}}
+      },
+      scales:{
+        y:{beginAtZero:true,ticks:{stepSize:1,font:{family:'DM Sans',size:11}},grid:{color:'rgba(0,0,0,.04)'}},
+        x:{ticks:{font:{family:'DM Sans',size:11},maxRotation:DL_PERIODO_VIEW==='mensal'?45:0},grid:{display:false}}
+      }
+    }
+  });
+}
+
+function renderDlMotivos(rows){
+  var counts={};
+  rows.forEach(function(r){ (r.motivos||[]).forEach(function(m){ counts[m]=(counts[m]||0)+1; }); });
+  var sorted=Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
+  var maxV=sorted.length?counts[sorted[0]]:1;
+  var total=rows.length||1;
+  var html=sorted.map(function(m){
+    var pct=Math.round(counts[m]/maxV*100);
+    var pctTotal=Math.round(counts[m]/total*100);
+    return '<div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:5px 0">'+
+      '<div style="font-size:.75rem;font-weight:600;color:var(--navy-700);max-width:240px;min-width:0;white-space:normal;line-height:1.3">'+esc(m)+'</div>'+
+      '<div style="background:var(--gray-100);border-radius:4px;height:20px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:var(--navy-400);border-radius:4px;transition:width .4s"></div></div>'+
+      '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--gray-500);white-space:nowrap;min-width:56px;text-align:right"><strong style="color:var(--navy-700)">'+counts[m]+'</strong> ('+pctTotal+'%)</div>'+
+    '</div>';
+  }).join('');
+  var el=document.getElementById('dl-motivos-bars');
+  if(el) el.innerHTML=html||'<div class="table-empty">Sem dados</div>';
+}
+
+function renderDlCargo(rows){
+  var counts={};
+  rows.forEach(function(r){
+    var c=r.cargo||'Não informado';
+    var cu=c.toUpperCase();
+    if(cu.includes('PROFESSOR')) c='Professor';
+    else if(cu.includes('SECRETAR')||cu.includes('ASSISTENTE ADM')) c='Secretaria / Adm';
+    else if(cu.includes('MARKETING')||cu.includes('MIDIA')) c='Marketing';
+    else if(cu.includes('ESTAGIÁR')||cu.includes('ESTAGIARIO')) c='Estagiário';
+    else if(cu.includes('ASG')||cu.includes('PORTEIRO')||cu.includes('PINTOR')) c='Serviços Gerais';
+    else if(cu.includes('GERENTE')||cu.includes('COORDENADOR')||cu.includes('DIRETOR')) c='Gestão';
+    else if(cu.includes('ANALISTA')||cu.includes('ASSISTENTE')) c='Analista / Assistente';
+    counts[c]=(counts[c]||0)+1;
+  });
+  var sorted=Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
+  var maxV=sorted.length?counts[sorted[0]]:1;
+  var total=rows.length||1;
+  var colors=['#2a4d76','#3d6b99','#5a8aba','#0d9488','#22c55e','#f59e0b','#8b5cf6','#ef4444'];
+  var html=sorted.map(function(c,i){
+    var pct=Math.round(counts[c]/maxV*100);
+    var pctTotal=Math.round(counts[c]/total*100);
+    return '<div style="display:grid;grid-template-columns:160px 1fr auto;align-items:center;gap:10px;padding:5px 0">'+
+      '<div style="font-size:.8rem;font-weight:600;color:var(--navy-700)">'+esc(c)+'</div>'+
+      '<div style="background:var(--gray-100);border-radius:4px;height:22px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+colors[i%colors.length]+';border-radius:4px;transition:width .4s"></div></div>'+
+      '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--gray-500);min-width:60px;text-align:right"><strong style="color:var(--navy-700)">'+counts[c]+'</strong> ('+pctTotal+'%)</div>'+
+    '</div>';
+  }).join('');
+  var el=document.getElementById('dl-cargo-bars');
+  if(el) el.innerHTML=html||'<div class="table-empty">Sem dados</div>';
+}
+
+function renderDlTempo(rows){
+  var counts={};
+  DL_TEMPO_ORDER.forEach(function(t){ counts[t]=0; });
+  rows.forEach(function(r){ if(r.tempoEmpresa&&counts[r.tempoEmpresa]!==undefined) counts[r.tempoEmpresa]++; });
+  var maxV=Math.max.apply(null,DL_TEMPO_ORDER.map(function(t){ return counts[t]; }).concat([1]));
+  var total=rows.length||1;
+  var html=DL_TEMPO_ORDER.map(function(t){
+    var n=counts[t]; if(!n) return '';
+    var pct=Math.round(n/maxV*100);
+    var pctTotal=Math.round(n/total*100);
+    return '<div style="display:grid;grid-template-columns:130px 1fr auto;align-items:center;gap:10px;padding:5px 0">'+
+      '<div style="font-size:.78rem;font-weight:600;color:var(--navy-700)">'+t+'</div>'+
+      '<div style="background:var(--gray-100);border-radius:4px;height:20px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:var(--teal-600);border-radius:4px;transition:width .4s"></div></div>'+
+      '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--gray-500);min-width:56px;text-align:right"><strong style="color:var(--navy-700)">'+n+'</strong> ('+pctTotal+'%)</div>'+
+    '</div>';
+  }).join('');
+  var el=document.getElementById('dl-tempo-bars');
+  if(el) el.innerHTML=html||'<div class="table-empty">Sem dados</div>';
+}
+
+function renderDlSalario(rows){
+  var faixas=['Até 10%','11% a 30%','31% a 50%','Mais de 50%','Mais de 100%'];
+  var counts={}; faixas.forEach(function(f){ counts[f]=0; });
+  rows.forEach(function(r){
+    if(r.trocaEmpresa&&r.trocaEmpresa!=='Não estou mudando de Empresa'&&counts[r.trocaEmpresa]!==undefined)
+      counts[r.trocaEmpresa]++;
+  });
+  var ctx=document.getElementById('chartDlSalario'); if(!ctx) return;
+  if(CHARTS.dlSalario){ CHARTS.dlSalario.destroy(); delete CHARTS.dlSalario; }
+  CHARTS.dlSalario=new Chart(ctx,{
+    type:'bar',
+    data:{labels:faixas,datasets:[{data:faixas.map(function(f){ return counts[f]; }),backgroundColor:'#f59e0b',borderRadius:4}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){ return ' '+ctx.raw+' pessoas'; }}}},
+      scales:{
+        y:{beginAtZero:true,ticks:{stepSize:1,font:{family:'DM Sans',size:11}},grid:{color:'rgba(0,0,0,.04)'}},
+        x:{ticks:{font:{family:'DM Sans',size:11}},grid:{display:false}}
+      }
+    }
+  });
+}
+
+function renderDlSalCompat(rows){
+  var sim=rows.filter(function(r){ return r.salCompat==='Sim'; }).length;
+  var nao=rows.filter(function(r){ return r.salCompat==='Não'||r.salCompat==='Nao'; }).length;
+  var total=sim+nao||1;
+  var pSim=Math.round(sim/total*100), pNao=Math.round(nao/total*100);
+  var el=document.getElementById('dl-sal-compat'); if(!el) return;
+  el.innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'+
+      '<span style="min-width:38px;font-size:.82rem;color:var(--navy-700);font-weight:600">Sim</span>'+
+      '<div style="flex:1;background:var(--gray-100);border-radius:4px;height:26px;overflow:hidden"><div style="width:'+pSim+'%;height:100%;background:var(--success-500);transition:width .4s"></div></div>'+
+      '<span style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;color:var(--navy-700);min-width:70px;text-align:right">'+sim+' ('+pSim+'%)</span>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'+
+      '<span style="min-width:38px;font-size:.82rem;color:var(--navy-700);font-weight:600">Não</span>'+
+      '<div style="flex:1;background:var(--gray-100);border-radius:4px;height:26px;overflow:hidden"><div style="width:'+pNao+'%;height:100%;background:var(--danger-500);transition:width .4s"></div></div>'+
+      '<span style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;color:var(--navy-700);min-width:70px;text-align:right">'+nao+' ('+pNao+'%)</span>'+
+    '</div>'+
+    '<div style="font-size:.75rem;color:var(--gray-400);text-align:center">'+(sim+nao)+' respondentes</div>';
+}
+
+function renderDlAvaliacoes(rows){
+  var ratings=['Excelente','Bom','Regular','Ruim'];
+  var scoreMap={Excelente:4,Bom:3,Regular:2,Ruim:1};
+
+  // Cards de nota média por categoria — identifica a de menor nota
+  var catAvgs=DL_AVAL_GROUPS.map(function(group){
+    var sum=0,count=0;
+    group.items.forEach(function(item){
+      rows.forEach(function(r){
+        var s=scoreMap[r[item.field]];
+        if(s!==undefined){ sum+=s; count++; }
+      });
+    });
+    return {title:group.title,avg:count?sum/count:null};
+  });
+  var worstIdx=-1, worstAvg=Infinity;
+  catAvgs.forEach(function(c,i){ if(c.avg!==null&&c.avg<worstAvg){ worstAvg=c.avg; worstIdx=i; } });
+  var kpisHtml=catAvgs.map(function(c,i){
+    var avg=c.avg;
+    var isWorst=(i===worstIdx&&avg!==null);
+    var color=avg===null?'var(--gray-400)':avg>=3.5?'var(--success-600)':avg>=2.5?'var(--navy-600)':avg>=1.5?'var(--warning-600)':'var(--danger-600)';
+    var bg=avg===null?'':avg>=3.5?'background:var(--success-50)':avg>=2.5?'background:var(--navy-50)':avg>=1.5?'background:var(--warning-50)':'background:var(--danger-50)';
+    var border=isWorst?';border-bottom:3px solid var(--warning-500)':'';
+    var badge=isWorst?'<span style="display:inline-block;font-size:.65rem;font-weight:700;color:var(--warning-600);background:var(--warning-100);border-radius:4px;padding:1px 6px;margin-top:4px">⚠ ponto crítico</span>':'';
+    return '<div class="kpi-card" style="'+bg+border+'">'+
+      '<div class="kpi-label">'+esc(c.title)+'</div>'+
+      '<div class="kpi-value" style="color:'+color+'">'+(avg!==null?avg.toFixed(1):'—')+'</div>'+
+      '<div class="kpi-sub">nota de 1 a 4</div>'+
+      badge+
+    '</div>';
+  }).join('');
+  var kpisEl=document.getElementById('dl-aval-kpis');
+  if(kpisEl) kpisEl.innerHTML=kpisHtml;
+
+  // Barras empilhadas detalhadas por item
+  var legend=ratings.map(function(r){
+    return '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:14px;font-size:.75rem">'+
+      '<span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:'+DL_AVAL_COLORS[r]+'"></span>'+r+'</span>';
+  }).join('');
+  var html=DL_AVAL_GROUPS.map(function(group){
+    var items=group.items.map(function(item){
+      var c={'Excelente':0,'Bom':0,'Regular':0,'Ruim':0},tot=0;
+      rows.forEach(function(r){
+        var val=r[item.field];
+        if(val&&val!=='Não Optante'&&val!=='Nao Optante'&&c[val]!==undefined){ c[val]++; tot++; }
+      });
+      if(!tot) return '<div class="dl-aval-row"><span class="dl-aval-label">'+esc(item.label)+'</span><div class="dl-aval-bar-wrap"></div><span class="dl-aval-score" style="color:var(--gray-300)">—</span></div>';
+      var segs=ratings.map(function(r){
+        var p=Math.round(c[r]/tot*100); if(!p) return '';
+        return '<div title="'+r+': '+p+'% ('+c[r]+')" style="height:100%;width:'+p+'%;background:'+DL_AVAL_COLORS[r]+';flex-shrink:0"></div>';
+      }).join('');
+      var score=(c['Excelente']*4+c['Bom']*3+c['Regular']*2+c['Ruim']*1)/tot;
+      var sColor=score>=3.5?'var(--success-600)':score>=2.5?'var(--navy-600)':score>=1.5?'var(--warning-600)':'var(--danger-600)';
+      return '<div class="dl-aval-row"><span class="dl-aval-label">'+esc(item.label)+'</span><div class="dl-aval-bar-wrap">'+segs+'</div><span class="dl-aval-score" style="color:'+sColor+'">'+score.toFixed(1)+'</span></div>';
+    }).join('');
+    return '<div class="dl-aval-group"><div class="dl-aval-group-title">'+esc(group.title)+'</div>'+items+'</div>';
+  }).join('');
+  var el=document.getElementById('dl-avaliacoes');
+  if(el) el.innerHTML='<div style="margin-bottom:16px">'+legend+'</div>'+html;
+}
+
+function renderDlInsights(rows){
+  var el=document.getElementById('dl-insights'); if(!el) return;
+
+  var withC=rows.filter(function(r){ return r.comentario&&r.comentario.length>8; });
+  if(!withC.length){ el.innerHTML='<div class="table-empty">Nenhum comentário para analisar</div>'; return; }
+
+  var normalize=function(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); };
+  var themeCounts=DL_COMMENT_THEMES.map(function(t){
+    var cnt=withC.filter(function(r){
+      var text=normalize(r.comentario);
+      return t.keys.some(function(k){ return text.indexOf(normalize(k))!==-1; });
+    }).length;
+    return {label:t.label,count:cnt};
+  }).filter(function(t){ return t.count>0; }).sort(function(a,b){ return b.count-a.count; });
+
+  if(!themeCounts.length){ el.innerHTML='<div class="table-empty">Nenhum tema identificado</div>'; return; }
+
+  var maxT=themeCounts[0].count;
+  var barColors=['#2a4d76','#3d6b99','#0d9488','#8b5cf6','#f97316','#22c55e','#ec4899'];
+  el.innerHTML=
+    '<div style="font-size:.75rem;font-weight:700;color:var(--gray-500);letter-spacing:.06em;margin-bottom:14px">TEMAS MENCIONADOS NOS COMENTÁRIOS <span style="font-weight:400">('+withC.length+' comentário'+(withC.length!==1?'s':'')+')</span></div>'+
+    themeCounts.map(function(t,i){
+      var pct=Math.round(t.count/maxT*100);
+      var pctCom=Math.round(t.count/withC.length*100);
+      return '<div style="display:grid;grid-template-columns:180px 1fr 80px;align-items:center;gap:12px;padding:4px 0">'+
+        '<div style="font-size:.8rem;color:var(--navy-700);font-weight:500">'+esc(t.label)+'</div>'+
+        '<div style="background:var(--gray-100);border-radius:4px;height:18px;overflow:hidden">'+
+          '<div style="width:'+pct+'%;height:100%;background:'+barColors[i%barColors.length]+';border-radius:4px;transition:width .4s"></div>'+
+        '</div>'+
+        '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--gray-500);text-align:right"><strong style="color:var(--navy-700)">'+t.count+'</strong> ('+pctCom+'%)</div>'+
+      '</div>';
+    }).join('');
+}
+
+function renderDlComentarios(rows){
+  var withC=rows.filter(function(r){ return r.comentario&&r.comentario.length>10; });
+  var countEl=document.getElementById('dl-comments-count');
+  if(countEl) countEl.textContent=withC.length;
+  var el=document.getElementById('dl-comments-list'); if(!el) return;
+  if(!withC.length){ el.innerHTML='<div class="table-empty">Nenhum comentário no período</div>'; return; }
+  el.innerHTML=withC.slice().reverse().slice(0,25).map(function(r){
+    return '<div class="dl-comment-card">'+
+      '<div class="dl-comment-meta">'+
+        '<strong style="font-size:.82rem;color:var(--navy-800)">'+esc(r.nome)+'</strong>'+
+        (r.cargo?'<span class="dl-comment-badge">'+esc(r.cargo)+'</span>':'')+
+        (r.unidade?'<span class="dl-comment-badge">'+esc(r.unidade)+'</span>':'')+
+        '<span style="margin-left:auto;font-size:.72rem;color:var(--gray-400)">'+esc(r.dataDeslig)+'</span>'+
+      '</div>'+
+      '<p class="dl-comment-text">'+esc(r.comentario)+'</p>'+
+    '</div>';
+  }).join('');
 }
 
 // UTILS
