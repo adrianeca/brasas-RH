@@ -317,6 +317,18 @@ Acesso restrito a `admin` e `dp`. Lê a planilha de entrevistas de desligamento.
 
 ---
 
+### Visão Geral — Lista de Colaboradores
+
+**Colunas presentes (em ordem):** Nome · Apelido · Unidade · Função · Sexo · Status · Admissão · Dt. Nasc. · Anos Casa · Dt. Deslig. · E-mail BRASAS
+
+- **Coluna Apelido** (`apelido` de `getData()`) adicionada após Nome, com suporte a ordenação.
+- **Coluna Dt. Nasc.** (`dataNasc`, formato `DD/MM/YYYY`) adicionada após Admissão, com suporte a ordenação (usa `toISO` como `dataAdm` e `dataDeslig`).
+- **Filtro "Mês de Nasc."** (`#f-nasc-mes`) — dropdown com os 12 meses. Filtra pelo campo `dataNasc`: extrai o mês via `dataNasc.split('/')[1]` e compara com o valor `MM` selecionado. Colaboradores sem `dataNasc` são excluídos quando o filtro está ativo.
+- **Status padrão = Ativos** — o select `#f-status` tem `selected` na opção `Ativo`, então a lista já abre filtrada por ativos. O botão "Limpar" também restaura para `Ativo` (não para "Todos").
+- Todas as colunas novas estão incluídas no CSV exportado por `downloadCSV()`.
+
+---
+
 ## Fluxo de trabalho no Git
 
 Esse projeto não tem CI nem deploy automático. As alterações são:

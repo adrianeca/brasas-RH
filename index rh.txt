@@ -336,9 +336,10 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
             </div>
           </div>
         </div>
-        <div class="filter-group"><label>Status</label><select id="f-status" onchange="applyFilters()"><option value="">Todos</option><option value="Ativo">Ativos</option><option value="Inativo">Inativos</option></select></div>
+        <div class="filter-group"><label>Status</label><select id="f-status" onchange="applyFilters()"><option value="">Todos</option><option value="Ativo" selected>Ativos</option><option value="Inativo">Inativos</option></select></div>
         <div class="filter-group"><label>Função</label><select id="f-funcao" onchange="applyFilters()"><option value="">Todas</option></select></div>
         <div class="filter-group" style="min-width:100px;flex:0.6"><label>Sexo</label><select id="f-sexo" onchange="applyFilters()"><option value="">Todos</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
+        <div class="filter-group" style="min-width:140px;flex:0.8"><label>Mês de Nasc.</label><select id="f-nasc-mes" onchange="applyFilters()"><option value="">Todos</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
         <div class="filter-group" style="min-width:240px;flex:1.5">
           <label>Admissão (de → até)</label>
           <div class="date-range-wrap"><input type="date" id="f-adm-de" onchange="applyFilters()"><span class="date-range-sep">→</span><input type="date" id="f-adm-ate" onchange="applyFilters()"></div>
@@ -381,11 +382,13 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
           <table class="data-table" id="tblEmps">
             <thead><tr>
               <th class="sortable" data-col="nome" onclick="sortEmps('nome')">Nome</th>
+              <th class="sortable" data-col="apelido" onclick="sortEmps('apelido')">Apelido</th>
               <th class="sortable" data-col="unidade" onclick="sortEmps('unidade')">Unidade</th>
               <th class="sortable" data-col="funcao" onclick="sortEmps('funcao')">Função</th>
               <th class="center sortable" data-col="sexo" onclick="sortEmps('sexo')">Sexo</th>
               <th class="center sortable" data-col="status" onclick="sortEmps('status')">Status</th>
               <th class="num sortable" data-col="dataAdm" onclick="sortEmps('dataAdm')">Admissão</th>
+              <th class="num sortable" data-col="dataNasc" onclick="sortEmps('dataNasc')">Dt. Nasc.</th>
               <th class="num sortable" data-col="tenureYears" onclick="sortEmps('tenureYears')">Anos Casa</th>
               <th class="num sortable" data-col="dataDeslig" onclick="sortEmps('dataDeslig')">Dt. Deslig.</th>
               <th class="sortable" data-col="emailBrasas" onclick="sortEmps('emailBrasas')">E-mail BRASAS</th>
@@ -1556,12 +1559,14 @@ function downloadBrindesCSV(){
 function applyFilters(){
   var fS=v('f-status'),fF=v('f-funcao'),fX=v('f-sexo'),fN=v('f-nome','').trim().toLowerCase();
   var admDe=v('f-adm-de'),admAte=v('f-adm-ate'),desDe=v('f-des-de'),desAte=v('f-des-ate');
+  var fMesNasc=v('f-nasc-mes');
   FILTERED=ALL_EMP.filter(function(e){
     if(SELECTED_UNITS.length&&!e.todasUnidades.some(function(u){ return SELECTED_UNITS.includes(u); })) return false;
     if(fS&&e.status!==fS) return false;
     if(fF&&e.funcao!==fF) return false;
     if(fX&&e.sexo!==fX) return false;
     if(fN&&!e.nome.toLowerCase().includes(fN)) return false;
+    if(fMesNasc){ var p=e.dataNasc?e.dataNasc.split('/'):null; if(!p||p[1]!==fMesNasc) return false; }
     var admIso=toISO(e.dataAdm);
     if(admDe&&admIso&&admIso<admDe) return false;
     if(admAte&&admIso&&admIso>admAte) return false;
@@ -1579,7 +1584,8 @@ function clearFilters(){
   document.getElementById('mdAll').checked=true;
   document.querySelectorAll('#mdUnidadeOpts input[type=checkbox]').forEach(function(c){ c.checked=true; });
   updateMdDisplay();
-  ['f-status','f-funcao','f-sexo'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['f-funcao','f-sexo','f-nasc-mes'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('f-status').value='Ativo';
   ['f-nome','f-adm-de','f-adm-ate','f-des-de','f-des-ate'].forEach(function(id){ document.getElementById(id).value=''; });
   applyFilters();
 }
@@ -1656,7 +1662,7 @@ function renderEmpsTable(){
   var sc=SORT_EMP;
   var sorted=[...FILTERED].sort(function(a,b){
     var va=a[sc.col],vb=b[sc.col];
-    if(sc.col==='dataAdm'||sc.col==='dataDeslig'){ va=toISO(va)||''; vb=toISO(vb)||''; }
+    if(sc.col==='dataAdm'||sc.col==='dataDeslig'||sc.col==='dataNasc'){ va=toISO(va)||''; vb=toISO(vb)||''; }
     if(va===null||va===undefined) va=''; if(vb===null||vb===undefined) vb='';
     return(typeof va==='string'?va.localeCompare(vb):va-vb)*sc.dir;
   });
@@ -1670,7 +1676,7 @@ function renderEmpsTable(){
   if(prevEl) prevEl.disabled=EMP_PAGE===0;
   if(nextEl) nextEl.disabled=EMP_PAGE>=pages-1;
   document.getElementById('tblEmpsBody').innerHTML=shown.map(function(e){
-    return '<tr><td>'+esc(e.nome)+'</td><td>'+esc(e.unidade)+(e.unidadeSec?'<br><small style="color:var(--gray-400)">+'+esc(e.unidadeSec)+'</small>':'')+'</td><td>'+(esc(e.funcao)||'—')+'</td><td class="center"><span class="badge '+(e.sexo==='F'?'badge-f':'badge-m')+'">'+(e.sexo||'—')+'</span></td><td class="center"><span class="badge '+(e.ativo?'badge-ativo':'badge-inativo')+'">'+e.status+'</span></td><td class="num">'+(e.dataAdm||'—')+'</td><td class="num">'+(validNum(e.tenureYears)?e.tenureYears+' a':'—')+'</td><td class="num">'+(e.dataDeslig||'—')+'</td><td><a class="email-link" href="mailto:'+esc(e.emailBrasas||e.email)+'">'+(esc(e.emailBrasas||e.email||'—'))+'</a></td></tr>';
+    return '<tr><td>'+esc(e.nome)+'</td><td>'+(esc(e.apelido)||'—')+'</td><td>'+esc(e.unidade)+(e.unidadeSec?'<br><small style="color:var(--gray-400)">+'+esc(e.unidadeSec)+'</small>':'')+'</td><td>'+(esc(e.funcao)||'—')+'</td><td class="center"><span class="badge '+(e.sexo==='F'?'badge-f':'badge-m')+'">'+(e.sexo||'—')+'</span></td><td class="center"><span class="badge '+(e.ativo?'badge-ativo':'badge-inativo')+'">'+e.status+'</span></td><td class="num">'+(e.dataAdm||'—')+'</td><td class="num">'+(e.dataNasc||'—')+'</td><td class="num">'+(validNum(e.tenureYears)?e.tenureYears+' a':'—')+'</td><td class="num">'+(e.dataDeslig||'—')+'</td><td><a class="email-link" href="mailto:'+esc(e.emailBrasas||e.email)+'">'+(esc(e.emailBrasas||e.email||'—'))+'</a></td></tr>';
   }).join('');
   document.querySelectorAll('#tblEmps thead th[data-col]').forEach(function(th){
     th.classList.remove('sort-asc','sort-desc');
@@ -1680,8 +1686,8 @@ function renderEmpsTable(){
 function pagEmps(dir){ EMP_PAGE+=dir; renderEmpsTable(); }
 function sortEmps(col){ SORT_EMP.dir=SORT_EMP.col===col?-SORT_EMP.dir:1; SORT_EMP.col=col; EMP_PAGE=0; renderEmpsTable(); }
 function downloadCSV(){
-  var headers=['Nome','Unidade','Unidade Sec','Função','Sexo','Status','Data Admissão','Anos de Casa','Data Deslig.','E-mail BRASAS','E-mail','Plano de Saúde','Num. Dependentes','CPF'];
-  var rows=FILTERED.map(function(e){ return [e.nome,e.unidade,e.unidadeSec,e.funcao,e.sexo,e.status,e.dataAdm,validNum(e.tenureYears)?e.tenureYears:'',e.dataDeslig,e.emailBrasas,e.email,e.planoSaude,e.numDep,e.cpf]; });
+  var headers=['Nome','Apelido','Unidade','Unidade Sec','Função','Sexo','Status','Data Admissão','Dt. Nascimento','Anos de Casa','Data Deslig.','E-mail BRASAS','E-mail','Plano de Saúde','Num. Dependentes','CPF'];
+  var rows=FILTERED.map(function(e){ return [e.nome,e.apelido||'',e.unidade,e.unidadeSec,e.funcao,e.sexo,e.status,e.dataAdm,e.dataNasc||'',validNum(e.tenureYears)?e.tenureYears:'',e.dataDeslig,e.emailBrasas,e.email,e.planoSaude,e.numDep,e.cpf]; });
   var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c===null||c===undefined?'':c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob);
