@@ -329,6 +329,45 @@ Acesso restrito a `admin` e `dp`. Lê a planilha de entrevistas de desligamento.
 
 ---
 
+---
+
+### Professores — Dropouts & Observações
+
+Nova seção na aba Professores com análise cruzada entre dropouts de alunos e notas de observação de coordenadores.
+
+**Planilhas:**
+- `DROPOUTS_SPREADSHEET_ID = '1d8votmt6HlwPmHcup2iQLqJa9dzpcHorPGGC3LO27hw'` → aba `Total Unidades`
+- `NOTAS_SPREADSHEET_ID = '1h6-an2pv-ei-ZaXXYaA1y5UCUq2Q7Za8OCrZ4pQLuNQ'` → aba `notas forms`
+
+**Join key:** `APELIDO | MATRÍCULA` — campo `chaveMatricula` em ambas as fontes
+- Dropouts: coluna `CHAVE NOME | MATRÍCULA` (normalizeH_ → `chave nome | matricula`)
+- Notas: coluna `Chave Matrícula` (normalizeH_ → `chave matricula`)
+
+**Backend:**
+- `getDropoutsData(token)` — retorna linhas por turma/mês: `{unidade, teacher, nomeTeacher, book, alunos, dropouts, mes, ano, mesAno, chaveMatricula, ativo}`
+- `getNotasData(token)` — retorna linhas por observação: `{teacher, coordenador, unidade, observationDate, mes, ano, mesAno, nivel, nota, chaveMatricula}`
+- `role=diretor` filtra por unidade da sessão em ambas
+
+**Frontend — carregamento:** `loadDropoutsData()` e `loadNotasData()` chamados com `setTimeout 300ms` após o load inicial de professores
+
+**Globais:** `ALL_DROPOUTS`, `ALL_NOTAS`, `DO_CHARTS` (instâncias Chart.js)
+
+**Filtros da seção:** `#do-unidade` (unidade) e `#do-ano` (ano)
+
+**4 gráficos globais:**
+- `chartDropoutsMes` — linha temporal de dropouts totais; estrelas laranjas marcam meses com observação
+- `chartTopDropouts` — barras horizontais top 20 por dropouts; âmbar = professor com observação, navy = sem
+- `chartNotasDist` — distribuição de notas em 5 faixas (< 6, 6–7, 7–8, 8–9, 9–10)
+- `chartImpacto` — barras agrupadas Antes vs Depois da última observação (janela de 3 meses); tooltip mostra nota e Δ; só aparece se há dados suficientes (≥ 1 mês antes E ≥ 1 depois)
+
+**Timeline individual (`#do-prof-timeline`):**
+- Seletor populado com todos os professores de `ALL_DROPOUTS`
+- Gráfico de linha: dropouts por mês; pontos laranja estrelados = mês com observação
+- Tooltip mostra nota e coordenador nos pontos de observação
+- KPIs: total dropouts, nº observações, nota média, tendência (↓ queda / ↑ alta / → estável)
+
+---
+
 ## Fluxo de trabalho no Git
 
 Esse projeto não tem CI nem deploy automático. As alterações são:

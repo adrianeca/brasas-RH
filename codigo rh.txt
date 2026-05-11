@@ -825,3 +825,106 @@ function getHistoricoTurmas(token) {
   }
 }
 
+// ─── DROPOUTS ────────────────────────────────────────────────────────────────
+const DROPOUTS_SPREADSHEET_ID = '1d8votmt6HlwPmHcup2iQLqJa9dzpcHorPGGC3LO27hw';
+
+function getDropoutsData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  try {
+    const ss = SpreadsheetApp.openById(DROPOUTS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Total Unidades');
+    if (!sheet) return { ok: false, error: 'Aba "Total Unidades" não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: false, error: 'Sem dados.' };
+
+    const col = {};
+    raw[0].forEach((h, i) => { col[normalizeH_(h)] = i; });
+    const g = (row, name) => { const i = col[normalizeH_(name)]; return i !== undefined ? row[i] : ''; };
+    const numF = (v) => { const n = parseFloat(String(v||'').replace(',','.')); return isNaN(n) ? 0 : n; };
+
+    const rows = [];
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      const teacher = String(g(row,'Teacher')||'').trim();
+      // Chave join com Notas: APELIDO | MATRÍCULA
+      const chaveMatricula = String(g(row,'CHAVE NOME | MATRICULA')||'').trim();
+      if (!teacher || !chaveMatricula || chaveMatricula.startsWith('(')) continue;
+
+      const dataDate = parseDate_(g(row,'Data'));
+      if (!dataDate) continue;
+
+      const mes = dataDate.getMonth() + 1;
+      const ano = dataDate.getFullYear();
+      const mesAno = String(mes).padStart(2,'0') + '/' + ano;
+
+      rows.push({
+        unidade:     String(g(row,'Unidade Ajuste Acesso')||g(row,'Unidade')||'').trim(),
+        teacher,
+        nomeTeacher: String(g(row,'Nome Teacher')||'').trim(),
+        book:        String(g(row,'Book')||'').trim(),
+        alunos:      numF(g(row,'Alunos')),
+        dropouts:    numF(g(row,'Dropouts')),
+        mes, ano, mesAno, chaveMatricula,
+        ativo:       String(g(row,'ATIVO?')||'').trim().toLowerCase() === 'ativo',
+      });
+    }
+
+    const role = session.role, uni = session.unidade||'';
+    const filtered = (role==='diretor'&&uni) ? rows.filter(r=>r.unidade===uni) : rows;
+    return { ok: true, rows: filtered };
+  } catch(e) { return { ok: false, error: e.message }; }
+}
+
+// ─── NOTAS DE OBSERVAÇÃO ─────────────────────────────────────────────────────
+const NOTAS_SPREADSHEET_ID = '1h6-an2pv-ei-ZaXXYaA1y5UCUq2Q7Za8OCrZ4pQLuNQ';
+
+function getNotasData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  try {
+    const ss = SpreadsheetApp.openById(NOTAS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('notas forms');
+    if (!sheet) return { ok: false, error: 'Aba "notas forms" não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: false, error: 'Sem dados.' };
+
+    const col = {};
+    raw[0].forEach((h, i) => { col[normalizeH_(h)] = i; });
+    const g = (row, name) => { const i = col[normalizeH_(name)]; return i !== undefined ? row[i] : ''; };
+
+    const rows = [];
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      const teacher = String(g(row,'Teacher')||'').trim();
+      const chaveMatricula = String(g(row,'Chave Matricula')||'').trim();
+      if (!teacher || !chaveMatricula) continue;
+
+      const obsDate = parseDate_(g(row,'Observation Date'));
+      if (!obsDate) continue;
+
+      const nota = parseFloat(String(g(row,'NOTA')||'').replace(',','.'));
+      if (isNaN(nota)) continue;
+
+      const mes = obsDate.getMonth() + 1;
+      const ano = obsDate.getFullYear();
+      const mesAno = String(mes).padStart(2,'0') + '/' + ano;
+
+      rows.push({
+        teacher,
+        coordenador:     String(g(row,'Coordenador')||'').trim(),
+        unidade:         String(g(row,'Unidade')||'').trim(),
+        observationDate: fmtDate_(obsDate),
+        mes, ano, mesAno,
+        nivel:           String(g(row,'Level')||g(row,'Nivel')||'').trim(),
+        nota:            Math.round(nota*100)/100,
+        chaveMatricula,
+      });
+    }
+
+    const role = session.role, uni = session.unidade||'';
+    const filtered = (role==='diretor'&&uni) ? rows.filter(r=>r.unidade===uni) : rows;
+    return { ok: true, rows: filtered };
+  } catch(e) { return { ok: false, error: e.message }; }
+}
+
