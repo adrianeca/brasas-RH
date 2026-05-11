@@ -2446,7 +2446,7 @@ function renderDOChartImpacto(n){
     {label:'Antes da observação',data:results.map(function(r){return r.avgBefore;}),backgroundColor:'rgba(42,77,118,.8)'},
     {label:'Depois da observação',data:results.map(function(r){return r.avgAfter;}),backgroundColor:'rgba(201,162,39,.85)'}
   ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom'},tooltip:{callbacks:{afterBody:function(items){var r=results[items[0].dataIndex];return['Nota: '+r.nota.toFixed(2).replace('.',','),'Δ: '+(r.avgAfter-r.avgBefore).toFixed(1)+(r.avgAfter<=r.avgBefore?' ✓ melhora':' ↑ piora')];}}},
+    plugins:{legend:{position:'bottom'},tooltip:{callbacks:{afterBody:function(items){var r=results[items[0].dataIndex];return['Nota: '+r.nota.toFixed(2).replace('.',','),'Δ: '+(r.avgAfter-r.avgBefore).toFixed(1)+(r.avgAfter<=r.avgBefore?' ✓ melhora':' ↑ piora')];}}}},
     scales:{y:{beginAtZero:true,title:{display:true,text:'Média de Dropouts'},ticks:{precision:0}}}
   }});
 }
