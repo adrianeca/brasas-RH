@@ -563,6 +563,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         <div class="filters-bar" style="padding:16px 24px;border-bottom:1px solid var(--gray-100)">
           <div class="filter-group"><label>Unidade</label><select id="do-unidade" onchange="renderDropoutsNotas()"><option value="">Todas</option></select></div>
           <div class="filter-group"><label>Ano</label><select id="do-ano" onchange="renderDropoutsNotas()"><option value="">Todos</option></select></div>
+          <div class="filter-group" style="min-width:220px;flex:2"><label>Professor</label><select id="do-prof" onchange="renderDropoutsNotas()"><option value="">Todos</option></select></div>
           <div class="filter-actions"><button class="btn-clear" onclick="clearDOFilters()">Limpar</button></div>
         </div>
         <div class="kpi-row" id="do-kpis" style="padding:16px 24px 0"></div>
@@ -570,13 +571,15 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
           <div class="chart-container full"><div class="chart-title">Evolução de Dropouts por Mês</div><div class="chart-subtitle">Total mensal de todas as turmas · ★ = mês com observação de coordenador</div><div class="chart-canvas-wrapper" style="height:260px"><canvas id="chartDropoutsMes"></canvas></div></div>
           <div class="chart-container"><div class="chart-title">Top Professores por Dropouts</div><div class="chart-subtitle">Ranking no período · âmbar = com observação registrada</div><div class="chart-canvas-wrapper" style="height:340px"><canvas id="chartTopDropouts"></canvas></div></div>
           <div class="chart-container"><div class="chart-title">Distribuição de Notas</div><div class="chart-subtitle">Frequência das notas de observação no período</div><div class="chart-canvas-wrapper" style="height:340px"><canvas id="chartNotasDist"></canvas></div></div>
-          <div class="chart-container full"><div class="chart-title">Impacto da Observação · Antes vs Depois</div><div class="chart-subtitle">Média de dropouts nos 3 meses antes e depois da última observação · professores com dados suficientes</div><div id="impactoEmptyMsg" style="display:none;text-align:center;padding:48px 0;color:var(--gray-400);font-size:.9rem">Dados insuficientes. São necessários professores com observação e pelo menos 1 mês de dropouts antes e depois.</div><div class="chart-canvas-wrapper" id="wrapImpacto" style="height:320px;display:none"><canvas id="chartImpacto"></canvas></div></div>
         </div>
         <div style="padding:16px 24px 24px;border-top:1px solid var(--gray-100);margin-top:8px">
           <div style="font-size:.88rem;font-weight:600;color:var(--navy-700);margin-bottom:12px">Timeline por Professor</div>
-          <div class="filter-group" style="min-width:220px;max-width:360px;margin-bottom:16px"><label>Professor</label><select id="do-prof-timeline" onchange="renderDOTimeline()"><option value="">Selecione um professor</option></select></div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+            <div class="filter-group" style="min-width:180px;flex:1"><label>Unidade</label><select id="do-tl-unidade" onchange="onDOTlUnidadeChange()"><option value="">Todas as unidades</option></select></div>
+            <div class="filter-group" style="min-width:220px;flex:2"><label>Professor</label><select id="do-prof-timeline" onchange="renderDOTimeline()"><option value="">Selecione um professor</option></select></div>
+          </div>
           <div id="do-tl-empty" style="text-align:center;padding:32px 0;color:var(--gray-400);font-size:.9rem">Selecione um professor para ver a evolução de dropouts e observações.</div>
-          <div class="chart-canvas-wrapper" id="wrapDOTimeline" style="height:300px;display:none"><canvas id="chartDOTimeline"></canvas></div>
+          <div class="chart-canvas-wrapper" id="wrapDOTimeline" style="height:340px;display:none"><canvas id="chartDOTimeline"></canvas></div>
           <div class="kpi-row" id="do-tl-kpis" style="padding:12px 0 0;display:none"></div>
         </div>
       </div>
@@ -2356,18 +2359,22 @@ function initDOFilters(){
   var profMap={};
   ALL_DROPOUTS.forEach(function(r){if(r.chaveMatricula) profMap[r.chaveMatricula]=r.teacher;});
   var keys=Object.keys(profMap).sort(function(a,b){return (profMap[a]||'').localeCompare(profMap[b]||'');});
+  var selProf=document.getElementById('do-prof');
+  if(selProf&&selProf.options.length<=1) keys.forEach(function(k){selProf.appendChild(new Option(profMap[k],k));});
+  var selTlU=document.getElementById('do-tl-unidade');
+  if(selTlU&&selTlU.options.length<=1) units.forEach(function(u){selTlU.appendChild(new Option(u,u));});
   var selP=document.getElementById('do-prof-timeline');
   if(selP&&selP.options.length<=1) keys.forEach(function(k){selP.appendChild(new Option(profMap[k],k));});
 }
 function clearDOFilters(){
-  ['do-unidade','do-ano'].forEach(function(id){var el=document.getElementById(id);if(el) el.value='';});
+  ['do-unidade','do-ano','do-prof'].forEach(function(id){var el=document.getElementById(id);if(el) el.value='';});
   renderDropoutsNotas();
 }
 function getDOFiltered(){
-  var fU=v('do-unidade'),fA=v('do-ano')?parseInt(v('do-ano')):0;
+  var fU=v('do-unidade'),fA=v('do-ano')?parseInt(v('do-ano')):0,fP=v('do-prof');
   return{
-    dropouts:ALL_DROPOUTS.filter(function(r){return(!fU||r.unidade===fU)&&(!fA||r.ano===fA);}),
-    notas:ALL_NOTAS.filter(function(r){return(!fU||r.unidade===fU)&&(!fA||r.ano===fA);})
+    dropouts:ALL_DROPOUTS.filter(function(r){return(!fU||r.unidade===fU)&&(!fA||r.ano===fA)&&(!fP||r.chaveMatricula===fP);}),
+    notas:ALL_NOTAS.filter(function(r){return(!fU||r.unidade===fU)&&(!fA||r.ano===fA)&&(!fP||r.chaveMatricula===fP);})
   };
 }
 function renderDropoutsNotas(){
@@ -2385,7 +2392,7 @@ function renderDropoutsNotas(){
     '<div class="kpi-card"><div class="kpi-label">Média / Prof. / Mês</div><div class="kpi-value">'+mediaD.toFixed(1)+'</div><div class="kpi-sub">dropouts médios</div></div>'+
     '<div class="kpi-card"><div class="kpi-label">Professores Observados</div><div class="kpi-value">'+profsN.size+'</div><div class="kpi-sub">com nota de coordenador</div></div>'+
     '<div class="kpi-card"><div class="kpi-label">Nota Média BRASAS</div><div class="kpi-value">'+(notaMed?notaMed.toFixed(2).replace('.',','):'—')+'</div><div class="kpi-sub">observações no período</div></div>';
-  renderDOChartMes(d,n); renderDOChartTop(d,n); renderDOChartNotas(n); renderDOChartImpacto(n);
+  renderDOChartMes(d,n); renderDOChartTop(d,n); renderDOChartNotas(n);
 }
 function renderDOChartMes(d,n){
   var byMes={};
@@ -2417,38 +2424,17 @@ function renderDOChartNotas(n){
   if(DO_CHARTS.notas) DO_CHARTS.notas.destroy();
   DO_CHARTS.notas=new Chart(ctx,{type:'bar',data:{labels:ranges.map(function(r){return r.l;}),datasets:[{label:'Observações',data:ranges.map(function(r){return n.filter(function(o){return o.nota>=r.min&&o.nota<r.max;}).length;}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
 }
-function renderDOChartImpacto(n){
-  var WIND=3,profMesMap={};
-  ALL_DROPOUTS.forEach(function(r){if(!profMesMap[r.chaveMatricula])profMesMap[r.chaveMatricula]={};profMesMap[r.chaveMatricula][r.mesAno]=(profMesMap[r.chaveMatricula][r.mesAno]||0)+r.dropouts;});
-  var latestObs={};
-  n.forEach(function(r){if(!latestObs[r.chaveMatricula]||r.ano>latestObs[r.chaveMatricula].ano||(r.ano===latestObs[r.chaveMatricula].ano&&r.mes>latestObs[r.chaveMatricula].mes))latestObs[r.chaveMatricula]=r;});
-  var results=[];
-  Object.entries(latestObs).forEach(function(e){
-    var chave=e[0],obs=e[1],mesMap=profMesMap[chave]||{},before=[],after=[];
-    for(var i=1;i<=WIND;i++){
-      var bD=new Date(obs.ano,obs.mes-1-i,1),bK=String(bD.getMonth()+1).padStart(2,'0')+'/'+bD.getFullYear();
-      if(mesMap[bK]!==undefined) before.push(mesMap[bK]);
-      var aD=new Date(obs.ano,obs.mes-1+i,1),aK=String(aD.getMonth()+1).padStart(2,'0')+'/'+aD.getFullYear();
-      if(mesMap[aK]!==undefined) after.push(mesMap[aK]);
-    }
-    if(!before.length||!after.length) return;
-    var avgB=before.reduce(function(s,v){return s+v;},0)/before.length;
-    var avgA=after.reduce(function(s,v){return s+v;},0)/after.length;
-    results.push({teacher:obs.teacher,nota:obs.nota,avgBefore:Math.round(avgB*10)/10,avgAfter:Math.round(avgA*10)/10});
-  });
-  results.sort(function(a,b){return b.avgBefore-a.avgBefore;});
-  var emptyEl=document.getElementById('impactoEmptyMsg'),wrapEl=document.getElementById('wrapImpacto');
-  if(!results.length){if(emptyEl)emptyEl.style.display='';if(wrapEl)wrapEl.style.display='none';return;}
-  if(emptyEl)emptyEl.style.display='none';if(wrapEl)wrapEl.style.display='';
-  var ctx=document.getElementById('chartImpacto'); if(!ctx) return;
-  if(DO_CHARTS.impacto) DO_CHARTS.impacto.destroy();
-  DO_CHARTS.impacto=new Chart(ctx,{type:'bar',data:{labels:results.map(function(r){return r.teacher;}),datasets:[
-    {label:'Antes da observação',data:results.map(function(r){return r.avgBefore;}),backgroundColor:'rgba(42,77,118,.8)'},
-    {label:'Depois da observação',data:results.map(function(r){return r.avgAfter;}),backgroundColor:'rgba(201,162,39,.85)'}
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:'bottom'},tooltip:{callbacks:{afterBody:function(items){var r=results[items[0].dataIndex];return['Nota: '+r.nota.toFixed(2).replace('.',','),'Δ: '+(r.avgAfter-r.avgBefore).toFixed(1)+(r.avgAfter<=r.avgBefore?' ✓ melhora':' ↑ piora')];}}}},
-    scales:{y:{beginAtZero:true,title:{display:true,text:'Média de Dropouts'},ticks:{precision:0}}}
-  }});
+function onDOTlUnidadeChange(){
+  var fU=v('do-tl-unidade');
+  var selP=document.getElementById('do-prof-timeline');
+  if(!selP) return;
+  while(selP.options.length>1) selP.remove(1);
+  var profMap={};
+  ALL_DROPOUTS.filter(function(r){return !fU||r.unidade===fU;}).forEach(function(r){if(r.chaveMatricula) profMap[r.chaveMatricula]=r.teacher;});
+  var keys=Object.keys(profMap).sort(function(a,b){return (profMap[a]||'').localeCompare(profMap[b]||'');});
+  keys.forEach(function(k){selP.appendChild(new Option(profMap[k],k));});
+  selP.value='';
+  renderDOTimeline();
 }
 function renderDOTimeline(){
   var chave=v('do-prof-timeline');
@@ -2465,12 +2451,36 @@ function renderDOTimeline(){
   var pStyles=meses.map(function(m){return obsMap[m.mesAno]?'star':'circle';});
   var pRadii=meses.map(function(m){return obsMap[m.mesAno]?10:4;});
   var pColors=meses.map(function(m){return obsMap[m.mesAno]?'#e05c2a':'#2a4d76';});
+  var dataNota=meses.map(function(m){
+    if(!obsMap[m.mesAno]||!obsMap[m.mesAno].length) return null;
+    var ns=obsMap[m.mesAno].map(function(o){return o.nota;});
+    return Math.round(ns.reduce(function(s,n){return s+n;},0)/ns.length*100)/100;
+  });
   if(emptyEl)emptyEl.style.display='none';if(wrapEl)wrapEl.style.display='';
   var ctx=document.getElementById('chartDOTimeline'); if(!ctx) return;
   if(DO_CHARTS.timeline) DO_CHARTS.timeline.destroy();
-  DO_CHARTS.timeline=new Chart(ctx,{type:'line',data:{labels:labels,datasets:[{label:'Dropouts',data:dataD,borderColor:'#2a4d76',backgroundColor:'rgba(42,77,118,.1)',fill:true,tension:.3,pointStyle:pStyles,pointRadius:pRadii,pointBackgroundColor:pColors,pointHoverRadius:12}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(item){var m=meses[item.dataIndex],lines=['Dropouts: '+item.parsed.y];if(obsMap[m.mesAno])obsMap[m.mesAno].forEach(function(o){lines.push('Nota: '+o.nota.toFixed(2).replace('.',',')+'  ('+o.coordenador+')');});return lines;}}}},
-    scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+  DO_CHARTS.timeline=new Chart(ctx,{type:'line',data:{labels:labels,datasets:[
+    {label:'Dropouts',data:dataD,borderColor:'#2a4d76',backgroundColor:'rgba(42,77,118,.1)',fill:true,tension:.3,pointStyle:pStyles,pointRadius:pRadii,pointBackgroundColor:pColors,pointHoverRadius:12,yAxisID:'yD'},
+    {label:'Nota observação',data:dataNota,borderColor:'#e05c2a',backgroundColor:'#e05c2a',fill:false,tension:0,pointStyle:'star',pointRadius:12,pointHoverRadius:15,showLine:false,spanGaps:false,yAxisID:'yN'}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:true,position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}},
+      tooltip:{callbacks:{label:function(item){
+        var m=meses[item.dataIndex];
+        if(item.datasetIndex===0){
+          var lines=['Dropouts: '+item.parsed.y];
+          if(obsMap[m.mesAno]) obsMap[m.mesAno].forEach(function(o){lines.push('Nota: '+o.nota.toFixed(2).replace('.',',')+'  ('+o.coordenador+')');});
+          return lines;
+        }
+        if(obsMap[m.mesAno]){var r=obsMap[m.mesAno];return r.map(function(o){return 'Nota: '+o.nota.toFixed(2).replace('.',',')+'  ('+o.coordenador+')';});}
+        return [];
+      }}}
+    },
+    scales:{
+      yD:{position:'left',beginAtZero:true,ticks:{precision:0,font:{family:'DM Sans',size:11}},title:{display:true,text:'Dropouts',font:{family:'DM Sans',size:11}}},
+      yN:{position:'right',min:0,max:10,grid:{drawOnChartArea:false},ticks:{stepSize:1,font:{family:'DM Sans',size:11}},title:{display:true,text:'Nota',font:{family:'DM Sans',size:11}}}
+    }
+  }});
   var totalD=dataD.reduce(function(s,v){return s+v;},0);
   var notaMed=profNotas.length?profNotas.reduce(function(s,r){return s+r.nota;},0)/profNotas.length:null;
   var avgLast=avg(dataD.slice(-3)),avgFirst=avg(dataD.slice(0,3));

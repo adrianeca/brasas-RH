@@ -897,13 +897,14 @@ function getNotasData(token) {
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
       const teacher = String(g(row,'Teacher')||'').trim();
-      const chaveMatricula = String(g(row,'Chave Matricula')||'').trim();
+      // CC = índice 80 (chave professor); CA = índice 78 (nota)
+      const chaveMatricula = String(row[80]||'').trim();
       if (!teacher || !chaveMatricula) continue;
 
       const obsDate = parseDate_(g(row,'Observation Date'));
       if (!obsDate) continue;
 
-      const nota = parseFloat(String(g(row,'NOTA')||'').replace(',','.'));
+      const nota = parseFloat(String(row[78]||'').replace(',','.'));
       if (isNaN(nota)) continue;
 
       const mes = obsDate.getMonth() + 1;
