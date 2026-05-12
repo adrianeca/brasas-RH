@@ -847,9 +847,10 @@ function getDropoutsData(token) {
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
       const teacher = String(g(row,'Teacher')||'').trim();
-      // Chave join com Notas — normalizada para garantir match case/acento
-      const chaveMatricula = normalizeH_(String(g(row,'CHAVE NOME | MATRICULA')||''));
-      if (!chaveMatricula || chaveMatricula.startsWith('(')) continue;
+      // Join key: MATRÍCULA BI (coluna M) — número compartilhado com notas forms
+      const matRaw = g(row,'MATRÍCULA BI');
+      const chaveMatricula = (typeof matRaw==='number' ? String(Math.round(matRaw)) : String(matRaw||'')).trim();
+      if (!chaveMatricula || chaveMatricula==='0') continue;
 
       const dataDate = parseDate_(g(row,'Data'));
       if (!dataDate) continue;
@@ -895,25 +896,31 @@ function getNotasData(token) {
 
     // Debug info: cabeçalhos reais e amostras das primeiras linhas
     const headers = raw[0].map((h,i) => i+':'+String(h).trim()).slice(0,85);
-    const sampleRow1 = raw.length>1 ? {col78:raw[1][78], col80:raw[1][80], row:raw[1].slice(0,5)} : null;
+    const _sr = raw.length>1 ? raw[1] : null;
+    const _cc = _sr ? String(_sr[80]||'').trim() : '';
+    const _ccParts = _cc.split('|');
+    const sampleRow1 = _sr ? {col78:_sr[78], col80_raw:_cc, col80_parsed:(_ccParts.length>1?_ccParts[_ccParts.length-1]:_ccParts[0]).trim()} : null;
 
     const rows = [];
     let skippedNoChave=0, skippedNoDate=0, skippedNonNumNota=0;
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
-      // CC (índice 80) = chave professor; CA (índice 78) = nota
-      const chaveMatricula = normalizeH_(String(row[80]||''));
-      if (!chaveMatricula || chaveMatricula.startsWith('(')) { skippedNoChave++; continue; }
+      // CC (índice 80) = Chave Matrícula = "APELIDO | MATRÍCULA" — extrai só o número
+      const chaveRaw = String(row[80]||'').trim();
+      const pipeParts = chaveRaw.split('|');
+      const chaveMatricula = (pipeParts.length > 1 ? pipeParts[pipeParts.length-1] : pipeParts[0]).trim();
+      if (!chaveMatricula || chaveMatricula.startsWith('(') || chaveMatricula==='0') { skippedNoChave++; continue; }
 
       const obsDate = parseDate_(g(row,'Observation Date')||g(row,'Data da Observacao')||g(row,'Data')||row[0]||'');
       if (!obsDate) { skippedNoDate++; continue; }
 
+      // CA (índice 78) = nota
       const nota = parseFloat(String(row[78]||'').replace(',','.'));
       if (isNaN(nota)) { skippedNonNumNota++; continue; }
 
-      // teacher: tenta vários cabeçalhos; fallback = parte antes do | na chave
+      // teacher: tenta vários cabeçalhos; fallback = APELIDO antes do | em Chave Matrícula
       const teacher = String(g(row,'Teacher')||g(row,'Nome Teacher')||g(row,'Professor')||'').trim()
-                      || chaveMatricula.split('|')[0].trim();
+                      || pipeParts[0].trim();
 
       const mes = obsDate.getMonth() + 1;
       const ano = obsDate.getFullYear();
