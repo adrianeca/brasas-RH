@@ -893,18 +893,23 @@ function getNotasData(token) {
     raw[0].forEach((h, i) => { col[normalizeH_(h)] = i; });
     const g = (row, name) => { const i = col[normalizeH_(name)]; return i !== undefined ? row[i] : ''; };
 
+    // Debug info: cabeçalhos reais e amostras das primeiras linhas
+    const headers = raw[0].map((h,i) => i+':'+String(h).trim()).slice(0,85);
+    const sampleRow1 = raw.length>1 ? {col78:raw[1][78], col80:raw[1][80], row:raw[1].slice(0,5)} : null;
+
     const rows = [];
+    let skippedNoChave=0, skippedNoDate=0, skippedNonNumNota=0;
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
       // CC (índice 80) = chave professor; CA (índice 78) = nota
       const chaveMatricula = normalizeH_(String(row[80]||''));
-      if (!chaveMatricula || chaveMatricula.startsWith('(')) continue;
+      if (!chaveMatricula || chaveMatricula.startsWith('(')) { skippedNoChave++; continue; }
 
-      const obsDate = parseDate_(g(row,'Observation Date')||g(row,'Data da Observacao')||g(row,'Data')||'');
-      if (!obsDate) continue;
+      const obsDate = parseDate_(g(row,'Observation Date')||g(row,'Data da Observacao')||g(row,'Data')||row[0]||'');
+      if (!obsDate) { skippedNoDate++; continue; }
 
       const nota = parseFloat(String(row[78]||'').replace(',','.'));
-      if (isNaN(nota)) continue;
+      if (isNaN(nota)) { skippedNonNumNota++; continue; }
 
       // teacher: tenta vários cabeçalhos; fallback = parte antes do | na chave
       const teacher = String(g(row,'Teacher')||g(row,'Nome Teacher')||g(row,'Professor')||'').trim()
@@ -928,7 +933,8 @@ function getNotasData(token) {
 
     const role = session.role, uni = session.unidade||'';
     const filtered = (role==='diretor'&&uni) ? rows.filter(r=>r.unidade===uni) : rows;
-    return { ok: true, rows: filtered };
+    const debug = rows.length===0 ? {headers, sampleRow1, skippedNoChave, skippedNoDate, skippedNonNumNota, totalRaw:raw.length-1} : null;
+    return { ok: true, rows: filtered, debug };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 

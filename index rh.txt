@@ -568,7 +568,6 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         </div>
         <div class="kpi-row" id="do-kpis" style="padding:16px 24px 0"></div>
         <div class="charts-grid">
-          <div class="chart-container full"><div class="chart-title">Evolução de Dropouts por Mês</div><div class="chart-subtitle">Total mensal de todas as turmas · ★ = mês com observação de coordenador</div><div class="chart-canvas-wrapper" style="height:260px"><canvas id="chartDropoutsMes"></canvas></div></div>
           <div class="chart-container"><div class="chart-title">Top Professores por Dropouts</div><div class="chart-subtitle">Ranking no período · âmbar = com observação registrada</div><div class="chart-canvas-wrapper" style="height:340px"><canvas id="chartTopDropouts"></canvas></div></div>
           <div class="chart-container"><div class="chart-title">Distribuição de Notas</div><div class="chart-subtitle">Frequência das notas de observação no período</div><div class="chart-canvas-wrapper" style="height:340px"><canvas id="chartNotasDist"></canvas></div></div>
         </div>
@@ -2346,7 +2345,20 @@ function loadDropoutsData(){
 }
 function loadNotasData(){
   google.script.run.withSuccessHandler(function(r){
-    if(r&&r.ok){ ALL_NOTAS=r.rows||[]; renderDropoutsNotas(); }
+    if(r&&r.ok){
+      ALL_NOTAS=r.rows||[];
+      console.log('[NOTAS] linhas recebidas:',ALL_NOTAS.length);
+      if(ALL_NOTAS.length){
+        console.log('[NOTAS] exemplo linha 0:',JSON.stringify(ALL_NOTAS[0]));
+      } else {
+        console.warn('[NOTAS] ZERO linhas — verifique: (1) cabeçalho da coluna de data na aba "notas forms", (2) se coluna CC tem valores, (3) se coluna CA tem notas numéricas');
+        if(r.debug) console.log('[NOTAS] debug info:',JSON.stringify(r.debug));
+      }
+      if(ALL_DROPOUTS.length) console.log('[DROPOUTS] exemplo chaveMatricula:',ALL_DROPOUTS[0].chaveMatricula);
+      renderDropoutsNotas();
+    } else {
+      console.error('[NOTAS] erro:',r&&r.error);
+    }
   }).getNotasData(TOKEN);
 }
 function initDOFilters(){
@@ -2392,41 +2404,7 @@ function renderDropoutsNotas(){
     '<div class="kpi-card"><div class="kpi-label">Média / Prof. / Mês</div><div class="kpi-value">'+mediaD.toFixed(1)+'</div><div class="kpi-sub">dropouts médios</div></div>'+
     '<div class="kpi-card"><div class="kpi-label">Professores Observados</div><div class="kpi-value">'+profsN.size+'</div><div class="kpi-sub">com nota de coordenador</div></div>'+
     '<div class="kpi-card"><div class="kpi-label">Nota Média BRASAS</div><div class="kpi-value">'+(notaMed?notaMed.toFixed(2).replace('.',','):'—')+'</div><div class="kpi-sub">observações no período</div></div>';
-  renderDOChartMes(d,n); renderDOChartTop(d,n); renderDOChartNotas(n);
-}
-function renderDOChartMes(d,n){
-  var byMes={};
-  d.forEach(function(r){if(!byMes[r.mesAno])byMes[r.mesAno]={mesAno:r.mesAno,ano:r.ano,mes:r.mes,dropouts:0};byMes[r.mesAno].dropouts+=r.dropouts;});
-  var obsCnt={};
-  n.forEach(function(r){obsCnt[r.mesAno]=(obsCnt[r.mesAno]||0)+1;});
-  var sorted=Object.values(byMes).sort(function(a,b){return a.ano!==b.ano?a.ano-b.ano:a.mes-b.mes;});
-  var labels=sorted.map(function(m){return m.mesAno;});
-  var dataD=sorted.map(function(m){return m.dropouts;});
-  var dataObs=sorted.map(function(m){return obsCnt[m.mesAno]?1:null;});
-  var ctx=document.getElementById('chartDropoutsMes'); if(!ctx) return;
-  if(DO_CHARTS.mes) DO_CHARTS.mes.destroy();
-  DO_CHARTS.mes=new Chart(ctx,{type:'line',data:{labels:labels,datasets:[
-    {label:'Dropouts',data:dataD,borderColor:'#2a4d76',backgroundColor:'rgba(42,77,118,.12)',fill:true,tension:.3,pointRadius:4,pointHoverRadius:6,yAxisID:'yD'},
-    {label:'Observação de coordenador',data:dataObs,borderColor:'#f59e0b',backgroundColor:'#f59e0b',
-     pointRadius:15,pointStyle:'star',showLine:false,pointHoverRadius:19,
-     pointBackgroundColor:'#f59e0b',pointBorderColor:'rgba(255,255,255,.9)',pointBorderWidth:2,
-     order:0,yAxisID:'yO'}
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    plugins:{
-      legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}},
-      tooltip:{mode:'index',intersect:false,
-        filter:function(item){return item.raw!==null;},
-        callbacks:{label:function(item){
-          if(item.datasetIndex===0) return ' Dropouts: '+item.parsed.y;
-          var cnt=obsCnt[item.label]; return cnt?' ★ '+cnt+(cnt===1?' observação':' observações'):'';
-        }}
-      }
-    },
-    scales:{
-      yD:{position:'left',beginAtZero:true,ticks:{precision:0}},
-      yO:{position:'right',min:0,max:1.2,display:false,grid:{drawOnChartArea:false}}
-    }
-  }});
+  renderDOChartTop(d,n); renderDOChartNotas(n);
 }
 function renderDOChartTop(d,n){
   var profMap={};
@@ -2477,6 +2455,8 @@ function renderDOTimeline(){
   ALL_DROPOUTS.filter(function(r){return r.chaveMatricula===chave;}).forEach(function(r){if(!profD[r.mesAno])profD[r.mesAno]={mesAno:r.mesAno,ano:r.ano,mes:r.mes,dropouts:0};profD[r.mesAno].dropouts+=r.dropouts;});
   var meses=Object.values(profD).sort(function(a,b){return a.ano!==b.ano?a.ano-b.ano:a.mes-b.mes;});
   var profNotas=ALL_NOTAS.filter(function(r){return r.chaveMatricula===chave;});
+  console.log('[TIMELINE] chave:',chave,'| notas encontradas:',profNotas.length,'| total ALL_NOTAS:',ALL_NOTAS.length);
+  if(ALL_NOTAS.length&&!profNotas.length) console.log('[TIMELINE] exemplo chave em ALL_NOTAS:',ALL_NOTAS[0].chaveMatricula);
   var obsMap={};
   profNotas.forEach(function(r){if(!obsMap[r.mesAno])obsMap[r.mesAno]=[];obsMap[r.mesAno].push(r);});
   var labels=meses.map(function(m){return m.mesAno;});
