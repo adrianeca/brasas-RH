@@ -2503,13 +2503,26 @@ function renderDOTimeline(){
   }});
   var totalD=dataD.reduce(function(s,v){return s+v;},0);
   var notaMed=profNotas.length?profNotas.reduce(function(s,r){return s+r.nota;},0)/profNotas.length:null;
-  var avgLast=avg(dataD.slice(-3)),avgFirst=avg(dataD.slice(0,3));
-  var trendStr=dataD.length>=2?(avgLast<avgFirst?'↓ queda':avgLast>avgFirst?'↑ alta':'→ estável'):'—';
+
+  // Ciclo = nov/ANO a out/ANO+1; se mês atual < nov, ciclo atual começou no ano passado
+  var nowD=new Date();
+  var cycleY=nowD.getMonth()>=10?nowD.getFullYear():nowD.getFullYear()-1;
+  function inCyc_(mes,ano,sy){return (ano>sy||(ano===sy&&mes>=11))&&(ano<sy+1||(ano===sy+1&&mes<=10));}
+  var cycleNotasCnt=profNotas.filter(function(r){return inCyc_(r.mes,r.ano,cycleY);}).length;
+  var cycleLabel='Ciclo nov/'+String(cycleY).slice(2)+'–out/'+String(cycleY+1).slice(2);
+  var cD=meses.filter(function(m){return inCyc_(m.mes,m.ano,cycleY);});
+  var pD=meses.filter(function(m){return inCyc_(m.mes,m.ano,cycleY-1);});
+  var cAvg=cD.length?Math.round(cD.reduce(function(s,m){return s+m.dropouts;},0)/cD.length*10)/10:null;
+  var pAvg=pD.length?Math.round(pD.reduce(function(s,m){return s+m.dropouts;},0)/pD.length*10)/10:null;
+  var trendStr=cAvg!==null&&pAvg!==null?(cAvg<pAvg?'↓ melhora':cAvg>pAvg?'↑ piora':'→ igual'):'—';
+  var trendColor=cAvg!==null&&pAvg!==null?(cAvg<pAvg?'var(--success-600)':cAvg>pAvg?'var(--danger-600)':'inherit'):'inherit';
+  var trendSub=cAvg!==null&&pAvg!==null?'média: '+String(cAvg).replace('.',',')+'  vs  '+String(pAvg).replace('.',','):'sem ciclo anterior';
+
   if(kpisEl){kpisEl.style.display='flex';kpisEl.innerHTML=
     '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Total Dropouts</div><div class="kpi-value">'+totalD+'</div><div class="kpi-sub">histórico completo</div></div>'+
-    '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Observações</div><div class="kpi-value">'+profNotas.length+'</div><div class="kpi-sub">de coordenadores</div></div>'+
+    '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Observações no Ciclo</div><div class="kpi-value">'+cycleNotasCnt+'</div><div class="kpi-sub">'+cycleLabel+'</div></div>'+
     (notaMed!==null?'<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Nota Média</div><div class="kpi-value">'+notaMed.toFixed(2).replace('.',',')+'</div><div class="kpi-sub">das observações</div></div>':'')+
-    '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Tendência</div><div class="kpi-value">'+trendStr+'</div><div class="kpi-sub">início vs fim</div></div>';}
+    '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">vs Ciclo Anterior</div><div class="kpi-value" style="color:'+trendColor+'">'+trendStr+'</div><div class="kpi-sub">'+trendSub+'</div></div>';}
 }
 
 // RENDER: COHORT
