@@ -857,12 +857,11 @@ function getDropoutsData(token) {
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
       const teacher = String(g(row,'Teacher')||'').trim();
-      // Join key: matrícula numérica — tenta vários cabeçalhos; fallback = índice 12 (col M)
+      // Join key: extrai número após | de "APELIDO | MATRÍCULA" (ex: "AISHA | 793" → "793")
       const matRaw = row[matColIdx];
-      const chaveMatricula = (typeof matRaw==='number'
-        ? String(Math.round(matRaw))
-        : String(matRaw||'').trim().replace(/\.0+$/,'')
-      );
+      const matStr = typeof matRaw==='number' ? String(Math.round(matRaw)) : String(matRaw||'').trim();
+      const matParts = matStr.split('|');
+      const chaveMatricula = (matParts.length > 1 ? matParts[matParts.length-1] : matParts[0]).trim().replace(/\.0+$/,'');
       if (!chaveMatricula || chaveMatricula==='0') continue;
 
       const dataDate = parseDate_(g(row,'Data'));
