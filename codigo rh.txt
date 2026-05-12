@@ -843,13 +843,26 @@ function getDropoutsData(token) {
     const g = (row, name) => { const i = col[normalizeH_(name)]; return i !== undefined ? row[i] : ''; };
     const numF = (v) => { const n = parseFloat(String(v||'').replace(',','.')); return isNaN(n) ? 0 : n; };
 
+    // Detecta a coluna de matrícula por múltiplos cabeçalhos; fallback = índice 12 (col M)
+    const matColIdx = (function(){
+      for (const n of ['MATRÍCULA BI','MATRICULA BI','MATRÍCULA','MATRICULA','MATRICULA BI']) {
+        const idx = col[normalizeH_(n)];
+        if (idx !== undefined) return idx;
+      }
+      return 12;
+    })();
+    const matColName = String(raw[0][matColIdx]||'col'+matColIdx).trim();
+
     const rows = [];
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
       const teacher = String(g(row,'Teacher')||'').trim();
-      // Join key: MATRÍCULA BI (coluna M) — número compartilhado com notas forms
-      const matRaw = g(row,'MATRÍCULA BI');
-      const chaveMatricula = (typeof matRaw==='number' ? String(Math.round(matRaw)) : String(matRaw||'')).trim();
+      // Join key: matrícula numérica — tenta vários cabeçalhos; fallback = índice 12 (col M)
+      const matRaw = row[matColIdx];
+      const chaveMatricula = (typeof matRaw==='number'
+        ? String(Math.round(matRaw))
+        : String(matRaw||'').trim().replace(/\.0+$/,'')
+      );
       if (!chaveMatricula || chaveMatricula==='0') continue;
 
       const dataDate = parseDate_(g(row,'Data'));
@@ -873,7 +886,9 @@ function getDropoutsData(token) {
 
     const role = session.role, uni = session.unidade||'';
     const filtered = (role==='diretor'&&uni) ? rows.filter(r=>r.unidade===uni) : rows;
-    return { ok: true, rows: filtered };
+    const debugD = {matColUsed: matColName, matColIdx, totalRows: rows.length,
+                    sample: rows.slice(0,3).map(r=>({chave:r.chaveMatricula, teacher:r.teacher}))};
+    return { ok: true, rows: filtered, debug: debugD };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 

@@ -2340,7 +2340,14 @@ function renderHistorico(){
 // ─── DROPOUTS & OBSERVAÇÕES ──────────────────────────────────────────────────
 function loadDropoutsData(){
   google.script.run.withSuccessHandler(function(r){
-    if(r&&r.ok){ ALL_DROPOUTS=r.rows||[]; initDOFilters(); renderDropoutsNotas(); }
+    if(r&&r.ok){
+      ALL_DROPOUTS=r.rows||[];
+      console.log('[DROPOUTS] linhas:',ALL_DROPOUTS.length,'| debug:',JSON.stringify(r.debug||{}));
+      if(!ALL_DROPOUTS.length) console.warn('[DROPOUTS] ZERO linhas — coluna de matrícula não encontrada ou vazia');
+      initDOFilters(); renderDropoutsNotas();
+    } else {
+      console.error('[DROPOUTS] erro:',r&&r.error);
+    }
   }).getDropoutsData(TOKEN);
 }
 function loadNotasData(){
