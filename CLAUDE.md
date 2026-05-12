@@ -220,6 +220,18 @@ Os dois gráficos separados (Top35 + Bottom20) foram substituídos por **um úni
 - `getBrindesConsolidado` filtra pelo campo `unidade` do session quando `role === 'diretor'`
 - **Brindes é o último item da navbar**, depois do dropdown DP
 
+### Brindes — filtro Tipo de Unidade
+
+Filtro `<select id="f-brinde-tipo-un">` adicionado na barra de filtros da aba Brindes, entre Semestre e Unidade/Franquia.
+
+| Opção exibida | Valor interno | Lógica |
+|---|---|---|
+| Todos | `""` | sem filtro |
+| Franquias | `"franquia"` | `isFranquia(e.tipo) === true` |
+| Unidades RJ | `"propria"` | `isFranquia(e.tipo) === false` |
+
+O campo `e.tipo` vem da coluna `TIPO UNIDADE` da aba `CONSOLIDADO_new` — valores na planilha: `"FRANQUIA"` ou `"PRÓPRIA"`. A função `isFranquia(tipo)` já existente faz o match case-insensitive. O filtro é aplicado em `renderBrindes()` antes de iterar os anos e resetado em `clearBrindesFilters()`.
+
 ---
 
 ### Professores — Histórico de Turmas e Alunos (`getHistoricoTurmas`)

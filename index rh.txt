@@ -460,6 +460,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
           </div>
         </div>
     <div class="filter-group"><label>Semestre</label><select id="f-brinde-sem" onchange="renderBrindes()"><option value="">Todos</option><option value="1º Semestre">1º Semestre</option><option value="2º Semestre">2º Semestre</option></select></div>
+    <div class="filter-group"><label>Tipo de Unidade</label><select id="f-brinde-tipo-un" onchange="renderBrindes()"><option value="">Todos</option><option value="franquia">Franquias</option><option value="propria">Unidades RJ</option></select></div>
     <div class="filter-group" style="min-width:160px">
      <label>Unidade / Franquia</label>
      <div class="multi-dropdown" id="mdBrindeLocal">
@@ -1477,6 +1478,7 @@ function clearBrindesFilters(){
   var ano2026=document.querySelector('#mdBrindeAnoOpts input[value="2026"]');
   if(ano2026){ ano2026.checked=true; updateMdBrindeDisplay('mdBrindeAno'); }
   document.getElementById('f-brinde-sem').value='';
+  document.getElementById('f-brinde-tipo-un').value='';
   renderBrindes();
 }
 
@@ -1485,6 +1487,7 @@ function renderBrindes(){
   var anosChecked=getMdSel('mdBrindeAno').map(function(a){ return parseInt(a); });
   if(!anosChecked.length) anosChecked=[2026];
   var sem=v('f-brinde-sem');
+  var tipoUn=v('f-brinde-tipo-un');
   var selTipo=getMdSel('mdBrindeTipo');
   var selLocal=getMdSel('mdBrindeLocal');
 
@@ -1492,6 +1495,8 @@ function renderBrindes(){
   var gifts=[];
   ALL_BRINDES.forEach(function(e){
     if(!e.ativo) return;
+    if(tipoUn==='franquia' && !isFranquia(e.tipo)) return;
+    if(tipoUn==='propria' && isFranquia(e.tipo)) return;
     anosChecked.forEach(function(ano){
       if(!e.giftInfo[ano]) return;
       var fr=isFranquia(e.tipo);
