@@ -55,6 +55,8 @@ Dashboard interno de RH da rede BRASAS RJ, construído em **Google Apps Script**
 | `getCopaData(token)` | Carrega coparticipação do plano de saúde |
 | `getTurmasData(token)` | Carrega turmas ativas por professor |
 | `getDesligamentosData(token)` | Carrega respostas da entrevista de desligamento |
+| `getDropoutsData(token)` | Carrega linhas de dropout por turma/mês da planilha CONSOLIDADO GERAL |
+| `getNotasData(token)` | Carrega notas de observação de coordenadores da planilha NOVO Teste class observation |
 
 ### Tabela de brindes por anos de casa
 
@@ -333,38 +335,72 @@ Acesso restrito a `admin` e `dp`. Lê a planilha de entrevistas de desligamento.
 
 ### Professores — Dropouts & Observações
 
-Nova seção na aba Professores com análise cruzada entre dropouts de alunos e notas de observação de coordenadores.
+Seção na aba Professores com análise cruzada entre dropouts de alunos e notas de observação de coordenadores.
 
 **Planilhas:**
-- `DROPOUTS_SPREADSHEET_ID = '1d8votmt6HlwPmHcup2iQLqJa9dzpcHorPGGC3LO27hw'` → aba `Total Unidades`
-- `NOTAS_SPREADSHEET_ID = '1h6-an2pv-ei-ZaXXYaA1y5UCUq2Q7Za8OCrZ4pQLuNQ'` → aba `notas forms`
+- `DROPOUTS_SPREADSHEET_ID = '1d8votmt6HlwPmHcup2iQLqJa9dzpcHorPGGC3LO27hw'` → planilha "CONSOLIDADO GERAL", aba `Total Unidades`
+- `NOTAS_SPREADSHEET_ID = '1h6-an2pv-ei-ZaXXYaA1y5UCUq2Q7Za8OCrZ4pQLuNQ'` → planilha "NOVO Teste class observation", aba `notas forms`
 
-**Join key:** `APELIDO | MATRÍCULA` — campo `chaveMatricula` em ambas as fontes
-- Dropouts: coluna `CHAVE NOME | MATRÍCULA` (normalizeH_ → `chave nome | matricula`)
-- Notas: coluna `Chave Matrícula` (normalizeH_ → `chave matricula`)
+**Join key — número de matrícula puro (após extrair o `|`):**
+
+| Lado | Coluna na planilha | Valor bruto de exemplo | `chaveMatricula` final |
+|---|---|---|---|
+| Dropouts | Col M = `MATRÍCULA BI` | `"AISHA \| 793"` | `"793"` |
+| Notas | Col CC (índice 80) = `Chave Matrícula` | `"ZOEY \| 525"` | `"525"` |
+
+Ambos fazem `split('|')` e pegam a parte após o `|`. Isso evita qualquer divergência de APELIDO entre as duas planilhas.
+
+**Leitura de colunas em `getNotasData`:**
+- Nota: coluna CA = índice 78
+- Chave: coluna CC = índice 80 (por índice fixo, não por cabeçalho)
+- Data: tenta cabeçalhos `Observation Date` → `Data da Observacao` → `Data` → fallback `row[0]` (Timestamp do Google Forms)
+
+**Detecção da coluna de matrícula em `getDropoutsData`:**
+Tenta os cabeçalhos na ordem: `MATRÍCULA BI` → `MATRICULA BI` → `MATRÍCULA` → `MATRICULA` → fallback índice 12 (col M). Usa `normalizeH_()` para tolerância de acento/case.
+
+**Ambas as funções retornam `debug`** com amostra de `chaveMatricula` para diagnóstico no console do browser.
 
 **Backend:**
-- `getDropoutsData(token)` — retorna linhas por turma/mês: `{unidade, teacher, nomeTeacher, book, alunos, dropouts, mes, ano, mesAno, chaveMatricula, ativo}`
-- `getNotasData(token)` — retorna linhas por observação: `{teacher, coordenador, unidade, observationDate, mes, ano, mesAno, nivel, nota, chaveMatricula}`
+- `getDropoutsData(token)` → `{unidade, teacher, nomeTeacher, book, alunos, dropouts, mes, ano, mesAno, chaveMatricula, ativo, debug}`
+- `getNotasData(token)` → `{teacher, coordenador, unidade, observationDate, mes, ano, mesAno, nivel, nota, chaveMatricula, debug}`
 - `role=diretor` filtra por unidade da sessão em ambas
 
-**Frontend — carregamento:** `loadDropoutsData()` e `loadNotasData()` chamados com `setTimeout 300ms` após o load inicial de professores
+**Frontend — carregamento:**
+- `loadDropoutsData()` e `loadNotasData()` chamados com `setTimeout 300ms` após o load inicial de professores
+- Ambas logam no console (`[DROPOUTS]` e `[NOTAS]`) para diagnóstico — verificar F12 se algo não aparecer
 
 **Globais:** `ALL_DROPOUTS`, `ALL_NOTAS`, `DO_CHARTS` (instâncias Chart.js)
 
-**Filtros da seção:** `#do-unidade` (unidade) e `#do-ano` (ano)
+**Filtros globais da seção (afetam os 2 gráficos globais):**
+- `#do-unidade` — unidade; ao mudar, chama `onDOUnidadeChange()` que recascateia o dropdown de professor
+- `#do-ano` — ano
+- `#do-prof` — professor; populado dinamicamente conforme unidade selecionada
 
-**4 gráficos globais:**
-- `chartDropoutsMes` — linha temporal de dropouts totais; estrelas laranjas marcam meses com observação
-- `chartTopDropouts` — barras horizontais top 20 por dropouts; âmbar = professor com observação, navy = sem
-- `chartNotasDist` — distribuição de notas em 5 faixas (< 6, 6–7, 7–8, 8–9, 9–10)
-- `chartImpacto` — barras agrupadas Antes vs Depois da última observação (janela de 3 meses); tooltip mostra nota e Δ; só aparece se há dados suficientes (≥ 1 mês antes E ≥ 1 depois)
+**2 gráficos globais** (a linha temporal global foi removida por ser redundante com a timeline individual):
+- `chartTopDropouts` — barras horizontais top 20 professores por dropouts; âmbar = tem observação registrada, navy = sem
+- `chartNotasDist` — distribuição de notas em 5 faixas: < 6, 6–7, 7–8, 8–9, 9–10
 
-**Timeline individual (`#do-prof-timeline`):**
-- Seletor populado com todos os professores de `ALL_DROPOUTS`
-- Gráfico de linha: dropouts por mês; pontos laranja estrelados = mês com observação
-- Tooltip mostra nota e coordenador nos pontos de observação
-- KPIs: total dropouts, nº observações, nota média, tendência (↓ queda / ↑ alta / → estável)
+**Timeline individual por professor:**
+- Filtros próprios: `#do-tl-unidade` (unidade) → `onDOTlUnidadeChange()` → recascateia `#do-prof-timeline`
+- Gráfico dual-axis: eixo esquerdo = dropouts (azul), eixo direito = nota 0–10 (laranja)
+- Pontos estrela laranja no dataset de dropouts marcam meses com observação; segundo dataset (`showLine:false`) plota a nota no eixo direito
+- Tooltip mostra nota e coordenador nos meses com observação
+
+**KPIs da timeline (abaixo do gráfico):**
+- **Total Dropouts** — soma histórica completa
+- **Observações no Ciclo** — conta só as observações do ciclo atual (nov–out); subtítulo mostra o ciclo ex: "Ciclo nov/25–out/26"
+- **Nota Média** — média de todas as notas do professor (histórico completo)
+- **vs Ciclo Anterior** — compara média de dropouts/mês do ciclo atual vs ciclo anterior; verde = melhorou, vermelho = piorou; subtítulo mostra os dois valores
+
+**Lógica do ciclo (nov–out):**
+```javascript
+var cycleY = nowD.getMonth() >= 10 ? nowD.getFullYear() : nowD.getFullYear()-1;
+// Se mês < novembro (getMonth < 10): ciclo iniciou no ano passado
+// Ex: maio/2026 → cycleY = 2025 → ciclo = nov/2025 a out/2026
+function inCyc_(mes, ano, sy) {
+  return (ano > sy || (ano === sy && mes >= 11)) && (ano < sy+1 || (ano === sy+1 && mes <= 10));
+}
+```
 
 ---
 
