@@ -561,7 +561,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       <div class="section" style="margin-bottom:24px">
         <div class="section-header"><div><div class="section-title">Dropouts &amp; Observações</div><div class="section-subtitle">Análise mensal de dropouts por turma e notas de observação dos coordenadores</div></div></div>
         <div class="filters-bar" style="padding:16px 24px;border-bottom:1px solid var(--gray-100)">
-          <div class="filter-group"><label>Unidade</label><select id="do-unidade" onchange="renderDropoutsNotas()"><option value="">Todas</option></select></div>
+          <div class="filter-group"><label>Unidade</label><select id="do-unidade" onchange="onDOUnidadeChange()"><option value="">Todas</option></select></div>
           <div class="filter-group"><label>Ano</label><select id="do-ano" onchange="renderDropoutsNotas()"><option value="">Todos</option></select></div>
           <div class="filter-group" style="min-width:220px;flex:2"><label>Professor</label><select id="do-prof" onchange="renderDropoutsNotas()"><option value="">Todos</option></select></div>
           <div class="filter-actions"><button class="btn-clear" onclick="clearDOFilters()">Limpar</button></div>
@@ -2397,17 +2397,36 @@ function renderDropoutsNotas(){
 function renderDOChartMes(d,n){
   var byMes={};
   d.forEach(function(r){if(!byMes[r.mesAno])byMes[r.mesAno]={mesAno:r.mesAno,ano:r.ano,mes:r.mes,dropouts:0};byMes[r.mesAno].dropouts+=r.dropouts;});
-  var obsMeses=new Set(n.map(function(r){return r.mesAno;}));
+  var obsCnt={};
+  n.forEach(function(r){obsCnt[r.mesAno]=(obsCnt[r.mesAno]||0)+1;});
   var sorted=Object.values(byMes).sort(function(a,b){return a.ano!==b.ano?a.ano-b.ano:a.mes-b.mes;});
   var labels=sorted.map(function(m){return m.mesAno;});
   var dataD=sorted.map(function(m){return m.dropouts;});
-  var dataObs=sorted.map(function(m){return obsMeses.has(m.mesAno)?m.dropouts:null;});
+  var dataObs=sorted.map(function(m){return obsCnt[m.mesAno]?1:null;});
   var ctx=document.getElementById('chartDropoutsMes'); if(!ctx) return;
   if(DO_CHARTS.mes) DO_CHARTS.mes.destroy();
   DO_CHARTS.mes=new Chart(ctx,{type:'line',data:{labels:labels,datasets:[
-    {label:'Dropouts',data:dataD,borderColor:'#2a4d76',backgroundColor:'rgba(42,77,118,.12)',fill:true,tension:.3,pointRadius:4,pointHoverRadius:6},
-    {label:'Mês c/ observação',data:dataObs,borderColor:'#e05c2a',backgroundColor:'#e05c2a',pointRadius:9,pointStyle:'star',showLine:false,pointHoverRadius:12}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},tooltip:{mode:'index',intersect:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+    {label:'Dropouts',data:dataD,borderColor:'#2a4d76',backgroundColor:'rgba(42,77,118,.12)',fill:true,tension:.3,pointRadius:4,pointHoverRadius:6,yAxisID:'yD'},
+    {label:'Observação de coordenador',data:dataObs,borderColor:'#f59e0b',backgroundColor:'#f59e0b',
+     pointRadius:15,pointStyle:'star',showLine:false,pointHoverRadius:19,
+     pointBackgroundColor:'#f59e0b',pointBorderColor:'rgba(255,255,255,.9)',pointBorderWidth:2,
+     order:0,yAxisID:'yO'}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},boxWidth:12}},
+      tooltip:{mode:'index',intersect:false,
+        filter:function(item){return item.raw!==null;},
+        callbacks:{label:function(item){
+          if(item.datasetIndex===0) return ' Dropouts: '+item.parsed.y;
+          var cnt=obsCnt[item.label]; return cnt?' ★ '+cnt+(cnt===1?' observação':' observações'):'';
+        }}
+      }
+    },
+    scales:{
+      yD:{position:'left',beginAtZero:true,ticks:{precision:0}},
+      yO:{position:'right',min:0,max:1.2,display:false,grid:{drawOnChartArea:false}}
+    }
+  }});
 }
 function renderDOChartTop(d,n){
   var profMap={};
@@ -2423,6 +2442,20 @@ function renderDOChartNotas(n){
   var ctx=document.getElementById('chartNotasDist'); if(!ctx) return;
   if(DO_CHARTS.notas) DO_CHARTS.notas.destroy();
   DO_CHARTS.notas=new Chart(ctx,{type:'bar',data:{labels:ranges.map(function(r){return r.l;}),datasets:[{label:'Observações',data:ranges.map(function(r){return n.filter(function(o){return o.nota>=r.min&&o.nota<r.max;}).length;}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+}
+function onDOUnidadeChange(){
+  var fU=v('do-unidade');
+  var selP=document.getElementById('do-prof');
+  if(selP){
+    var cur=selP.value;
+    while(selP.options.length>1) selP.remove(1);
+    var profMap={};
+    ALL_DROPOUTS.filter(function(r){return !fU||r.unidade===fU;}).forEach(function(r){if(r.chaveMatricula) profMap[r.chaveMatricula]=r.teacher;});
+    var keys=Object.keys(profMap).sort(function(a,b){return (profMap[a]||'').localeCompare(profMap[b]||'');});
+    keys.forEach(function(k){selP.appendChild(new Option(profMap[k],k));});
+    if(cur&&profMap[cur]) selP.value=cur; else selP.value='';
+  }
+  renderDropoutsNotas();
 }
 function onDOTlUnidadeChange(){
   var fU=v('do-tl-unidade');
