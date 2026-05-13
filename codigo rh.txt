@@ -962,6 +962,7 @@ function getNotasData(token) {
 
 // ─── NOTAS MÉDIAS (PÓDIO) ────────────────────────────────────────────────────
 const FOTOS_FOLDER_ID = '1D6fq0r-OPxiK_Pa56rZ4t4BfDkrkDvrs';
+const PODIUM_EXCL_UNITS = ['metodos', 'editora', 'ec new'];
 
 function getNotasMediasData(token) {
   const session = checkSession(token);
@@ -986,33 +987,45 @@ function getNotasMediasData(token) {
 
     const debugHdrs = hdrs.slice(0, 10);
 
-    // Mapas de fotos — pasta pública, usa URL direta (sem base64)
-    const fileMap = {};      // "APELIDO - SIGLA" → fileId
-    const apelidoMap = {};   // "APELIDO" → fileId (fallback quando sigla não bate)
+    // Normalização idêntica à do sistema de dropouts: minúsculo + sem acento
+    const normPhoto_ = v => String(v||'').trim().toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'');
+
+    // Mapas de fotos — base64 (mais confiável em iframe do HtmlService que URL direta)
+    const fileMap = {};      // normPhoto_("APELIDO - SIGLA") → File
+    const apelidoMap = {};   // normPhoto_("APELIDO") → File (fallback sem unidade)
     let folderErr = null, folderFileCount = 0;
     try {
       const folder = DriveApp.getFolderById(FOTOS_FOLDER_ID);
       const files = folder.getFiles();
       while (files.hasNext()) {
         const f = files.next();
-        const key = f.getName().replace(/\.[^.]+$/, '').trim().toUpperCase();
-        const fid = f.getId();
-        fileMap[key] = fid;
+        const baseName = f.getName().replace(/\.[^.]+$/, '').trim();
+        const normKey = normPhoto_(baseName);
+        fileMap[normKey] = f;
         folderFileCount++;
-        const apKey = key.split(' - ')[0].trim();
-        if (!apelidoMap[apKey]) apelidoMap[apKey] = fid;
+        const apKey = normKey.split(' - ')[0].trim();
+        if (!apelidoMap[apKey]) apelidoMap[apKey] = f;
       }
     } catch(e) { folderErr = e.message; }
 
     const fileMapKeys = Object.keys(fileMap).slice(0, 8);
 
-    const getPhotoUrl_ = (apelido, unidade) => {
+    const getPhotoB64_ = (apelido, unidade) => {
       if (!apelido) return null;
-      const fid = fileMap[(apelido + ' - ' + (unidade||'')).toUpperCase()]
-               || apelidoMap[apelido.toUpperCase()]
-               || null;
-      return fid ? 'https://drive.google.com/uc?id=' + fid + '&export=view' : null;
+      const normKey = normPhoto_(apelido + ' - ' + (unidade||''));
+      const normAp  = normPhoto_(apelido);
+      const photoFile = fileMap[normKey] || apelidoMap[normAp] || null;
+      if (!photoFile) return null;
+      try {
+        const blob = photoFile.getBlob();
+        return 'data:' + (blob.getContentType()||'image/jpeg') + ';base64,' + Utilities.base64Encode(blob.getBytes());
+      } catch(e) { return null; }
     };
+
+    const isExclUnit_ = u => PODIUM_EXCL_UNITS.includes(
+      normPhoto_(u).normalize('NFD').replace(/[̀-ͯ]/g,'')
+    );
 
     const rows = [];
     const photoDebug = [];
@@ -1027,17 +1040,20 @@ function getNotasMediasData(token) {
       const pipeParts = chaveRaw.split('|');
       const matricula = (pipeParts.length > 1 ? pipeParts[pipeParts.length-1] : pipeParts[0]).trim();
       const nm = Math.round(nota * 100) / 100;
-      if (un1) {
-        const ph = getPhotoUrl_(apelido, un1);
-        if (photoDebug.length < 5) photoDebug.push({ key: (apelido+' - '+un1).toUpperCase(), found: !!ph });
+      if (un1 && !isExclUnit_(un1)) {
+        const ph = getPhotoB64_(apelido, un1);
+        if (photoDebug.length < 5) photoDebug.push({ key: normPhoto_(apelido+' - '+un1), found: !!ph });
         rows.push({ apelido, unidade: un1, notaMedia: nm, matricula, photoUrl: ph });
       }
-      if (un2) {
-        const ph = getPhotoUrl_(apelido, un2);
-        if (photoDebug.length < 5) photoDebug.push({ key: (apelido+' - '+un2).toUpperCase(), found: !!ph });
+      if (un2 && !isExclUnit_(un2)) {
+        const ph = getPhotoB64_(apelido, un2);
+        if (photoDebug.length < 5) photoDebug.push({ key: normPhoto_(apelido+' - '+un2), found: !!ph });
         rows.push({ apelido, unidade: un2, notaMedia: nm, matricula, photoUrl: ph });
       }
-      if (!un1 && !un2) rows.push({ apelido, unidade: '', notaMedia: nm, matricula, photoUrl: getPhotoUrl_(apelido, '') });
+      if (!un1 && !un2) {
+        const ph = getPhotoB64_(apelido, '');
+        rows.push({ apelido, unidade: '', notaMedia: nm, matricula, photoUrl: ph });
+      }
     }
 
     const debug = {
