@@ -2519,6 +2519,9 @@ function loadNotasMediasData(){
   google.script.run
     .withSuccessHandler(function(r){
       ALL_NOTAS_MEDIAS=r&&r.ok?r.rows:[];
+      console.log('[PODIUM] linhas:',ALL_NOTAS_MEDIAS.length);
+      if(r&&r.debug) console.warn('[PODIUM] debug (colunas não encontradas):',JSON.stringify(r.debug));
+      if(ALL_NOTAS_MEDIAS.length) console.log('[PODIUM] exemplo:',JSON.stringify(ALL_NOTAS_MEDIAS[0]));
       renderPodium();
     })
     .withFailureHandler(function(e){
@@ -2529,11 +2532,11 @@ function loadNotasMediasData(){
 }
 
 function onProfFilterChange(){
+  refreshProfProf();
   renderProfessores();
   if(typeof renderTurmasChart==='function') renderTurmasChart();
   renderPodium();
-  if(ALL_DROPOUTS.length||ALL_NOTAS.length){ renderDropoutsNotas(); renderDOScatter(); }
-  refreshProfProf();
+  if(ALL_DROPOUTS.length||ALL_NOTAS.length) renderDropoutsNotas();
 }
 function onProfProfChange(){
   if(ALL_DROPOUTS.length||ALL_NOTAS.length){ renderDropoutsNotas(); }

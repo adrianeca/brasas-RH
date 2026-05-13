@@ -975,10 +975,13 @@ function getNotasMediasData(token) {
 
     const hdrs = raw[0].map(h => String(h).trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,''));
     const ci = name => hdrs.indexOf(name);
-    const iAp = ci('APELIDO');
+    const iAp   = ci('APELIDO');
     const iNota = ci('NOTA MEDIA');
-    const iUn = ci('UNIDADE PRIMARIA');
-    const iMat = ci('MATRICULA') !== -1 ? ci('MATRICULA') : ci('MATRIC');
+    const iUn1  = ci('UNIDADE 1°');   // "Unidade 1°"
+    const iUn2  = ci('UNIDADE 2°');   // "Unidade 2°"
+    const iMat  = ci('CHAVE MATRICULA');   // "Chave Matrícula"
+
+    const debugHdrs = hdrs.slice(0, 10);
 
     // Mapa de fotos: "APELIDO - UNIDADE" (maiúsculo, sem extensão) → File object
     const fileMap = {};
@@ -992,33 +995,42 @@ function getNotasMediasData(token) {
       }
     } catch(e) {}
 
+    const getPhoto_ = (apelido, unidade) => {
+      if (!apelido || !unidade) return null;
+      const photoFile = fileMap[(apelido + ' - ' + unidade).toUpperCase()] || null;
+      if (!photoFile) return null;
+      try {
+        const blob = photoFile.getBlob();
+        return 'data:' + (blob.getContentType()||'image/jpeg') + ';base64,' + Utilities.base64Encode(blob.getBytes());
+      } catch(e) { return null; }
+    };
+
     const rows = [];
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
-      const apelido = iAp !== -1 ? String(row[iAp]||'').trim() : '';
-      const unidade = iUn !== -1 ? String(row[iUn]||'').trim() : '';
-      const nota = iNota !== -1 ? parseFloat(String(row[iNota]||'').replace(',','.')) : NaN;
+      const apelido = iAp   !== -1 ? String(row[iAp]||'').trim()   : '';
+      const nota    = iNota !== -1 ? parseFloat(String(row[iNota]||'').replace(',','.')) : NaN;
       if (!apelido || isNaN(nota) || nota <= 0) continue;
-      const mat = iMat !== -1 ? String(row[iMat]||'').trim() : '';
-      const photoKey = (apelido + ' - ' + unidade).toUpperCase();
-      const photoFile = fileMap[photoKey] || null;
-      let photoUrl = null;
-      if (photoFile) {
-        try {
-          const blob = photoFile.getBlob();
-          const mime = blob.getContentType() || 'image/jpeg';
-          photoUrl = 'data:' + mime + ';base64,' + Utilities.base64Encode(blob.getBytes());
-        } catch(e) {}
-      }
-      rows.push({ apelido, unidade, notaMedia: Math.round(nota * 100) / 100, matricula: mat, photoUrl });
+      const un1 = iUn1 !== -1 ? String(row[iUn1]||'').trim() : '';
+      const un2 = iUn2 !== -1 ? String(row[iUn2]||'').trim() : '';
+      // Extract number from "APELIDO | 123" format
+      const chaveRaw = iMat !== -1 ? String(row[iMat]||'').trim() : '';
+      const pipeParts = chaveRaw.split('|');
+      const matricula = (pipeParts.length > 1 ? pipeParts[pipeParts.length-1] : pipeParts[0]).trim();
+      const nm = Math.round(nota * 100) / 100;
+      if (un1) rows.push({ apelido, unidade: un1, notaMedia: nm, matricula, photoUrl: getPhoto_(apelido, un1) });
+      if (un2) rows.push({ apelido, unidade: un2, notaMedia: nm, matricula, photoUrl: getPhoto_(apelido, un2) });
+      if (!un1 && !un2) rows.push({ apelido, unidade: '', notaMedia: nm, matricula, photoUrl: null });
     }
+
+    const debug = rows.length === 0 ? { hdrs: debugHdrs, iAp, iNota, iUn1, iUn2, iMat, totalRaw: raw.length-1 } : null;
 
     // diretor vê só sua unidade
     const filtered = (session.role === 'diretor' && session.unidade)
       ? rows.filter(r => r.unidade === session.unidade)
       : rows;
 
-    return { ok: true, rows: filtered };
+    return { ok: true, rows: filtered, debug };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
