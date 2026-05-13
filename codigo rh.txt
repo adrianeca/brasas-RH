@@ -986,8 +986,9 @@ function getNotasMediasData(token) {
 
     const debugHdrs = hdrs.slice(0, 10);
 
-    // Mapa de fotos: "APELIDO - UNIDADE" (maiúsculo, sem extensão) → File object
-    const fileMap = {};
+    // Mapas de fotos — pasta pública, usa URL direta (sem base64)
+    const fileMap = {};      // "APELIDO - SIGLA" → fileId
+    const apelidoMap = {};   // "APELIDO" → fileId (fallback quando sigla não bate)
     let folderErr = null, folderFileCount = 0;
     try {
       const folder = DriveApp.getFolderById(FOTOS_FOLDER_ID);
@@ -995,25 +996,26 @@ function getNotasMediasData(token) {
       while (files.hasNext()) {
         const f = files.next();
         const key = f.getName().replace(/\.[^.]+$/, '').trim().toUpperCase();
-        fileMap[key] = f;
+        const fid = f.getId();
+        fileMap[key] = fid;
         folderFileCount++;
+        const apKey = key.split(' - ')[0].trim();
+        if (!apelidoMap[apKey]) apelidoMap[apKey] = fid;
       }
     } catch(e) { folderErr = e.message; }
 
-    const fileMapKeys = Object.keys(fileMap).slice(0, 5); // primeiros 5 nomes para debug
+    const fileMapKeys = Object.keys(fileMap).slice(0, 8);
 
-    const getPhoto_ = (apelido, unidade) => {
-      if (!apelido || !unidade) return null;
-      const photoFile = fileMap[(apelido + ' - ' + unidade).toUpperCase()] || null;
-      if (!photoFile) return null;
-      try {
-        const blob = photoFile.getBlob();
-        return 'data:' + (blob.getContentType()||'image/jpeg') + ';base64,' + Utilities.base64Encode(blob.getBytes());
-      } catch(e) { return null; }
+    const getPhotoUrl_ = (apelido, unidade) => {
+      if (!apelido) return null;
+      const fid = fileMap[(apelido + ' - ' + (unidade||'')).toUpperCase()]
+               || apelidoMap[apelido.toUpperCase()]
+               || null;
+      return fid ? 'https://drive.google.com/uc?id=' + fid + '&export=view' : null;
     };
 
     const rows = [];
-    const photoDebug = []; // primeiros 5 lookups para diagnóstico
+    const photoDebug = [];
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
       const apelido = iAp   !== -1 ? String(row[iAp]||'').trim()   : '';
@@ -1021,29 +1023,26 @@ function getNotasMediasData(token) {
       if (!apelido || isNaN(nota) || nota <= 0) continue;
       const un1 = iUn1 !== -1 ? String(row[iUn1]||'').trim() : '';
       const un2 = iUn2 !== -1 ? String(row[iUn2]||'').trim() : '';
-      // Extract number from "APELIDO | 123" format
       const chaveRaw = iMat !== -1 ? String(row[iMat]||'').trim() : '';
       const pipeParts = chaveRaw.split('|');
       const matricula = (pipeParts.length > 1 ? pipeParts[pipeParts.length-1] : pipeParts[0]).trim();
       const nm = Math.round(nota * 100) / 100;
       if (un1) {
-        const ph = getPhoto_(apelido, un1);
+        const ph = getPhotoUrl_(apelido, un1);
         if (photoDebug.length < 5) photoDebug.push({ key: (apelido+' - '+un1).toUpperCase(), found: !!ph });
         rows.push({ apelido, unidade: un1, notaMedia: nm, matricula, photoUrl: ph });
       }
       if (un2) {
-        const ph = getPhoto_(apelido, un2);
+        const ph = getPhotoUrl_(apelido, un2);
         if (photoDebug.length < 5) photoDebug.push({ key: (apelido+' - '+un2).toUpperCase(), found: !!ph });
         rows.push({ apelido, unidade: un2, notaMedia: nm, matricula, photoUrl: ph });
       }
-      if (!un1 && !un2) rows.push({ apelido, unidade: '', notaMedia: nm, matricula, photoUrl: null });
+      if (!un1 && !un2) rows.push({ apelido, unidade: '', notaMedia: nm, matricula, photoUrl: getPhotoUrl_(apelido, '') });
     }
 
     const debug = {
-      rows: rows.length,
-      folderFileCount, folderErr,
-      fileMapKeys,   // primeiros 5 nomes de arquivo na pasta
-      photoDebug,    // primeiros 5 lookups: chave buscada + se encontrou
+      rows: rows.length, folderFileCount, folderErr,
+      fileMapKeys, photoDebug,
       ...(rows.length === 0 ? { hdrs: debugHdrs, iAp, iNota, iUn1, iUn2, iMat, totalRaw: raw.length-1 } : {})
     };
 
