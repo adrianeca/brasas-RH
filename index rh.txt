@@ -2560,8 +2560,8 @@ function clearProfPageFilters(){
 }
 function renderPodium(){
   var stg=document.getElementById('podium-stage'); if(!stg) return;
-  var fU=v('f-prof-unidade');
-  var data=ALL_NOTAS_MEDIAS.filter(function(r){return !fU||r.unidade===fU;});
+  var fU=(v('f-prof-unidade')||'').trim().toUpperCase();
+  var data=ALL_NOTAS_MEDIAS.filter(function(r){return !fU||(r.unidade||'').trim().toUpperCase()===fU;});
   data.sort(function(a,b){return b.notaMedia-a.notaMedia;});
   var top=data.slice(0,3);
   if(!top.length){stg.innerHTML='<div class="podium-empty">Nenhum dado disponível para o filtro selecionado.</div>';return;}

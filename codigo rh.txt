@@ -980,15 +980,15 @@ function getNotasMediasData(token) {
     const iUn = ci('UNIDADE PRIMARIA');
     const iMat = ci('MATRICULA') !== -1 ? ci('MATRICULA') : ci('MATRIC');
 
-    // Mapa de fotos: "APELIDO - UNIDADE" (maiúsculo, sem extensão) → fileId
-    const photoMap = {};
+    // Mapa de fotos: "APELIDO - UNIDADE" (maiúsculo, sem extensão) → File object
+    const fileMap = {};
     try {
       const folder = DriveApp.getFolderById(FOTOS_FOLDER_ID);
       const files = folder.getFiles();
       while (files.hasNext()) {
         const f = files.next();
         const key = f.getName().replace(/\.[^.]+$/, '').trim().toUpperCase();
-        try { photoMap[key] = f.getThumbnailLink(); } catch(e) { photoMap[key] = null; }
+        fileMap[key] = f;
       }
     } catch(e) {}
 
@@ -1001,7 +1001,15 @@ function getNotasMediasData(token) {
       if (!apelido || isNaN(nota) || nota <= 0) continue;
       const mat = iMat !== -1 ? String(row[iMat]||'').trim() : '';
       const photoKey = (apelido + ' - ' + unidade).toUpperCase();
-      const photoUrl = photoMap[photoKey] || null;
+      const photoFile = fileMap[photoKey] || null;
+      let photoUrl = null;
+      if (photoFile) {
+        try {
+          const blob = photoFile.getBlob();
+          const mime = blob.getContentType() || 'image/jpeg';
+          photoUrl = 'data:' + mime + ';base64,' + Utilities.base64Encode(blob.getBytes());
+        } catch(e) {}
+      }
       rows.push({ apelido, unidade, notaMedia: Math.round(nota * 100) / 100, matricula: mat, photoUrl });
     }
 
