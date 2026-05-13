@@ -985,6 +985,7 @@ function getNotasMediasData(token) {
 
     // Mapa de fotos: "APELIDO - UNIDADE" (maiúsculo, sem extensão) → File object
     const fileMap = {};
+    let folderErr = null, folderFileCount = 0;
     try {
       const folder = DriveApp.getFolderById(FOTOS_FOLDER_ID);
       const files = folder.getFiles();
@@ -992,8 +993,11 @@ function getNotasMediasData(token) {
         const f = files.next();
         const key = f.getName().replace(/\.[^.]+$/, '').trim().toUpperCase();
         fileMap[key] = f;
+        folderFileCount++;
       }
-    } catch(e) {}
+    } catch(e) { folderErr = e.message; }
+
+    const fileMapKeys = Object.keys(fileMap).slice(0, 5); // primeiros 5 nomes para debug
 
     const getPhoto_ = (apelido, unidade) => {
       if (!apelido || !unidade) return null;
@@ -1006,6 +1010,7 @@ function getNotasMediasData(token) {
     };
 
     const rows = [];
+    const photoDebug = []; // primeiros 5 lookups para diagnóstico
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
       const apelido = iAp   !== -1 ? String(row[iAp]||'').trim()   : '';
@@ -1018,12 +1023,26 @@ function getNotasMediasData(token) {
       const pipeParts = chaveRaw.split('|');
       const matricula = (pipeParts.length > 1 ? pipeParts[pipeParts.length-1] : pipeParts[0]).trim();
       const nm = Math.round(nota * 100) / 100;
-      if (un1) rows.push({ apelido, unidade: un1, notaMedia: nm, matricula, photoUrl: getPhoto_(apelido, un1) });
-      if (un2) rows.push({ apelido, unidade: un2, notaMedia: nm, matricula, photoUrl: getPhoto_(apelido, un2) });
+      if (un1) {
+        const ph = getPhoto_(apelido, un1);
+        if (photoDebug.length < 5) photoDebug.push({ key: (apelido+' - '+un1).toUpperCase(), found: !!ph });
+        rows.push({ apelido, unidade: un1, notaMedia: nm, matricula, photoUrl: ph });
+      }
+      if (un2) {
+        const ph = getPhoto_(apelido, un2);
+        if (photoDebug.length < 5) photoDebug.push({ key: (apelido+' - '+un2).toUpperCase(), found: !!ph });
+        rows.push({ apelido, unidade: un2, notaMedia: nm, matricula, photoUrl: ph });
+      }
       if (!un1 && !un2) rows.push({ apelido, unidade: '', notaMedia: nm, matricula, photoUrl: null });
     }
 
-    const debug = rows.length === 0 ? { hdrs: debugHdrs, iAp, iNota, iUn1, iUn2, iMat, totalRaw: raw.length-1 } : null;
+    const debug = {
+      rows: rows.length,
+      folderFileCount, folderErr,
+      fileMapKeys,   // primeiros 5 nomes de arquivo na pasta
+      photoDebug,    // primeiros 5 lookups: chave buscada + se encontrou
+      ...(rows.length === 0 ? { hdrs: debugHdrs, iAp, iNota, iUn1, iUn2, iMat, totalRaw: raw.length-1 } : {})
+    };
 
     // diretor vê só sua unidade
     const filtered = (session.role === 'diretor' && session.unidade)

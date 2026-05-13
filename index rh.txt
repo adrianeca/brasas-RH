@@ -2518,9 +2518,15 @@ function loadNotasMediasData(){
   google.script.run
     .withSuccessHandler(function(r){
       ALL_NOTAS_MEDIAS=r&&r.ok?r.rows:[];
+      var dbg=r&&r.debug;
       console.log('[PODIUM] linhas:',ALL_NOTAS_MEDIAS.length);
-      if(r&&r.debug) console.warn('[PODIUM] debug (colunas não encontradas):',JSON.stringify(r.debug));
-      if(ALL_NOTAS_MEDIAS.length) console.log('[PODIUM] exemplo:',JSON.stringify(ALL_NOTAS_MEDIAS[0]));
+      if(dbg){
+        console.log('[PODIUM] pasta: '+dbg.folderFileCount+' arquivos'+(dbg.folderErr?' ERRO:'+dbg.folderErr:''));
+        console.log('[PODIUM] nomes na pasta:',JSON.stringify(dbg.fileMapKeys));
+        console.log('[PODIUM] lookups de foto:',JSON.stringify(dbg.photoDebug));
+        if(dbg.iAp!=null) console.log('[PODIUM] col indices iAp='+dbg.iAp+' iNota='+dbg.iNota+' iUn1='+dbg.iUn1+' iUn2='+dbg.iUn2+' iMat='+dbg.iMat);
+      }
+      if(ALL_NOTAS_MEDIAS.length) console.log('[PODIUM] exemplo linha 0:',JSON.stringify(ALL_NOTAS_MEDIAS[0]));
       renderPodium();
     })
     .withFailureHandler(function(e){
