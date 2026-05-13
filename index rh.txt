@@ -576,8 +576,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       <div class="filters-bar">
         <div class="filter-group"><label>Status</label><select id="f-prof-status" onchange="onProfFilterChange()"><option value="Ativo">Apenas Ativos</option><option value="">Todos</option></select></div>
         <div class="filter-group" style="min-width:180px;flex:1.5"><label>Unidade</label><select id="f-prof-unidade" onchange="onProfFilterChange()"><option value="">Todas</option></select></div>
-        <div class="filter-group"><label>Nível</label><select id="f-prof-nivel" onchange="onProfFilterChange()"><option value="">Todos</option></select></div>
-        <div class="filter-group" style="min-width:100px"><label>Ano</label><select id="f-prof-ano" onchange="onProfFilterChange()"><option value="">Todos</option></select></div>
+<div class="filter-group" style="min-width:100px"><label>Ano</label><select id="f-prof-ano" onchange="onProfFilterChange()"><option value="">Todos</option></select></div>
         <div class="filter-group" style="min-width:220px;flex:2"><label>Professor</label><select id="f-prof-prof" onchange="onProfProfChange()"><option value="">Todos</option></select></div>
         <div class="filter-actions"><button class="btn-clear" onclick="clearProfPageFilters()">Limpar</button></div>
       </div>
@@ -620,7 +619,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       </div>
       <div class="section" style="margin-bottom:24px">
         <div class="section-header">
-          <div><div class="section-title">Histórico — Turmas e Alunos por Professor</div><div class="section-subtitle">Último snapshot de cada mês · 12 meses</div></div>
+          <div><div class="section-title">Histórico — Turmas e Alunos por Professor</div></div>
         </div>
         <div class="filters-bar" style="padding:16px 24px 16px;border-bottom:1px solid var(--gray-100)">
           <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="hist-unidade" onchange="onHistUnidadeChange()"><option value="">Todas as unidades</option></select></div>
@@ -640,7 +639,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         <div class="charts-grid">
           <div class="chart-container"><div class="chart-title">Top Professores por Dropouts</div><div class="chart-subtitle">Ranking no período · âmbar = com observação registrada</div><div class="chart-canvas-wrapper" style="height:340px"><canvas id="chartTopDropouts"></canvas></div></div>
           <div class="chart-container"><div class="chart-title">Distribuição de Notas</div><div class="chart-subtitle">Frequência das notas de observação no período</div><div class="chart-canvas-wrapper" style="height:340px"><canvas id="chartNotasDist"></canvas></div></div>
-          <div class="chart-container full"><div class="chart-title">Dropouts por Nível</div><div class="chart-subtitle">Total de dropouts no período por nível do professor · baseado em RJ - UNIDADES</div><div id="do-nivel-unmatched" style="margin-bottom:8px"></div><div class="chart-canvas-wrapper" style="height:280px"><canvas id="chartDONivel"></canvas></div></div>
+          <div class="chart-container full"><div class="chart-title">Dropouts por Nível</div><div id="do-nivel-unmatched" style="margin-bottom:8px"></div><div class="chart-canvas-wrapper" style="height:280px"><canvas id="chartDONivel"></canvas></div></div>
         </div>
         <div style="padding:16px 24px 24px;border-top:1px solid var(--gray-100);margin-top:8px">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
@@ -691,7 +690,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         </div>
       </div>
 
-      <div class="section"><div class="section-header"><div><div class="section-title">Lista de Professores</div><div class="section-subtitle">Teachers com nível cadastrado</div></div><div class="section-badge" id="prof-badge">0 registros</div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Apelido</th><th>Nome Completo</th><th>Unidade</th><th class="center">Nível</th><th class="center">Status</th><th class="num">Anos de Casa</th><th>E-mail BRASAS</th></tr></thead><tbody id="tblProfessores"></tbody></table></div><div style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--gray-100)"><div style="font-size:.78rem;color:var(--gray-500)" id="prof-pag-info">—</div><div style="display:flex;gap:8px"><button class="btn-clear" id="prof-pag-prev" onclick="pagProf(-1)" style="min-height:32px;padding:6px 14px">← Anterior</button><button class="btn-clear" id="prof-pag-next" onclick="pagProf(1)" style="min-height:32px;padding:6px 14px">Próxima →</button></div></div></div>
+      <div class="section"><div class="section-header"><div><div class="section-title">Lista de Professores</div></div><div class="section-badge" id="prof-badge">0 registros</div></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Apelido</th><th>Nome Completo</th><th>Unidade</th><th class="center">Nível</th><th class="center">Status</th><th class="num">Anos de Casa</th><th>E-mail BRASAS</th></tr></thead><tbody id="tblProfessores"></tbody></table></div><div style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--gray-100)"><div style="font-size:.78rem;color:var(--gray-500)" id="prof-pag-info">—</div><div style="display:flex;gap:8px"><button class="btn-clear" id="prof-pag-prev" onclick="pagProf(-1)" style="min-height:32px;padding:6px 14px">← Anterior</button><button class="btn-clear" id="prof-pag-next" onclick="pagProf(1)" style="min-height:32px;padding:6px 14px">Próxima →</button></div></div></div>
       <div class="section">
       <div class="section-header">
         <div class="section-title">Professores por Unidade e Nível</div>
