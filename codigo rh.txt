@@ -161,6 +161,7 @@ function getData(token) {
         unidadeAcesso:    String(g(row,'UNIDADE ACESSO') || '').trim(),
         unidadeSecAcesso: String(g(row,'UNIDADE SEC ACESSO') || '').trim(),
         motivoSaida:      String(g(row,'INATIVOS') || '').trim(),
+        chaveMatriculaDP: String(row[38]||'').trim().split('|').pop().trim(),
       });
     }
     const role = session.role;
@@ -946,7 +947,7 @@ function getNotasData(token) {
         unidade:         String(g(row,'Unidade')||'').trim(),
         observationDate: fmtDate_(obsDate),
         mes, ano, mesAno,
-        nivel:           String(g(row,'Level')||g(row,'Nivel')||'').trim(),
+        nivel:           String(row[81]||g(row,'Level')||g(row,'Nivel')||'').trim(),
         nota:            Math.round(nota*100)/100,
         chaveMatricula,
       });

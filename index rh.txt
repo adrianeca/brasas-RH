@@ -245,6 +245,38 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .dl-comment-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .dl-comment-badge{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--navy-50);color:var(--navy-600)}
 .dl-comment-text{font-size:.82rem;color:var(--navy-700);line-height:1.6}
+.sc-wrap{display:flex;gap:20px;align-items:flex-start}
+.sc-chart-side{flex:1;min-width:0;position:relative}
+.sc-q-labels{position:absolute;inset:0;pointer-events:none;z-index:1}
+.sc-q-label{position:absolute;font-size:.68rem;font-weight:700;opacity:.28;text-transform:uppercase;letter-spacing:.05em;line-height:1.4}
+.sc-q-label.tl{top:8px;left:52px;color:#dc2626}
+.sc-q-label.tr{top:8px;right:10px;color:#d97706;text-align:right}
+.sc-q-label.bl{bottom:36px;left:52px;color:#94a3b8}
+.sc-q-label.br{bottom:36px;right:10px;color:#15803d;text-align:right}
+.sc-thr-pills{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.sc-thr-pill{font-size:.75rem;background:var(--navy-50);border:1px solid #c0d4e9;border-radius:20px;padding:3px 10px;color:var(--navy-600)}
+.sc-thr-pill b{color:var(--navy-800)}
+.sc-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.sc-legend-item{display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--gray-500)}
+.sc-legend-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,.15)}
+#do-sc-detail{width:230px;flex-shrink:0;background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow-lg);border:1px solid var(--gray-200);padding:18px 18px 16px;position:relative;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
+#do-sc-detail.visible{opacity:1;transform:none;pointer-events:auto}
+.sc-det-close{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--gray-400);font-size:.9rem;cursor:pointer;line-height:1;padding:3px 6px;border-radius:4px}
+.sc-det-close:hover{background:var(--navy-50);color:var(--navy-700)}
+.sc-det-name{font-size:.95rem;font-weight:700;color:var(--navy-800);margin-bottom:6px;padding-right:20px}
+.sc-det-badge{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 9px;border-radius:4px;margin-bottom:14px}
+.sc-det-badge.tl{background:#fee2e2;color:#dc2626}
+.sc-det-badge.tr{background:#fef3c7;color:#b45309}
+.sc-det-badge.bl{background:#f1f5f9;color:#475569}
+.sc-det-badge.br{background:#dcfce7;color:#15803d}
+.sc-det-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.sc-det-metric{background:var(--navy-25);border-radius:8px;padding:10px 8px;text-align:center}
+.sc-det-metric .mv{font-size:1.3rem;font-weight:700;color:var(--navy-700);line-height:1}
+.sc-det-metric .ml{font-size:.68rem;color:var(--gray-500);margin-top:3px;text-transform:uppercase;letter-spacing:.03em}
+.sc-det-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--gray-200);font-size:.79rem}
+.sc-det-row:last-child{border-bottom:none}
+.sc-det-lbl{color:var(--gray-500)}
+.sc-det-val{font-weight:600;color:var(--navy-700)}
 @media(max-width:900px){
   .container{padding:16px}.charts-grid{grid-template-columns:1fr}
   .insight-banner{grid-template-columns:1fr 1fr}
@@ -571,6 +603,49 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         <div class="charts-grid">
           <div class="chart-container"><div class="chart-title">Top Professores por Dropouts</div><div class="chart-subtitle">Ranking no período · âmbar = com observação registrada</div><div class="chart-canvas-wrapper" style="height:340px"><canvas id="chartTopDropouts"></canvas></div></div>
           <div class="chart-container"><div class="chart-title">Distribuição de Notas</div><div class="chart-subtitle">Frequência das notas de observação no período</div><div class="chart-canvas-wrapper" style="height:340px"><canvas id="chartNotasDist"></canvas></div></div>
+          <div class="chart-container full"><div class="chart-title">Dropouts por Nível</div><div class="chart-subtitle">Total de dropouts no período por nível do professor · baseado em RJ - UNIDADES</div><div id="do-nivel-unmatched" style="margin-bottom:8px"></div><div class="chart-canvas-wrapper" style="height:280px"><canvas id="chartDONivel"></canvas></div></div>
+        </div>
+        <div style="padding:16px 24px 24px;border-top:1px solid var(--gray-100);margin-top:8px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+            <div>
+              <div style="font-size:.88rem;font-weight:600;color:var(--navy-700)">Nota de Observação × Dropouts no Ciclo</div>
+              <div style="font-size:.75rem;color:var(--gray-400);margin-top:2px">Cada ponto = um professor · sigla = unidade · clique para detalhes · linhas = mediana</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+              <div class="filter-group" style="min-width:150px"><label>Unidade</label><select id="do-sc-unidade" onchange="renderDOScatter()"><option value="">Todas</option></select></div>
+              <div class="filter-group" style="min-width:150px"><label>Nível</label><select id="do-sc-nivel" onchange="renderDOScatter()"><option value="">Todos</option><option>BÁSICO</option><option>INTERMEDIÁRIO</option><option>AVANÇADO</option></select></div>
+              <div class="filter-group" style="min-width:160px"><label>Mín. Observações</label><select id="do-sc-min-obs" onchange="renderDOScatter()"><option value="1">≥ 1 observação</option><option value="2">≥ 2 observações</option><option value="3">≥ 3 observações</option></select></div>
+            </div>
+          </div>
+          <div class="sc-thr-pills">
+            <div class="sc-thr-pill">Nota abaixo da média &lt; <b id="sc-thr-nota">—</b></div>
+            <div class="sc-thr-pill">Dropout alto ≥ <b id="sc-thr-drop">—</b></div>
+            <div class="sc-thr-pill" style="color:var(--gray-400);border-color:var(--gray-200)">divisores = mediana dos dados filtrados</div>
+          </div>
+          <div class="sc-wrap">
+            <div class="sc-chart-side">
+              <div style="position:relative;height:400px">
+                <div class="sc-q-labels">
+                  <span class="sc-q-label tl">Nota abaixo da média · Dropout alto</span>
+                  <span class="sc-q-label tr">Nota acima da média · Dropout alto</span>
+                  <span class="sc-q-label bl">Nota abaixo da média · Dropout baixo</span>
+                  <span class="sc-q-label br">Nota acima da média · Dropout baixo</span>
+                </div>
+                <canvas id="chartDOScatter"></canvas>
+              </div>
+              <div class="sc-legend">
+                <div class="sc-legend-item"><div class="sc-legend-dot" style="background:#ef444466;border-color:#dc2626"></div>Nota abaixo da média · Dropout alto</div>
+                <div class="sc-legend-item"><div class="sc-legend-dot" style="background:#f59e0b66;border-color:#d97706"></div>Nota acima da média · Dropout alto</div>
+                <div class="sc-legend-item"><div class="sc-legend-dot" style="background:#94a3b866;border-color:#64748b"></div>Nota abaixo da média · Dropout baixo</div>
+                <div class="sc-legend-item"><div class="sc-legend-dot" style="background:#22c55e66;border-color:#15803d"></div>Nota acima da média · Dropout baixo</div>
+              </div>
+            </div>
+            <div id="do-sc-detail">
+              <button class="sc-det-close" onclick="closeSCDetail()">✕</button>
+              <div id="do-sc-det-body"></div>
+            </div>
+          </div>
+          <div id="do-sc-empty" style="display:none;text-align:center;padding:40px 0;color:var(--gray-400);font-size:.9rem">Nenhum professor com observações registradas no ciclo atual.</div>
         </div>
         <div style="padding:16px 24px 24px;border-top:1px solid var(--gray-100);margin-top:8px">
           <div style="font-size:.88rem;font-weight:600;color:var(--navy-700);margin-bottom:12px">Timeline por Professor</div>
@@ -958,6 +1033,18 @@ var ALL_TURMAS=[];
 var ALL_HISTORICO=[];
 var ALL_DESLIG=[];
 var ALL_DROPOUTS=[], ALL_NOTAS=[], DO_CHARTS={};
+var DO_SCATTER_CHART=null, SC_MED_NOTA=0, SC_MED_DROP=0;
+var SC_Q_COLORS={tl:{bg:'#ef444455',border:'#dc2626'},tr:{bg:'#f59e0b55',border:'#d97706'},bl:{bg:'#94a3b855',border:'#64748b'},br:{bg:'#22c55e55',border:'#15803d'}};
+var SC_Q_LABELS={tl:'Nota abaixo da média · Dropout alto',tr:'Nota acima da média · Dropout alto',bl:'Nota abaixo da média · Dropout baixo',br:'Nota acima da média · Dropout baixo'};
+var SC_SIGLA_PLUGIN={id:'scSiglaPlugin',afterDatasetsDraw:function(chart){
+  var ctx=chart.ctx;ctx.save();ctx.font='bold 8px Arial,sans-serif';ctx.fillStyle='rgba(255,255,255,0.95)';ctx.textAlign='center';ctx.textBaseline='middle';
+  chart.data.datasets.forEach(function(ds,di){
+    if(ds.label&&ds.label.startsWith('__')) return;
+    var meta=chart.getDatasetMeta(di);
+    (ds.data||[]).forEach(function(pt,pi){var el=meta.data[pi];if(!el||!pt||!pt._p) return;ctx.fillText(scSigla_(pt._p.unidade),el.x,el.y);});
+  });
+  ctx.restore();
+}};
 var DL_ANOS_SEL=[];
 var ENG_COLORS={pos:'#22c55e',neg:'#ef4444',neu:'#f59e0b',def:'#3d6b99'};
 var CHARTS={};
@@ -1883,11 +1970,24 @@ function renderPeople(){
   var admY=groupBy(ALL_EMP.filter(function(e){ return e.admYear&&e.admYear>=2022; }),'admYear');
   var yrL=Object.keys(admY).sort();
   mkChart('chartAdmAno','bar',yrL,yrL.map(function(y){ return admY[y].length; }),'Admissões',{colors:['#3d6b99']});
-  var funcs=[...new Set(base.map(function(e){ return e.funcao; }).filter(Boolean))].sort();
-  document.getElementById('tblGeneroFuncao').innerHTML=funcs.map(function(f){
+  var funcs=[...new Set(base.map(function(e){ return e.funcao; }).filter(Boolean))];
+  var funcData=funcs.map(function(f){
     var s=base.filter(function(e){ return e.funcao===f; });
-    return '<tr><td>'+esc(f)+'</td><td class="num">'+s.filter(function(e){ return e.sexo==='M'; }).length+'</td><td class="num">'+s.filter(function(e){ return e.sexo==='F'; }).length+'</td><td class="num">'+s.length+'</td><td class="num">'+pct(s.length,base.length)+'%</td></tr>';
-  }).join('')+'<tr class="row-total"><td>TOTAL</td><td class="num">'+masc+'</td><td class="num">'+fem+'</td><td class="num">'+base.length+'</td><td class="num">100%</td></tr>';
+    return {f:f,s:s,masc:s.filter(function(e){ return e.sexo==='M'; }).length,fem:s.filter(function(e){ return e.sexo==='F'; }).length,n:s.length,p:pct(s.length,base.length)};
+  });
+  funcData.sort(function(a,b){ return b.n-a.n; });
+  var mainFuncs=funcData.filter(function(d){ return +d.p>0; });
+  var otherFuncs=funcData.filter(function(d){ return +d.p===0; });
+  var funcRows=mainFuncs.map(function(d){
+    return '<tr><td>'+esc(d.f)+'</td><td class="num">'+d.masc+'</td><td class="num">'+d.fem+'</td><td class="num">'+d.n+'</td><td class="num">'+d.p+'%</td></tr>';
+  });
+  if(otherFuncs.length){
+    var oM=otherFuncs.reduce(function(a,d){ return a+d.masc; },0);
+    var oF=otherFuncs.reduce(function(a,d){ return a+d.fem; },0);
+    var oN=otherFuncs.reduce(function(a,d){ return a+d.n; },0);
+    funcRows.push('<tr><td>Outros ('+otherFuncs.length+' funções)</td><td class="num">'+oM+'</td><td class="num">'+oF+'</td><td class="num">'+oN+'</td><td class="num">'+pct(oN,base.length)+'%</td></tr>');
+  }
+  document.getElementById('tblGeneroFuncao').innerHTML=funcRows.join('')+'<tr class="row-total"><td>TOTAL</td><td class="num">'+masc+'</td><td class="num">'+fem+'</td><td class="num">'+base.length+'</td><td class="num">100%</td></tr>';
 }
 function clearPeopleFilters(){
   ['pf-unidade','pf-status','pf-sexo','pf-funcao'].forEach(function(id){
@@ -2389,6 +2489,8 @@ function initDOFilters(){
   if(selTlU&&selTlU.options.length<=1) units.forEach(function(u){selTlU.appendChild(new Option(u,u));});
   var selP=document.getElementById('do-prof-timeline');
   if(selP&&selP.options.length<=1) keys.forEach(function(k){selP.appendChild(new Option(profMap[k],k));});
+  var selScU=document.getElementById('do-sc-unidade');
+  if(selScU&&selScU.options.length<=1) units.forEach(function(u){selScU.appendChild(new Option(u,u));});
 }
 function clearDOFilters(){
   ['do-unidade','do-ano','do-prof'].forEach(function(id){var el=document.getElementById(id);if(el) el.value='';});
@@ -2416,7 +2518,7 @@ function renderDropoutsNotas(){
     '<div class="kpi-card"><div class="kpi-label">Média / Prof. / Mês</div><div class="kpi-value">'+mediaD.toFixed(1)+'</div><div class="kpi-sub">dropouts médios</div></div>'+
     '<div class="kpi-card"><div class="kpi-label">Professores Observados</div><div class="kpi-value">'+profsN.size+'</div><div class="kpi-sub">com nota de coordenador</div></div>'+
     '<div class="kpi-card"><div class="kpi-label">Nota Média BRASAS</div><div class="kpi-value">'+(notaMed?notaMed.toFixed(2).replace('.',','):'—')+'</div><div class="kpi-sub">observações no período</div></div>';
-  renderDOChartTop(d,n); renderDOChartNotas(n);
+  renderDOChartTop(d,n); renderDOChartNotas(n); renderDONivelChart(d); renderDOScatter();
 }
 function renderDOChartTop(d,n){
   var profMap={};
@@ -2433,6 +2535,141 @@ function renderDOChartNotas(n){
   if(DO_CHARTS.notas) DO_CHARTS.notas.destroy();
   DO_CHARTS.notas=new Chart(ctx,{type:'bar',data:{labels:ranges.map(function(r){return r.l;}),datasets:[{label:'Observações',data:ranges.map(function(r){return n.filter(function(o){return o.nota>=r.min&&o.nota<r.max;}).length;}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
 }
+function renderDONivelChart(d){
+  var nivelMap={};
+  ALL_EMP.forEach(function(e){if(e.chaveMatriculaDP) nivelMap[e.chaveMatriculaDP]=e.nivel||'';});
+  var nivelDrops={}, unmatchedProfs={};
+  d.forEach(function(r){
+    var niv=nivelMap[r.chaveMatricula];
+    if(!niv){if(r.teacher) unmatchedProfs[r.chaveMatricula]=r.teacher; niv='Não informado';}
+    nivelDrops[niv]=(nivelDrops[niv]||0)+r.dropouts;
+  });
+  var keys=Object.keys(nivelDrops).filter(function(k){return nivelDrops[k]>0;});
+  keys.sort(function(a,b){var ia=NIVEL_ORDER.indexOf(a),ib=NIVEL_ORDER.indexOf(b);return (ia===-1?99:ia)-(ib===-1?99:ib);});
+  var ctx=document.getElementById('chartDONivel'); if(!ctx) return;
+  if(DO_CHARTS.nivel) DO_CHARTS.nivel.destroy();
+  DO_CHARTS.nivel=new Chart(ctx,{type:'bar',data:{labels:keys,datasets:[{label:'Dropouts',data:keys.map(function(k){return nivelDrops[k];}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{precision:0}}}}});
+  var unNames=Object.values(unmatchedProfs).sort();
+  console.log('[DO-NIVEL] professores sem nível ('+unNames.length+'):', unNames.join(', ')||'nenhum');
+  var unEl=document.getElementById('do-nivel-unmatched');
+  if(unEl) unEl.innerHTML=unNames.length?'<span style="font-size:.75rem;color:var(--gray-400)">Sem nível cadastrado ('+unNames.length+'): '+unNames.map(function(n){return esc(n);}).join(', ')+'</span>':'';
+}
+function scSigla_(unidade){
+  var words=(unidade||'').trim().toUpperCase().split(/\s+/).filter(Boolean);
+  if(!words.length) return '?';
+  if(words.length===1) return words[0].substring(0,3);
+  return words.map(function(w){return w[0];}).join('').substring(0,3);
+}
+function scMedian_(arr){
+  if(!arr.length) return 0;
+  var s=[].concat(arr).sort(function(a,b){return a-b;});
+  var m=Math.floor(s.length/2);
+  return s.length%2?s[m]:(s[m-1]+s[m])/2;
+}
+function scQKey_(p){return (p.dropouts>=SC_MED_DROP?'t':'b')+(p.nota<SC_MED_NOTA?'l':'r');}
+function renderDOScatter(){
+  if(!ALL_NOTAS.length) return;
+  var fU=v('do-sc-unidade'),fNiv=v('do-sc-nivel'),fMin=parseInt(v('do-sc-min-obs')||'1')||1;
+  var nowD=new Date();
+  var cycleY=nowD.getMonth()>=10?nowD.getFullYear():nowD.getFullYear()-1;
+  function inCycSC_(mes,ano){return (ano>cycleY||(ano===cycleY&&mes>=11))&&(ano<cycleY+1||(ano===cycleY+1&&mes<=10));}
+  var dropMap={};
+  ALL_DROPOUTS.filter(function(r){return inCycSC_(r.mes,r.ano);}).forEach(function(r){
+    if(!r.chaveMatricula) return;
+    if(!dropMap[r.chaveMatricula]) dropMap[r.chaveMatricula]={teacher:r.teacher,unidade:r.unidade,dropouts:0};
+    dropMap[r.chaveMatricula].dropouts+=r.dropouts;
+  });
+  var notaMap={};
+  ALL_NOTAS.forEach(function(r){
+    if(!r.chaveMatricula) return;
+    if(!notaMap[r.chaveMatricula]) notaMap[r.chaveMatricula]={teacher:r.teacher,unidade:r.unidade,nivel:r.nivel,notas:[],coordenador:r.coordenador};
+    notaMap[r.chaveMatricula].notas.push(r.nota);
+    notaMap[r.chaveMatricula].coordenador=r.coordenador;
+  });
+  var profs=[];
+  Object.keys(notaMap).forEach(function(k){
+    var nm=notaMap[k];
+    if(nm.notas.length<fMin) return;
+    var unidade=nm.unidade||(dropMap[k]||{}).unidade||'';
+    var nivel=nm.nivel||'';
+    if(fU&&unidade!==fU) return;
+    if(fNiv&&nivel!==fNiv) return;
+    profs.push({chave:k,teacher:nm.teacher||(dropMap[k]||{}).teacher||k,unidade:unidade,nivel:nivel,
+      nota:nm.notas.reduce(function(s,x){return s+x;},0)/nm.notas.length,
+      dropouts:(dropMap[k]||{dropouts:0}).dropouts,
+      numObs:nm.notas.length,coordenador:nm.coordenador});
+  });
+  var canvasEl=document.getElementById('chartDOScatter'),emptyEl=document.getElementById('do-sc-empty');
+  if(!profs.length){if(canvasEl)canvasEl.style.display='none';if(emptyEl)emptyEl.style.display='';return;}
+  if(canvasEl)canvasEl.style.display='';if(emptyEl)emptyEl.style.display='none';
+  SC_MED_NOTA=scMedian_(profs.map(function(p){return p.nota;}));
+  SC_MED_DROP=scMedian_(profs.map(function(p){return p.dropouts;}));
+  var maxDrop=Math.max.apply(null,profs.map(function(p){return p.dropouts;}));
+  var yMax=Math.max(maxDrop+2,Math.ceil(maxDrop*1.2));
+  var thrN=document.getElementById('sc-thr-nota'),thrD=document.getElementById('sc-thr-drop');
+  if(thrN)thrN.textContent=SC_MED_NOTA.toFixed(1).replace('.',',');
+  if(thrD)thrD.textContent=SC_MED_DROP.toFixed(1).replace('.',',');
+  var datasets=['tl','tr','bl','br'].map(function(qk){
+    return {label:'__q_'+qk,data:profs.filter(function(p){return scQKey_(p)===qk;}).map(function(p){return{x:p.nota,y:p.dropouts,_p:p};}),
+      backgroundColor:SC_Q_COLORS[qk].bg,borderColor:SC_Q_COLORS[qk].border,borderWidth:1.5,pointRadius:18,pointHoverRadius:20};
+  });
+  datasets.push({label:'__medNota',data:[{x:SC_MED_NOTA,y:0},{x:SC_MED_NOTA,y:yMax+2}],type:'line',borderColor:'#94a3b8',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0});
+  datasets.push({label:'__medDrop',data:[{x:4.5,y:SC_MED_DROP},{x:11,y:SC_MED_DROP}],type:'line',borderColor:'#94a3b8',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0});
+  if(DO_SCATTER_CHART){DO_SCATTER_CHART.destroy();DO_SCATTER_CHART=null;}
+  DO_SCATTER_CHART=new Chart(canvasEl,{type:'scatter',data:{datasets:datasets},plugins:[SC_SIGLA_PLUGIN],options:{
+    responsive:true,maintainAspectRatio:false,animation:{duration:250},
+    interaction:{mode:'nearest',intersect:false},
+    plugins:{legend:{display:false},tooltip:{enabled:false}},
+    scales:{
+      x:{title:{display:true,text:'Nota Média de Observação',font:{size:12},color:'#64748b'},min:4.5,max:10.5,
+         ticks:{stepSize:1,font:{size:11},color:'#64748b',callback:function(v){return Number.isInteger(v)&&v>=5&&v<=10?v:''}},
+         grid:{color:'#e2e8f0'},border:{color:'#e2e8f0'}},
+      y:{title:{display:true,text:'Dropouts no Ciclo',font:{size:12},color:'#64748b'},min:0,max:yMax,
+         ticks:{font:{size:11},color:'#64748b',precision:0},grid:{color:'#e2e8f0'},border:{color:'#e2e8f0'}}
+    }
+  }});
+  canvasEl.style.cursor='default';
+  canvasEl.onclick=function(evt){
+    if(!DO_SCATTER_CHART) return;
+    var rect=canvasEl.getBoundingClientRect();
+    var cx=evt.clientX-rect.left, cy=evt.clientY-rect.top;
+    var els=DO_SCATTER_CHART.getElementsAtEventForMode(evt,'nearest',{intersect:false},false);
+    if(!els.length) return;
+    var ds=DO_SCATTER_CHART.data.datasets[els[0].datasetIndex];
+    if(!ds.label||ds.label.startsWith('__')) return;
+    var pt=ds.data[els[0].index]; if(!pt||!pt._p) return;
+    var meta=DO_SCATTER_CHART.getDatasetMeta(els[0].datasetIndex);
+    var el=meta.data[els[0].index]; if(!el) return;
+    if(Math.sqrt(Math.pow(cx-el.x,2)+Math.pow(cy-el.y,2))>24) return;
+    showSCDetail(pt._p);
+  };
+  canvasEl.onmousemove=function(evt){
+    if(!DO_SCATTER_CHART){canvasEl.style.cursor='default';return;}
+    var rect=canvasEl.getBoundingClientRect();
+    var cx=evt.clientX-rect.left, cy=evt.clientY-rect.top;
+    var els=DO_SCATTER_CHART.getElementsAtEventForMode(evt,'nearest',{intersect:false},false);
+    if(!els.length){canvasEl.style.cursor='default';return;}
+    var ds=DO_SCATTER_CHART.data.datasets[els[0].datasetIndex];
+    if(!ds.label||ds.label.startsWith('__')){canvasEl.style.cursor='default';return;}
+    var meta=DO_SCATTER_CHART.getDatasetMeta(els[0].datasetIndex);
+    var el=meta.data[els[0].index]; if(!el){canvasEl.style.cursor='default';return;}
+    canvasEl.style.cursor=Math.sqrt(Math.pow(cx-el.x,2)+Math.pow(cy-el.y,2))<=24?'pointer':'default';
+  };
+}
+function showSCDetail(p){
+  var qk=scQKey_(p);
+  document.getElementById('do-sc-det-body').innerHTML=
+    '<div class="sc-det-name">'+esc(p.teacher)+'</div>'
+    +'<span class="sc-det-badge '+qk+'">'+esc(SC_Q_LABELS[qk])+'</span>'
+    +'<div class="sc-det-metrics"><div class="sc-det-metric"><div class="mv">'+p.nota.toFixed(1).replace('.',',')+'</div><div class="ml">Nota média</div></div>'
+    +'<div class="sc-det-metric"><div class="mv">'+p.dropouts+'</div><div class="ml">Dropouts ciclo</div></div></div>'
+    +'<div class="sc-det-row"><span class="sc-det-lbl">Unidade</span><span class="sc-det-val">'+esc(p.unidade)+'</span></div>'
+    +'<div class="sc-det-row"><span class="sc-det-lbl">Nível</span><span class="sc-det-val">'+esc(p.nivel||'—')+'</span></div>'
+    +'<div class="sc-det-row"><span class="sc-det-lbl">Observações</span><span class="sc-det-val">'+p.numObs+'</span></div>'
+    +(p.coordenador?'<div class="sc-det-row"><span class="sc-det-lbl">Coordenador</span><span class="sc-det-val">'+esc(p.coordenador)+'</span></div>':'');
+  document.getElementById('do-sc-detail').classList.add('visible');
+}
+function closeSCDetail(){document.getElementById('do-sc-detail').classList.remove('visible');}
 function onDOUnidadeChange(){
   var fU=v('do-unidade');
   var selP=document.getElementById('do-prof');
@@ -2526,8 +2763,7 @@ function renderDOTimeline(){
   if(kpisEl){kpisEl.style.display='flex';kpisEl.innerHTML=
     '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Total Dropouts</div><div class="kpi-value">'+totalD+'</div><div class="kpi-sub">histórico completo</div></div>'+
     '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Observações no Ciclo</div><div class="kpi-value">'+cycleNotasCnt+'</div><div class="kpi-sub">'+cycleLabel+'</div></div>'+
-    (notaMed!==null?'<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Nota Média</div><div class="kpi-value">'+notaMed.toFixed(2).replace('.',',')+'</div><div class="kpi-sub">das observações</div></div>':'')+
-    '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">vs Ciclo Anterior</div><div class="kpi-value" style="color:'+trendColor+'">'+trendStr+'</div><div class="kpi-sub">'+trendSub+'</div></div>';}
+    (notaMed!==null?'<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Nota Média</div><div class="kpi-value">'+notaMed.toFixed(2).replace('.',',')+'</div><div class="kpi-sub">das observações</div></div>':'');}
 }
 
 // RENDER: COHORT

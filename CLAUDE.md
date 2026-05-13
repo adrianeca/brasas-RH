@@ -365,6 +365,7 @@ Ambos fazem `split('|')` e pegam a parte após o `|`. Isso evita qualquer diverg
 **Leitura de colunas em `getNotasData`:**
 - Nota: coluna CA = índice 78
 - Chave: coluna CC = índice 80 (por índice fixo, não por cabeçalho)
+- **Nível: coluna CD = índice 81** (por índice fixo, como primária; fallback cabeçalhos `Level` / `Nivel`)
 - Data: tenta cabeçalhos `Observation Date` → `Data da Observacao` → `Data` → fallback `row[0]` (Timestamp do Google Forms)
 
 **Detecção da coluna de matrícula em `getDropoutsData`:**
@@ -374,7 +375,8 @@ Tenta os cabeçalhos na ordem: `MATRÍCULA BI` → `MATRICULA BI` → `MATRÍCUL
 
 **Backend:**
 - `getDropoutsData(token)` → `{unidade, teacher, nomeTeacher, book, alunos, dropouts, mes, ano, mesAno, chaveMatricula, ativo, debug}`
-- `getNotasData(token)` → `{teacher, coordenador, unidade, observationDate, mes, ano, mesAno, nivel, nota, chaveMatricula, debug}`
+- `getNotasData(token)` → `{teacher, coordenador, unidade, observationDate, mes, ano, mesAno, nivel, nota, chaveMatricula, debug}` — `nivel` lido de col CD (índice 81)
+- `getData(token)` inclui campo `chaveMatriculaDP` = número extraído da col AM (índice 38, formato pipe igual ao dropouts) — usado para join com `ALL_DROPOUTS` no gráfico Dropouts por Nível
 - `role=diretor` filtra por unidade da sessão em ambas
 
 **Frontend — carregamento:**
@@ -388,9 +390,16 @@ Tenta os cabeçalhos na ordem: `MATRÍCULA BI` → `MATRICULA BI` → `MATRÍCUL
 - `#do-ano` — ano
 - `#do-prof` — professor; populado dinamicamente conforme unidade selecionada
 
-**2 gráficos globais** (a linha temporal global foi removida por ser redundante com a timeline individual):
+**3 gráficos globais** (a linha temporal global foi removida por ser redundante com a timeline individual):
 - `chartTopDropouts` — barras horizontais top 20 professores por dropouts; âmbar = tem observação registrada, navy = sem
 - `chartNotasDist` — distribuição de notas em 5 faixas: < 6, 6–7, 7–8, 8–9, 9–10
+- `chartDONivel` — barras verticais full-width: total de dropouts por nível do professor
+
+**Gráfico Dropouts por Nível (`chartDONivel`):**
+- Join: `ALL_DROPOUTS[i].chaveMatricula` ↔ `ALL_EMP[j].chaveMatriculaDP` (col AM da planilha principal)
+- Nível vem de `ALL_EMP[j].nivel` (col AH)
+- Ordenação por `NIVEL_ORDER` (A, B, 1.1 … 3.4); "Não informado" cai no final (índice 99)
+- Professores sem correspondência listados em `#do-nivel-unmatched` abaixo do título e logados em `[DO-NIVEL]` no console
 
 **Timeline individual por professor:**
 - Filtros próprios: `#do-tl-unidade` (unidade) → `onDOTlUnidadeChange()` → recascateia `#do-prof-timeline`
@@ -402,7 +411,6 @@ Tenta os cabeçalhos na ordem: `MATRÍCULA BI` → `MATRICULA BI` → `MATRÍCUL
 - **Total Dropouts** — soma histórica completa
 - **Observações no Ciclo** — conta só as observações do ciclo atual (nov–out); subtítulo mostra o ciclo ex: "Ciclo nov/25–out/26"
 - **Nota Média** — média de todas as notas do professor (histórico completo)
-- **vs Ciclo Anterior** — compara média de dropouts/mês do ciclo atual vs ciclo anterior; verde = melhorou, vermelho = piorou; subtítulo mostra os dois valores
 
 **Lógica do ciclo (nov–out):**
 ```javascript
@@ -413,6 +421,49 @@ function inCyc_(mes, ano, sy) {
   return (ano > sy || (ano === sy && mes >= 11)) && (ano < sy+1 || (ano === sy+1 && mes <= 10));
 }
 ```
+
+---
+
+### Professores — Scatter Nota de Observação × Dropouts no Ciclo
+
+Gráfico de dispersão abaixo dos gráficos globais da seção Dropouts & Observações.
+
+**Canvas:** `#chartDOScatter` | **Detail panel:** `#do-sc-detail`
+
+**Filtros próprios** (independentes dos filtros globais da seção):
+- `#do-sc-unidade` — unidade (populado em `initDOFilters()`)
+- `#do-sc-nivel` — nível (opções fixas: BÁSICO / INTERMEDIÁRIO / AVANÇADO)
+- `#do-sc-min-obs` — mínimo de observações (1/2/3)
+
+**Dados:**
+- Eixo X = nota média de `ALL_NOTAS` por `chaveMatricula` (ciclo todo, sem filtro de data)
+- Eixo Y = soma de dropouts de `ALL_DROPOUTS` filtrados para o ciclo atual (nov–out) por `chaveMatricula`
+- Apenas professores com ≥ `fMin` observações entram no gráfico
+
+**Quadrantes** (divisor = mediana dos dados filtrados):
+- `SC_MED_NOTA` e `SC_MED_DROP` calculados a cada render — armazenados globalmente
+- Labels: "Nota abaixo da média · Dropout alto/baixo" / "Nota acima da média · Dropout alto/baixo"
+- Cores: vermelho (TL), âmbar (TR), cinza (BL), verde (BR) — definidas em `SC_Q_COLORS`
+- `SC_Q_LABELS` define o texto dos quadrantes
+
+**Plugin de siglas (`SC_SIGLA_PLUGIN`):**
+- Plugin **local** (não global): passado via `plugins: [SC_SIGLA_PLUGIN]` no config do chart
+- `scSigla_(unidade)` gera sigla dinâmica: 1 palavra → 3 primeiras letras; múltiplas → inicial de cada (ex: "CAMPO GRANDE" → "CG")
+- **Nunca usar `Chart.register()` para esse plugin** — afetaria todos os outros gráficos da página
+
+**Click detection:**
+- Usa `canvas.onclick` + `getElementsAtEventForMode(evt, 'nearest', {intersect:false})` + checagem manual de distância ≤ 24px
+- `options.onClick` / `options.onHover` do Chart.js **não são confiáveis** em iframes do Apps Script — usar canvas events diretamente
+- `canvas.onclick` e `canvas.onmousemove` são atribuídos por propriedade (não addEventListener) para não acumular ao re-renderizar
+
+**Globals:** `DO_SCATTER_CHART`, `SC_MED_NOTA`, `SC_MED_DROP`, `SC_Q_COLORS`, `SC_Q_LABELS`, `SC_SIGLA_PLUGIN`
+
+---
+
+### People — Tabela Gênero × Função
+
+- Ordenada por headcount decrescente
+- Funções com percentual arredondado para 0% são agrupadas em **"Outros (N funções)"** — mesmo padrão da pirâmide de funções na aba Professores
 
 ---
 
