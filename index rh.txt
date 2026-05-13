@@ -589,7 +589,9 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
             <div class="podium-title">🏆 Top 3 · Maiores Médias de Observação</div>
             <div class="podium-subtitle">Baseado nas notas médias do ciclo · aba Notas Médias</div>
           </div>
+          <button class="btn-clear" onclick="runDiagFotos()" style="font-size:.75rem">🔍 Diagnóstico Fotos</button>
         </div>
+        <div id="podium-diag" style="display:none;background:var(--gray-100);border-radius:8px;padding:12px;margin-bottom:12px;font-size:.75rem;font-family:var(--font-mono);white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto"></div>
         <div id="podium-stage" class="podium-stage">
           <div class="podium-empty">Carregando ranking…</div>
         </div>
@@ -2512,6 +2514,14 @@ function loadNotasData(){
       console.error('[NOTAS] erro:',r&&r.error);
     }
   }).getNotasData(TOKEN);
+}
+function runDiagFotos(){
+  var el=document.getElementById('podium-diag'); if(!el) return;
+  el.style.display='block'; el.textContent='Carregando diagnóstico...';
+  google.script.run
+    .withSuccessHandler(function(r){ el.textContent=JSON.stringify(r,null,2); })
+    .withFailureHandler(function(e){ el.textContent='ERRO: '+(e&&e.message); })
+    .diagFotos(TOKEN);
 }
 function loadNotasMediasData(){
   var stg=document.getElementById('podium-stage');

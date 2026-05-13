@@ -987,45 +987,53 @@ function getNotasMediasData(token) {
 
     const debugHdrs = hdrs.slice(0, 10);
 
-    // Normalização idêntica à do sistema de dropouts: minúsculo + sem acento
-    const normPhoto_ = v => String(v||'').trim().toLowerCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g,'');
+    // Normalização idêntica ao sistema de dropouts: minúsculo + sem acento
+    const normPhoto_ = v => String(v||'').trim().replace(/ /g,' ').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
 
-    // Mapas de fotos — base64 (mais confiável em iframe do HtmlService que URL direta)
-    const fileMap = {};      // normPhoto_("APELIDO - SIGLA") → File
-    const apelidoMap = {};   // normPhoto_("APELIDO") → File (fallback sem unidade)
+    // Carrega todos os arquivos da pasta UMA vez — mapas para lookup O(1)
+    const folderFiles = [];   // [{name, normName, normApelido, blob: null}]
     let folderErr = null, folderFileCount = 0;
     try {
       const folder = DriveApp.getFolderById(FOTOS_FOLDER_ID);
-      const files = folder.getFiles();
-      while (files.hasNext()) {
-        const f = files.next();
-        const baseName = f.getName().replace(/\.[^.]+$/, '').trim();
-        const normKey = normPhoto_(baseName);
-        fileMap[normKey] = f;
+      const iter = folder.getFiles();
+      while (iter.hasNext()) {
+        const f = iter.next();
+        const raw_ = f.getName().replace(/\.[^.]+$/, '');
+        const normName = normPhoto_(raw_);
+        const normAp   = normName.split(' - ')[0].trim();
+        folderFiles.push({ f, normName, normAp });
         folderFileCount++;
-        const apKey = normKey.split(' - ')[0].trim();
-        if (!apelidoMap[apKey]) apelidoMap[apKey] = f;
       }
     } catch(e) { folderErr = e.message; }
 
-    const fileMapKeys = Object.keys(fileMap).slice(0, 8);
+    const fileMapKeys = folderFiles.slice(0,8).map(function(o){return o.normName;});
 
+    // Abordagem idêntica ao getTeacherPhotoBase64_ do sistema de dropouts:
+    // itera os arquivos e compara normalized name — sem mapa pré-construído
     const getPhotoB64_ = (apelido, unidade) => {
       if (!apelido) return null;
-      const normKey = normPhoto_(apelido + ' - ' + (unidade||''));
-      const normAp  = normPhoto_(apelido);
-      const photoFile = fileMap[normKey] || apelidoMap[normAp] || null;
-      if (!photoFile) return null;
+      const target = normPhoto_(apelido + ' - ' + (unidade||''));
+      const normAp = normPhoto_(apelido);
+      // 1ª passagem: match exato "APELIDO - SIGLA"
+      let found = null;
+      for (let i = 0; i < folderFiles.length; i++) {
+        if (folderFiles[i].normName === target) { found = folderFiles[i].f; break; }
+      }
+      // 2ª passagem: fallback pelo apelido apenas
+      if (!found) {
+        for (let i = 0; i < folderFiles.length; i++) {
+          if (folderFiles[i].normAp === normAp) { found = folderFiles[i].f; break; }
+        }
+      }
+      if (!found) return null;
       try {
-        const blob = photoFile.getBlob();
+        const blob = found.getBlob();
         return 'data:' + (blob.getContentType()||'image/jpeg') + ';base64,' + Utilities.base64Encode(blob.getBytes());
       } catch(e) { return null; }
     };
 
-    const isExclUnit_ = u => PODIUM_EXCL_UNITS.includes(
-      normPhoto_(u).normalize('NFD').replace(/[̀-ͯ]/g,'')
-    );
+    const isExclUnit_ = u => PODIUM_EXCL_UNITS.includes(normPhoto_(u));
 
     const rows = [];
     const photoDebug = [];
@@ -1068,6 +1076,49 @@ function getNotasMediasData(token) {
       : rows;
 
     return { ok: true, rows: filtered, debug };
+  } catch(e) { return { ok: false, error: e.message }; }
+}
+
+// Diagnóstico: lista arquivos na pasta e primeiras linhas da planilha Notas Médias
+function diagFotos(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessao expirada.' };
+  try {
+    const folder = DriveApp.getFolderById(FOTOS_FOLDER_ID);
+    const iter = folder.getFiles();
+    const filesInFolder = [];
+    while (iter.hasNext()) filesInFolder.push(iter.next().getName());
+
+    const normFn_ = v => String(v||'').trim().replace(/ /g,' ').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+    const normH_  = h => String(h||'').trim().toUpperCase().normalize('NFD')
+      .replace(/[̀-ͯ°ºª]/g,'');
+
+    const ss    = SpreadsheetApp.openById(NOTAS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Notas Medias') || ss.getSheetByName('Notas Médias');
+    if (!sheet) return { ok: true, filesInFolder, error: 'Aba Notas Medias nao encontrada' };
+
+    const raw  = sheet.getDataRange().getValues();
+    const hdrs = raw[0].map(normH_);
+    const ci   = name => hdrs.indexOf(normH_(name));
+    const iAp  = ci('APELIDO'), iUn1 = ci('UNIDADE 1'), iUn2 = ci('UNIDADE 2');
+
+    const sheetRows = raw.slice(1, 6).map(function(row) { return {
+      apelido: String(iAp  !== -1 ? row[iAp]  : '').trim(),
+      un1:     String(iUn1 !== -1 ? row[iUn1] : '').trim(),
+      un2:     String(iUn2 !== -1 ? row[iUn2] : '').trim(),
+    }; });
+
+    const matchTests = sheetRows.map(function(r) {
+      const target = normFn_(r.apelido + ' - ' + r.un1);
+      const hit    = filesInFolder.find(function(n){ return normFn_(n.replace(/\.[^.]+$/,'')) === target; }) || null;
+      const hitAp  = filesInFolder.find(function(n){ return normFn_(n.replace(/\.[^.]+$/,'')).split(' - ')[0].trim() === normFn_(r.apelido); }) || null;
+      return { apelido: r.apelido, un1: r.un1, un2: r.un2, target: target, hit: hit, hitAp: hitAp };
+    });
+
+    return { ok: true, filesInFolder: filesInFolder.slice(0,15),
+             hdrsNormalized: hdrs.slice(0,8), iAp: iAp, iUn1: iUn1, iUn2: iUn2,
+             matchTests: matchTests };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
