@@ -220,17 +220,21 @@ Os dois gráficos separados (Top35 + Bottom20) foram substituídos por **um úni
 - `getBrindesConsolidado` filtra pelo campo `unidade` do session quando `role === 'diretor'`
 - **Brindes é o último item da navbar**, depois do dropdown DP
 
-### Brindes — filtro Tipo de Unidade
+### Brindes — filtros e lista
 
-Filtro `<select id="f-brinde-tipo-un">` adicionado na barra de filtros da aba Brindes, entre Semestre e Unidade/Franquia.
+**Filtros disponíveis na barra:**
 
-| Opção exibida | Valor interno | Lógica |
+| ID | Label | Lógica |
 |---|---|---|
-| Todos | `""` | sem filtro |
-| Franquias | `"franquia"` | `isFranquia(e.tipo) === true` |
-| Unidades RJ | `"propria"` | `isFranquia(e.tipo) === false` |
+| `f-brinde-tipo-un` | Tipo de Unidade | `isFranquia(e.tipo)` — valores: `"franquia"` / `"propria"` |
+| `f-brinde-anos` | Anos de Casa | `g.anos === parseInt(fAnos)` — opções: 5, 10, 15 … 50 |
+| `f-brinde-setor` | Setor | `"pedagogico"` = funcao inclui PROFESSOR, COORDENADOR ou é GERENTE DE UNIDADE; `"administrativo"` = demais |
 
-O campo `e.tipo` vem da coluna `TIPO UNIDADE` da aba `CONSOLIDADO_new` — valores na planilha: `"FRANQUIA"` ou `"PRÓPRIA"`. A função `isFranquia(tipo)` já existente faz o match case-insensitive. O filtro é aplicado em `renderBrindes()` antes de iterar os anos e resetado em `clearBrindesFilters()`.
+O campo `e.tipo` vem da coluna `TIPO UNIDADE` da aba `CONSOLIDADO_new`. A função `isFranquia(tipo)` faz o match case-insensitive. Todos os filtros são resetados em `clearBrindesFilters()`.
+
+**Lista de Brindes — colunas:** Nome · Unidade · **Função** · Tipo · Data Admissão · Anos de Casa · Semestre · Brinde
+
+A coluna `Função` exibe o campo `funcao` retornado por `getBrindesConsolidado` (coluna `FUNÇÃO` da aba `CONSOLIDADO_new`). Também incluída no CSV exportado por `downloadBrindesCSV()`.
 
 ---
 
@@ -338,7 +342,7 @@ Acesso restrito a `admin` e `dp`. Lê a planilha de entrevistas de desligamento.
 - **Coluna Apelido** (`apelido` de `getData()`) adicionada após Nome, com suporte a ordenação.
 - **Coluna Dt. Nasc.** (`dataNasc`, formato `DD/MM/YYYY`) adicionada após Admissão, com suporte a ordenação (usa `toISO` como `dataAdm` e `dataDeslig`).
 - **Filtro "Mês de Nasc."** (`#f-nasc-mes`) — dropdown com os 12 meses. Filtra pelo campo `dataNasc`: extrai o mês via `dataNasc.split('/')[1]` e compara com o valor `MM` selecionado. Colaboradores sem `dataNasc` são excluídos quando o filtro está ativo.
-- **Status padrão = Ativos** — o select `#f-status` tem `selected` na opção `Ativo`, então a lista já abre filtrada por ativos. O botão "Limpar" também restaura para `Ativo` (não para "Todos").
+- **Status padrão = Todos** — o select `#f-status` abre sem filtro de status. O botão "Limpar" também restaura para `""` (Todos).
 - Todas as colunas novas estão incluídas no CSV exportado por `downloadCSV()`.
 
 ---
@@ -365,7 +369,7 @@ Ambos fazem `split('|')` e pegam a parte após o `|`. Isso evita qualquer diverg
 **Leitura de colunas em `getNotasData`:**
 - Nota: coluna CA = índice 78
 - Chave: coluna CC = índice 80 (por índice fixo, não por cabeçalho)
-- **Nível: coluna CD = índice 81** (por índice fixo, como primária; fallback cabeçalhos `Level` / `Nivel`)
+- **Nível: coluna CD = índice 81** (por índice fixo, como primária; fallback cabeçalhos `Level` / `Nivel`) — resultado recebe `.replace(/,/g,'.')` para normalizar "1,1" → "1.1" (mesma lógica de `getData()`)
 - Data: tenta cabeçalhos `Observation Date` → `Data da Observacao` → `Data` → fallback `row[0]` (Timestamp do Google Forms)
 
 **Detecção da coluna de matrícula em `getDropoutsData`:**
@@ -436,10 +440,12 @@ Gráfico de dispersão abaixo dos gráficos globais da seção Dropouts & Observ
 - `#do-sc-min-obs` — mínimo de observações (1/2/3)
 
 **Dados:**
-- Eixo X = nota média de `ALL_NOTAS` por `chaveMatricula` (ciclo todo, sem filtro de data); **min:4.5, max:10.5**
-- Eixo Y = soma de dropouts de `ALL_DROPOUTS` filtrados para o ciclo atual (nov–out) por `chaveMatricula`
+- Eixo X = nota média de `ALL_NOTAS` **filtrado para o ciclo atual (nov–out)** por `chaveMatricula`; **min:4.5, max:10.5**
+- Eixo Y = soma de dropouts de `ALL_DROPOUTS` filtrados para o ciclo atual (nov–out) por `chaveMatricula`; **min:-1.5** (espaço abaixo de 0 para bolinhas não serem cortadas)
+- Ambos usam a mesma função `inCycSC_` para consistência ciclo × ciclo
 - Apenas professores com ≥ `fMin` observações entram no gráfico
 - **Apenas professores ativos**: filtro por `Set` de `chaveMatriculaDP` de `ALL_EMP` onde `ativo=true`
+- Nível no filtro `#do-sc-nivel`: populado apenas com valores presentes em `NIVEL_ORDER` (`filter(Boolean)` não é suficiente — valores inválidos como "J2B" são excluídos)
 
 **`chaveMatriculaDP` em `getData()`:** `String(row[38]||'').trim().split('|').pop().trim()` — col AM (índice 38) da planilha principal; mesmo formato de matrícula que `chaveMatricula` em dropouts e notas.
 

@@ -368,7 +368,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
             </div>
           </div>
         </div>
-        <div class="filter-group"><label>Status</label><select id="f-status" onchange="applyFilters()"><option value="">Todos</option><option value="Ativo" selected>Ativos</option><option value="Inativo">Inativos</option></select></div>
+        <div class="filter-group"><label>Status</label><select id="f-status" onchange="applyFilters()"><option value="" selected>Todos</option><option value="Ativo">Ativos</option><option value="Inativo">Inativos</option></select></div>
         <div class="filter-group"><label>Função</label><select id="f-funcao" onchange="applyFilters()"><option value="">Todas</option></select></div>
         <div class="filter-group" style="min-width:100px;flex:0.6"><label>Sexo</label><select id="f-sexo" onchange="applyFilters()"><option value="">Todos</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
         <div class="filter-group" style="min-width:140px;flex:0.8"><label>Mês de Nasc.</label><select id="f-nasc-mes" onchange="applyFilters()"><option value="">Todos</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
@@ -493,6 +493,8 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         </div>
     <div class="filter-group"><label>Semestre</label><select id="f-brinde-sem" onchange="renderBrindes()"><option value="">Todos</option><option value="1º Semestre">1º Semestre</option><option value="2º Semestre">2º Semestre</option></select></div>
     <div class="filter-group"><label>Tipo de Unidade</label><select id="f-brinde-tipo-un" onchange="renderBrindes()"><option value="">Todos</option><option value="franquia">Franquias</option><option value="propria">Unidades RJ</option></select></div>
+    <div class="filter-group"><label>Anos de Casa</label><select id="f-brinde-anos" onchange="renderBrindes()"><option value="">Todos</option><option value="5">5 anos</option><option value="10">10 anos</option><option value="15">15 anos</option><option value="20">20 anos</option><option value="25">25 anos</option><option value="30">30 anos</option><option value="35">35 anos</option><option value="40">40 anos</option><option value="45">45 anos</option><option value="50">50 anos</option></select></div>
+    <div class="filter-group"><label>Setor</label><select id="f-brinde-setor" onchange="renderBrindes()"><option value="">Todos</option><option value="pedagogico">Pedagógico</option><option value="administrativo">Administrativo</option></select></div>
     <div class="filter-group" style="min-width:160px">
      <label>Unidade / Franquia</label>
      <div class="multi-dropdown" id="mdBrindeLocal">
@@ -538,7 +540,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         </div>
         <div class="table-scroll">
           <table class="data-table">
-            <thead><tr><th>Nome</th><th>Unidade</th><th class="center">Tipo</th><th class="num">Data Admissão</th><th class="num">Anos de Casa</th><th class="center">Semestre</th><th>Brinde</th></tr></thead>
+            <thead><tr><th>Nome</th><th>Unidade</th><th>Função</th><th class="center">Tipo</th><th class="num">Data Admissão</th><th class="num">Anos de Casa</th><th class="center">Semestre</th><th>Brinde</th></tr></thead>
             <tbody id="tblBrindes"></tbody>
           </table>
         </div>
@@ -1566,6 +1568,8 @@ function clearBrindesFilters(){
   if(ano2026){ ano2026.checked=true; updateMdBrindeDisplay('mdBrindeAno'); }
   document.getElementById('f-brinde-sem').value='';
   document.getElementById('f-brinde-tipo-un').value='';
+  document.getElementById('f-brinde-anos').value='';
+  document.getElementById('f-brinde-setor').value='';
   renderBrindes();
 }
 
@@ -1575,6 +1579,8 @@ function renderBrindes(){
   if(!anosChecked.length) anosChecked=[2026];
   var sem=v('f-brinde-sem');
   var tipoUn=v('f-brinde-tipo-un');
+  var fAnos=v('f-brinde-anos');
+  var fSetor=v('f-brinde-setor');
   var selTipo=getMdSel('mdBrindeTipo');
   var selLocal=getMdSel('mdBrindeLocal');
 
@@ -1590,6 +1596,8 @@ function renderBrindes(){
       if(selLocal.length && selLocal.indexOf(e.unidade)<0) return;
       var g=Object.assign({},e,e.giftInfo[ano],{ano:ano});
       if(sem && g.semestre!==sem) return;
+      if(fAnos && g.anos!==parseInt(fAnos)) return;
+      if(fSetor){var fu=(g.funcao||'').toUpperCase();var isPed=fu.indexOf('PROFESSOR')>=0||fu.indexOf('COORDENADOR')>=0||fu==='GERENTE DE UNIDADE';if(fSetor==='pedagogico'&&!isPed) return;if(fSetor==='administrativo'&&isPed) return;}
       if(selTipo.length && selTipo.indexOf(g.brinde)<0) return;
       gifts.push(g);
     });
@@ -1620,6 +1628,7 @@ function renderBrindes(){
         return '<tr>'+
           '<td>'+esc(String(g.nome||'').toUpperCase())+'</td>'+
           '<td>'+esc(g.unidade)+'</td>'+
+          '<td>'+esc(g.funcao||'')+'</td>'+
           '<td class="center">'+tipoTag+'</td>'+
           '<td class="num">'+fmtDateBr(g.dataAdm)+'</td>'+
           '<td class="num" style="font-weight:700">'+g.anos+'</td>'+
@@ -1627,7 +1636,7 @@ function renderBrindes(){
           '<td><span class="badge badge-brinde">🎁 '+esc(g.brinde)+'</span></td>'+
           '</tr>';
       }).join('')
-    :'<tr><td colspan="7" class="table-empty">Nenhum brinde encontrado.</td></tr>';
+    :'<tr><td colspan="8" class="table-empty">Nenhum brinde encontrado.</td></tr>';
 
    // tabela resumo por brinde x semestre
   var brindesDistintos=[...new Set(gifts.map(function(g){ return g.brinde; }))].sort();
@@ -1666,8 +1675,8 @@ function renderBrindes(){
 
 function downloadBrindesCSV(){
   var gifts=window._brindesAtual||[];
-  var headers=['Tipo','Nome','Unidade','Data Admissão','Anos de Casa','Semestre','Brinde'];
-  var rows=gifts.map(function(g){ return [g.tipo,g.nome,g.unidade,fmtDateBr(g.dataAdm),g.anos,g.semestre,g.brinde]; });
+  var headers=['Tipo','Nome','Unidade','Função','Data Admissão','Anos de Casa','Semestre','Brinde'];
+  var rows=gifts.map(function(g){ return [g.tipo,g.nome,g.unidade,g.funcao||'',fmtDateBr(g.dataAdm),g.anos,g.semestre,g.brinde]; });
   var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c||'').replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
   var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob);
@@ -1705,7 +1714,7 @@ function clearFilters(){
   document.querySelectorAll('#mdUnidadeOpts input[type=checkbox]').forEach(function(c){ c.checked=true; });
   updateMdDisplay();
   ['f-funcao','f-sexo','f-nasc-mes'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('f-status').value='Ativo';
+  document.getElementById('f-status').value='';
   ['f-nome','f-adm-de','f-adm-ate','f-des-de','f-des-ate'].forEach(function(id){ document.getElementById(id).value=''; });
   applyFilters();
 }
@@ -2493,8 +2502,8 @@ function initDOFilters(){
   if(selScU&&selScU.options.length<=1) units.forEach(function(u){selScU.appendChild(new Option(u,u));});
   var selScN=document.getElementById('do-sc-nivel');
   if(selScN&&selScN.options.length<=1){
-    var nivsInNotas=[...new Set(ALL_NOTAS.map(function(r){return r.nivel;}).filter(Boolean))];
-    nivsInNotas.sort(function(a,b){var ia=NIVEL_ORDER.indexOf(a),ib=NIVEL_ORDER.indexOf(b);return(ia===-1?99:ia)-(ib===-1?99:ib);});
+    var nivsInNotas=[...new Set(ALL_NOTAS.map(function(r){return r.nivel;}).filter(function(n){return n&&NIVEL_ORDER.indexOf(n)!==-1;}))];
+    nivsInNotas.sort(function(a,b){return NIVEL_ORDER.indexOf(a)-NIVEL_ORDER.indexOf(b);});
     nivsInNotas.forEach(function(n){selScN.appendChild(new Option(n,n));});
   }
 }
@@ -2536,10 +2545,13 @@ function renderDOChartTop(d,n){
   DO_CHARTS.top=new Chart(ctx,{type:'bar',data:{labels:list.map(function(e){return e[1].teacher;}),datasets:[{label:'Dropouts',data:list.map(function(e){return e[1].dropouts;}),backgroundColor:list.map(function(e){return obsSet.has(e[0])?'#c9a227':'#2a4d76';})}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}}});
 }
 function renderDOChartNotas(n){
+  var nowD=new Date(),cycleY=nowD.getMonth()>=10?nowD.getFullYear():nowD.getFullYear()-1;
+  function inCycN_(mes,ano){return (ano>cycleY||(ano===cycleY&&mes>=11))&&(ano<cycleY+1||(ano===cycleY+1&&mes<=10));}
+  var nCyc=n.filter(function(r){return inCycN_(r.mes,r.ano);});
   var ranges=[{l:'< 6',min:0,max:6},{l:'6 – 7',min:6,max:7},{l:'7 – 8',min:7,max:8},{l:'8 – 9',min:8,max:9},{l:'9 – 10',min:9,max:10.1}];
   var ctx=document.getElementById('chartNotasDist'); if(!ctx) return;
   if(DO_CHARTS.notas) DO_CHARTS.notas.destroy();
-  DO_CHARTS.notas=new Chart(ctx,{type:'bar',data:{labels:ranges.map(function(r){return r.l;}),datasets:[{label:'Observações',data:ranges.map(function(r){return n.filter(function(o){return o.nota>=r.min&&o.nota<r.max;}).length;}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+  DO_CHARTS.notas=new Chart(ctx,{type:'bar',data:{labels:ranges.map(function(r){return r.l;}),datasets:[{label:'Observações',data:ranges.map(function(r){return nCyc.filter(function(o){return o.nota>=r.min&&o.nota<r.max;}).length;}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:'Ciclo nov/'+String(cycleY).slice(2)+'–out/'+String(cycleY+1).slice(2),font:{size:11},color:'#64748b',padding:{bottom:4}}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
 }
 function renderDONivelChart(d){
   var nivelMap={};
@@ -2584,7 +2596,7 @@ function renderDOScatter(){
     dropMap[r.chaveMatricula].dropouts+=r.dropouts;
   });
   var notaMap={};
-  ALL_NOTAS.forEach(function(r){
+  ALL_NOTAS.filter(function(r){return inCycSC_(r.mes,r.ano);}).forEach(function(r){
     if(!r.chaveMatricula) return;
     if(!notaMap[r.chaveMatricula]) notaMap[r.chaveMatricula]={teacher:r.teacher,unidade:r.unidade,nivel:r.nivel,notas:[],coordenador:r.coordenador};
     notaMap[r.chaveMatricula].notas.push(r.nota);
@@ -2650,10 +2662,11 @@ function renderDOScatter(){
     }},
     scales:{
       x:{title:{display:true,text:'Nota Média de Observação',font:{size:12},color:'#64748b'},min:4.5,max:10.5,
-         ticks:{stepSize:1,font:{size:11},color:'#64748b',callback:function(v){return Number.isInteger(v)&&v>=5&&v<=10?v:''}},
+         ticks:{font:{size:11},color:'#64748b'},
+         afterBuildTicks:function(axis){axis.ticks=[5,6,7,8,9,10].map(function(v){return{value:v};});},
          grid:{color:'#e2e8f0'},border:{color:'#e2e8f0'}},
-      y:{title:{display:true,text:'Dropouts no Ciclo',font:{size:12},color:'#64748b'},min:0,max:yMax,
-         ticks:{font:{size:11},color:'#64748b',precision:0},grid:{color:'#e2e8f0'},border:{color:'#e2e8f0'}}
+      y:{title:{display:true,text:'Dropouts no Ciclo',font:{size:12},color:'#64748b'},min:-1.5,max:yMax,
+         ticks:{font:{size:11},color:'#64748b',precision:0,callback:function(v){return v<0?'':v;}},grid:{color:'#e2e8f0'},border:{color:'#e2e8f0'}}
     }
   }});
   canvasEl.style.cursor='default';
@@ -2753,17 +2766,17 @@ function renderDOTimeline(){
       yN:{position:'right',min:0,max:10,grid:{drawOnChartArea:false},ticks:{stepSize:1,font:{family:'DM Sans',size:11}},title:{display:true,text:'Nota',font:{family:'DM Sans',size:11}}}
     }
   }});
-  var totalD=dataD.reduce(function(s,v){return s+v;},0);
-  var notaMed=profNotas.length?profNotas.reduce(function(s,r){return s+r.nota;},0)/profNotas.length:null;
-
   // Ciclo = nov/ANO a out/ANO+1; se mês atual < nov, ciclo atual começou no ano passado
   var nowD=new Date();
   var cycleY=nowD.getMonth()>=10?nowD.getFullYear():nowD.getFullYear()-1;
   function inCyc_(mes,ano,sy){return (ano>sy||(ano===sy&&mes>=11))&&(ano<sy+1||(ano===sy+1&&mes<=10));}
-  var cycleNotasCnt=profNotas.filter(function(r){return inCyc_(r.mes,r.ano,cycleY);}).length;
   var cycleLabel='Ciclo nov/'+String(cycleY).slice(2)+'–out/'+String(cycleY+1).slice(2);
   var cD=meses.filter(function(m){return inCyc_(m.mes,m.ano,cycleY);});
   var pD=meses.filter(function(m){return inCyc_(m.mes,m.ano,cycleY-1);});
+  var totalD=cD.reduce(function(s,m){return s+m.dropouts;},0);
+  var cycleNotas=profNotas.filter(function(r){return inCyc_(r.mes,r.ano,cycleY);});
+  var cycleNotasCnt=cycleNotas.length;
+  var notaMed=cycleNotas.length?cycleNotas.reduce(function(s,r){return s+r.nota;},0)/cycleNotas.length:null;
   var cAvg=cD.length?Math.round(cD.reduce(function(s,m){return s+m.dropouts;},0)/cD.length*10)/10:null;
   var pAvg=pD.length?Math.round(pD.reduce(function(s,m){return s+m.dropouts;},0)/pD.length*10)/10:null;
   var trendStr=cAvg!==null&&pAvg!==null?(cAvg<pAvg?'↓ melhora':cAvg>pAvg?'↑ piora':'→ igual'):'—';
@@ -2771,9 +2784,9 @@ function renderDOTimeline(){
   var trendSub=cAvg!==null&&pAvg!==null?'média: '+String(cAvg).replace('.',',')+'  vs  '+String(pAvg).replace('.',','):'sem ciclo anterior';
 
   if(kpisEl){kpisEl.style.display='flex';kpisEl.innerHTML=
-    '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Total Dropouts</div><div class="kpi-value">'+totalD+'</div><div class="kpi-sub">histórico completo</div></div>'+
+    '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Total Dropouts</div><div class="kpi-value">'+totalD+'</div><div class="kpi-sub">'+cycleLabel+'</div></div>'+
     '<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Observações no Ciclo</div><div class="kpi-value">'+cycleNotasCnt+'</div><div class="kpi-sub">'+cycleLabel+'</div></div>'+
-    (notaMed!==null?'<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Nota Média</div><div class="kpi-value">'+notaMed.toFixed(2).replace('.',',')+'</div><div class="kpi-sub">das observações</div></div>':'');}
+    (notaMed!==null?'<div class="kpi-card" style="flex:0 0 auto"><div class="kpi-label">Nota Média</div><div class="kpi-value">'+notaMed.toFixed(2).replace('.',',')+'</div><div class="kpi-sub">'+cycleLabel+'</div></div>':'');}
 }
 
 // RENDER: COHORT

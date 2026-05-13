@@ -947,7 +947,7 @@ function getNotasData(token) {
         unidade:         String(g(row,'Unidade')||'').trim(),
         observationDate: fmtDate_(obsDate),
         mes, ano, mesAno,
-        nivel:           String(row[81]||g(row,'Level')||g(row,'Nivel')||'').trim(),
+        nivel:           String(row[81]||g(row,'Level')||g(row,'Nivel')||'').trim().replace(/,/g,'.'),
         nota:            Math.round(nota*100)/100,
         chaveMatricula,
       });
