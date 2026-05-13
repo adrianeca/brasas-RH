@@ -988,7 +988,7 @@ function getNotasMediasData(token) {
       while (files.hasNext()) {
         const f = files.next();
         const key = f.getName().replace(/\.[^.]+$/, '').trim().toUpperCase();
-        photoMap[key] = f.getId();
+        try { photoMap[key] = f.getThumbnailLink(); } catch(e) { photoMap[key] = null; }
       }
     } catch(e) {}
 
@@ -1001,8 +1001,8 @@ function getNotasMediasData(token) {
       if (!apelido || isNaN(nota) || nota <= 0) continue;
       const mat = iMat !== -1 ? String(row[iMat]||'').trim() : '';
       const photoKey = (apelido + ' - ' + unidade).toUpperCase();
-      const photoId = photoMap[photoKey] || null;
-      rows.push({ apelido, unidade, notaMedia: Math.round(nota * 100) / 100, matricula: mat, photoId });
+      const photoUrl = photoMap[photoKey] || null;
+      rows.push({ apelido, unidade, notaMedia: Math.round(nota * 100) / 100, matricula: mat, photoUrl });
     }
 
     // diretor vê só sua unidade

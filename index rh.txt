@@ -574,9 +574,12 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
     <!-- TAB: PROFESSORES -->
     <div id="tab-professores" class="tab-content">
       <div class="filters-bar">
-        <div class="filter-group"><label>Status</label><select id="f-prof-status" onchange="renderProfessores()"><option value="Ativo">Apenas Ativos</option><option value="">Todos</option></select></div>
-        <div class="filter-group"><label>Unidade</label><select id="f-prof-unidade" onchange="renderProfessores()"><option value="">Todas</option></select></div>
-        <div class="filter-group"><label>Nível</label><select id="f-prof-nivel" onchange="renderProfessores()"><option value="">Todos</option></select></div>
+        <div class="filter-group"><label>Status</label><select id="f-prof-status" onchange="onProfFilterChange()"><option value="Ativo">Apenas Ativos</option><option value="">Todos</option></select></div>
+        <div class="filter-group" style="min-width:180px;flex:1.5"><label>Unidade</label><select id="f-prof-unidade" onchange="onProfFilterChange()"><option value="">Todas</option></select></div>
+        <div class="filter-group"><label>Nível</label><select id="f-prof-nivel" onchange="onProfFilterChange()"><option value="">Todos</option></select></div>
+        <div class="filter-group" style="min-width:100px"><label>Ano</label><select id="f-prof-ano" onchange="onProfFilterChange()"><option value="">Todos</option></select></div>
+        <div class="filter-group" style="min-width:220px;flex:2"><label>Professor</label><select id="f-prof-prof" onchange="onProfProfChange()"><option value="">Todos</option></select></div>
+        <div class="filter-actions"><button class="btn-clear" onclick="clearProfPageFilters()">Limpar</button></div>
       </div>
       <div class="kpi-row" id="prof-kpis"></div>
 
@@ -586,12 +589,6 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
           <div>
             <div class="podium-title">🏆 Top 3 · Maiores Médias de Observação</div>
             <div class="podium-subtitle">Baseado nas notas médias do ciclo · aba Notas Médias</div>
-          </div>
-          <div class="filter-group" style="margin:0;min-width:180px">
-            <label style="font-size:.72rem">Unidade</label>
-            <select id="f-podium-unidade" onchange="renderPodium()" style="font-size:.82rem">
-              <option value="">Todas as unidades</option>
-            </select>
           </div>
         </div>
         <div id="podium-stage" class="podium-stage">
@@ -639,12 +636,6 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       <!-- DROPOUTS & OBSERVAÇÕES -->
       <div class="section" style="margin-bottom:24px">
         <div class="section-header"><div><div class="section-title">Dropouts &amp; Observações</div><div class="section-subtitle">Análise mensal de dropouts por turma e notas de observação dos coordenadores</div></div></div>
-        <div class="filters-bar" style="padding:16px 24px;border-bottom:1px solid var(--gray-100)">
-          <div class="filter-group"><label>Unidade</label><select id="do-unidade" onchange="onDOUnidadeChange()"><option value="">Todas</option></select></div>
-          <div class="filter-group"><label>Ano</label><select id="do-ano" onchange="renderDropoutsNotas()"><option value="">Todos</option></select></div>
-          <div class="filter-group" style="min-width:220px;flex:2"><label>Professor</label><select id="do-prof" onchange="renderDropoutsNotas()"><option value="">Todos</option></select></div>
-          <div class="filter-actions"><button class="btn-clear" onclick="clearDOFilters()">Limpar</button></div>
-        </div>
         <div class="kpi-row" id="do-kpis" style="padding:16px 24px 0"></div>
         <div class="charts-grid">
           <div class="chart-container"><div class="chart-title">Top Professores por Dropouts</div><div class="chart-subtitle">Ranking no período · âmbar = com observação registrada</div><div class="chart-canvas-wrapper" style="height:340px"><canvas id="chartTopDropouts"></canvas></div></div>
@@ -658,7 +649,6 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
               <div style="font-size:.75rem;color:var(--gray-400);margin-top:2px">Cada ponto = um professor · sigla = unidade · clique para detalhes · linhas = mediana</div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-              <div class="filter-group" style="min-width:150px"><label>Unidade</label><select id="do-sc-unidade" onchange="renderDOScatter()"><option value="">Todas</option></select></div>
               <div class="filter-group" style="min-width:150px"><label>Nível</label><select id="do-sc-nivel" onchange="renderDOScatter()"><option value="">Todos</option></select></div>
               <div class="filter-group" style="min-width:160px"><label>Mín. Observações</label><select id="do-sc-min-obs" onchange="renderDOScatter()"><option value="1">≥ 1 observação</option><option value="2">≥ 2 observações</option><option value="3">≥ 3 observações</option></select></div>
             </div>
@@ -695,11 +685,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         </div>
         <div style="padding:16px 24px 24px;border-top:1px solid var(--gray-100);margin-top:8px">
           <div style="font-size:.88rem;font-weight:600;color:var(--navy-700);margin-bottom:12px">Timeline por Professor</div>
-          <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
-            <div class="filter-group" style="min-width:180px;flex:1"><label>Unidade</label><select id="do-tl-unidade" onchange="onDOTlUnidadeChange()"><option value="">Todas as unidades</option></select></div>
-            <div class="filter-group" style="min-width:220px;flex:2"><label>Professor</label><select id="do-prof-timeline" onchange="renderDOTimeline()"><option value="">Selecione um professor</option></select></div>
-          </div>
-          <div id="do-tl-empty" style="text-align:center;padding:32px 0;color:var(--gray-400);font-size:.9rem">Selecione um professor para ver a evolução de dropouts e observações.</div>
+          <div id="do-tl-empty" style="text-align:center;padding:32px 0;color:var(--gray-400);font-size:.9rem">Selecione um professor no filtro acima para ver a evolução de dropouts e observações.</div>
           <div class="chart-canvas-wrapper" id="wrapDOTimeline" style="height:340px;display:none"><canvas id="chartDOTimeline"></canvas></div>
           <div class="kpi-row" id="do-tl-kpis" style="padding:12px 0 0;display:none"></div>
         </div>
@@ -2533,7 +2519,6 @@ function loadNotasMediasData(){
   google.script.run
     .withSuccessHandler(function(r){
       ALL_NOTAS_MEDIAS=r&&r.ok?r.rows:[];
-      initPodiumFilter();
       renderPodium();
     })
     .withFailureHandler(function(e){
@@ -2542,15 +2527,40 @@ function loadNotasMediasData(){
     })
     .getNotasMediasData(TOKEN);
 }
-function initPodiumFilter(){
-  var sel=document.getElementById('f-podium-unidade');
-  if(!sel||sel.options.length>1) return;
-  var units=[...new Set(ALL_NOTAS_MEDIAS.map(function(r){return r.unidade;}).filter(Boolean))].sort();
-  units.forEach(function(u){sel.appendChild(new Option(u,u));});
+
+function onProfFilterChange(){
+  renderProfessores();
+  if(typeof renderTurmasChart==='function') renderTurmasChart();
+  renderPodium();
+  if(ALL_DROPOUTS.length||ALL_NOTAS.length){ renderDropoutsNotas(); renderDOScatter(); }
+  refreshProfProf();
+}
+function onProfProfChange(){
+  if(ALL_DROPOUTS.length||ALL_NOTAS.length){ renderDropoutsNotas(); }
+  renderDOTimeline();
+}
+function refreshProfProf(){
+  var fU=v('f-prof-unidade');
+  var sel=document.getElementById('f-prof-prof'); if(!sel) return;
+  var cur=sel.value;
+  while(sel.options.length>1) sel.remove(1);
+  var profMap={};
+  ALL_DROPOUTS.forEach(function(r){if(r.chaveMatricula&&(!fU||r.unidade===fU)) profMap[r.chaveMatricula]=r.teacher;});
+  var keys=Object.keys(profMap).sort(function(a,b){return (profMap[a]||'').localeCompare(profMap[b]||'');});
+  keys.forEach(function(k){sel.appendChild(new Option(profMap[k],k));});
+  if(cur&&profMap[cur]) sel.value=cur; else sel.value='';
+}
+function clearProfPageFilters(){
+  ['f-prof-status','f-prof-unidade','f-prof-nivel','f-prof-ano','f-prof-prof'].forEach(function(id){
+    var el=document.getElementById(id); if(!el) return;
+    el.value=id==='f-prof-status'?'Ativo':'';
+  });
+  onProfFilterChange();
+  renderDOTimeline();
 }
 function renderPodium(){
   var stg=document.getElementById('podium-stage'); if(!stg) return;
-  var fU=document.getElementById('f-podium-unidade')?document.getElementById('f-podium-unidade').value:'';
+  var fU=v('f-prof-unidade');
   var data=ALL_NOTAS_MEDIAS.filter(function(r){return !fU||r.unidade===fU;});
   data.sort(function(a,b){return b.notaMedia-a.notaMedia;});
   var top=data.slice(0,3);
@@ -2563,7 +2573,7 @@ function renderPodium(){
   order.forEach(function(p,i){
     if(!p){html+='<div style="width:160px"></div>';return;}
     var pos=slots[i],medal=medals[i];
-    var imgSrc=p.photoId?'https://drive.google.com/thumbnail?id='+p.photoId+'&sz=w200':PODIUM_PH;
+    var imgSrc=p.photoUrl||PODIUM_PH;
     var nota=p.notaMedia.toFixed(2).replace('.',',');
     html+='<div class="podium-slot podium-slot-'+pos+'">'+
       '<div class="podium-avatar-wrap">'+
@@ -2580,23 +2590,13 @@ function renderPodium(){
   stg.innerHTML=html;
 }
 function initDOFilters(){
-  var units=[...new Set(ALL_DROPOUTS.map(function(r){return r.unidade;}).filter(Boolean))].sort();
-  var selU=document.getElementById('do-unidade');
-  if(selU&&selU.options.length<=1) units.forEach(function(u){selU.appendChild(new Option(u,u));});
+  // Ano global
   var anos=[...new Set(ALL_DROPOUTS.map(function(r){return r.ano;}).filter(Boolean))].sort(function(a,b){return b-a;});
-  var selA=document.getElementById('do-ano');
+  var selA=document.getElementById('f-prof-ano');
   if(selA&&selA.options.length<=1) anos.forEach(function(a){selA.appendChild(new Option(a,a));});
-  var profMap={};
-  ALL_DROPOUTS.forEach(function(r){if(r.chaveMatricula) profMap[r.chaveMatricula]=r.teacher;});
-  var keys=Object.keys(profMap).sort(function(a,b){return (profMap[a]||'').localeCompare(profMap[b]||'');});
-  var selProf=document.getElementById('do-prof');
-  if(selProf&&selProf.options.length<=1) keys.forEach(function(k){selProf.appendChild(new Option(profMap[k],k));});
-  var selTlU=document.getElementById('do-tl-unidade');
-  if(selTlU&&selTlU.options.length<=1) units.forEach(function(u){selTlU.appendChild(new Option(u,u));});
-  var selP=document.getElementById('do-prof-timeline');
-  if(selP&&selP.options.length<=1) keys.forEach(function(k){selP.appendChild(new Option(profMap[k],k));});
-  var selScU=document.getElementById('do-sc-unidade');
-  if(selScU&&selScU.options.length<=1) units.forEach(function(u){selScU.appendChild(new Option(u,u));});
+  // Professor global (todos, sem filtro de unidade)
+  refreshProfProf();
+  // Scatter nivel
   var selScN=document.getElementById('do-sc-nivel');
   if(selScN&&selScN.options.length<=1){
     var nivsInNotas=[...new Set(ALL_NOTAS.map(function(r){return r.nivel;}).filter(function(n){return n&&NIVEL_ORDER.indexOf(n)!==-1;}))];
@@ -2604,12 +2604,9 @@ function initDOFilters(){
     nivsInNotas.forEach(function(n){selScN.appendChild(new Option(n,n));});
   }
 }
-function clearDOFilters(){
-  ['do-unidade','do-ano','do-prof'].forEach(function(id){var el=document.getElementById(id);if(el) el.value='';});
-  renderDropoutsNotas();
-}
+
 function getDOFiltered(){
-  var fU=v('do-unidade'),fA=v('do-ano')?parseInt(v('do-ano')):0,fP=v('do-prof');
+  var fU=v('f-prof-unidade'),fA=v('f-prof-ano')?parseInt(v('f-prof-ano')):0,fP=v('f-prof-prof');
   return{
     dropouts:ALL_DROPOUTS.filter(function(r){return(!fU||r.unidade===fU)&&(!fA||r.ano===fA)&&(!fP||r.chaveMatricula===fP);}),
     notas:ALL_NOTAS.filter(function(r){return(!fU||r.unidade===fU)&&(!fA||r.ano===fA)&&(!fP||r.chaveMatricula===fP);})
@@ -2682,7 +2679,7 @@ function scMedian_(arr){
 function scQKey_(p){return (p.dropouts>=SC_MED_DROP?'t':'b')+(p.nota<SC_MED_NOTA?'l':'r');}
 function renderDOScatter(){
   if(!ALL_NOTAS.length) return;
-  var fU=v('do-sc-unidade'),fNiv=v('do-sc-nivel'),fMin=parseInt(v('do-sc-min-obs')||'1')||1;
+  var fU=v('f-prof-unidade'),fNiv=v('do-sc-nivel'),fMin=parseInt(v('do-sc-min-obs')||'1')||1;
   var nowD=new Date();
   var cycleY=nowD.getMonth()>=10?nowD.getFullYear():nowD.getFullYear()-1;
   function inCycSC_(mes,ano){return (ano>cycleY||(ano===cycleY&&mes>=11))&&(ano<cycleY+1||(ano===cycleY+1&&mes<=10));}
@@ -2790,34 +2787,9 @@ function showSCDetail(p){
   document.getElementById('do-sc-detail').classList.add('visible');
 }
 function closeSCDetail(){document.getElementById('do-sc-detail').classList.remove('visible');}
-function onDOUnidadeChange(){
-  var fU=v('do-unidade');
-  var selP=document.getElementById('do-prof');
-  if(selP){
-    var cur=selP.value;
-    while(selP.options.length>1) selP.remove(1);
-    var profMap={};
-    ALL_DROPOUTS.filter(function(r){return !fU||r.unidade===fU;}).forEach(function(r){if(r.chaveMatricula) profMap[r.chaveMatricula]=r.teacher;});
-    var keys=Object.keys(profMap).sort(function(a,b){return (profMap[a]||'').localeCompare(profMap[b]||'');});
-    keys.forEach(function(k){selP.appendChild(new Option(profMap[k],k));});
-    if(cur&&profMap[cur]) selP.value=cur; else selP.value='';
-  }
-  renderDropoutsNotas();
-}
-function onDOTlUnidadeChange(){
-  var fU=v('do-tl-unidade');
-  var selP=document.getElementById('do-prof-timeline');
-  if(!selP) return;
-  while(selP.options.length>1) selP.remove(1);
-  var profMap={};
-  ALL_DROPOUTS.filter(function(r){return !fU||r.unidade===fU;}).forEach(function(r){if(r.chaveMatricula) profMap[r.chaveMatricula]=r.teacher;});
-  var keys=Object.keys(profMap).sort(function(a,b){return (profMap[a]||'').localeCompare(profMap[b]||'');});
-  keys.forEach(function(k){selP.appendChild(new Option(profMap[k],k));});
-  selP.value='';
-  renderDOTimeline();
-}
+
 function renderDOTimeline(){
-  var chave=v('do-prof-timeline');
+  var chave=v('f-prof-prof');
   var emptyEl=document.getElementById('do-tl-empty'),wrapEl=document.getElementById('wrapDOTimeline'),kpisEl=document.getElementById('do-tl-kpis');
   if(!chave){if(emptyEl)emptyEl.style.display='';if(wrapEl)wrapEl.style.display='none';if(kpisEl){kpisEl.style.display='none';kpisEl.innerHTML='';}return;}
   var profD={};
