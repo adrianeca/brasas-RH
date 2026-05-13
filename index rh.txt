@@ -613,7 +613,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
               <div class="filter-group" style="min-width:150px"><label>Unidade</label><select id="do-sc-unidade" onchange="renderDOScatter()"><option value="">Todas</option></select></div>
-              <div class="filter-group" style="min-width:150px"><label>Nível</label><select id="do-sc-nivel" onchange="renderDOScatter()"><option value="">Todos</option><option>BÁSICO</option><option>INTERMEDIÁRIO</option><option>AVANÇADO</option></select></div>
+              <div class="filter-group" style="min-width:150px"><label>Nível</label><select id="do-sc-nivel" onchange="renderDOScatter()"><option value="">Todos</option></select></div>
               <div class="filter-group" style="min-width:160px"><label>Mín. Observações</label><select id="do-sc-min-obs" onchange="renderDOScatter()"><option value="1">≥ 1 observação</option><option value="2">≥ 2 observações</option><option value="3">≥ 3 observações</option></select></div>
             </div>
           </div>
@@ -1039,7 +1039,7 @@ var SC_Q_LABELS={tl:'Nota abaixo da média · Dropout alto',tr:'Nota acima da m�
 var SC_SIGLA_PLUGIN={id:'scSiglaPlugin',afterDatasetsDraw:function(chart){
   var ctx=chart.ctx;ctx.save();ctx.font='bold 8px Arial,sans-serif';ctx.fillStyle='rgba(255,255,255,0.95)';ctx.textAlign='center';ctx.textBaseline='middle';
   chart.data.datasets.forEach(function(ds,di){
-    if(ds.label&&ds.label.startsWith('__')) return;
+    if(!ds.label||ds.label.startsWith('__med')) return;
     var meta=chart.getDatasetMeta(di);
     (ds.data||[]).forEach(function(pt,pi){var el=meta.data[pi];if(!el||!pt||!pt._p) return;ctx.fillText(scSigla_(pt._p.unidade),el.x,el.y);});
   });
@@ -2491,6 +2491,12 @@ function initDOFilters(){
   if(selP&&selP.options.length<=1) keys.forEach(function(k){selP.appendChild(new Option(profMap[k],k));});
   var selScU=document.getElementById('do-sc-unidade');
   if(selScU&&selScU.options.length<=1) units.forEach(function(u){selScU.appendChild(new Option(u,u));});
+  var selScN=document.getElementById('do-sc-nivel');
+  if(selScN&&selScN.options.length<=1){
+    var nivsInNotas=[...new Set(ALL_NOTAS.map(function(r){return r.nivel;}).filter(Boolean))];
+    nivsInNotas.sort(function(a,b){var ia=NIVEL_ORDER.indexOf(a),ib=NIVEL_ORDER.indexOf(b);return(ia===-1?99:ia)-(ib===-1?99:ib);});
+    nivsInNotas.forEach(function(n){selScN.appendChild(new Option(n,n));});
+  }
 }
 function clearDOFilters(){
   ['do-unidade','do-ano','do-prof'].forEach(function(id){var el=document.getElementById(id);if(el) el.value='';});
@@ -2538,10 +2544,10 @@ function renderDOChartNotas(n){
 function renderDONivelChart(d){
   var nivelMap={};
   ALL_EMP.forEach(function(e){if(e.chaveMatriculaDP) nivelMap[e.chaveMatriculaDP]=e.nivel||'';});
-  var nivelDrops={}, unmatchedProfs={};
+  var nivelDrops={};
   d.forEach(function(r){
     var niv=nivelMap[r.chaveMatricula];
-    if(!niv){if(r.teacher) unmatchedProfs[r.chaveMatricula]=r.teacher; niv='Não informado';}
+    if(!niv) return;
     nivelDrops[niv]=(nivelDrops[niv]||0)+r.dropouts;
   });
   var keys=Object.keys(nivelDrops).filter(function(k){return nivelDrops[k]>0;});
@@ -2549,10 +2555,8 @@ function renderDONivelChart(d){
   var ctx=document.getElementById('chartDONivel'); if(!ctx) return;
   if(DO_CHARTS.nivel) DO_CHARTS.nivel.destroy();
   DO_CHARTS.nivel=new Chart(ctx,{type:'bar',data:{labels:keys,datasets:[{label:'Dropouts',data:keys.map(function(k){return nivelDrops[k];}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{precision:0}}}}});
-  var unNames=Object.values(unmatchedProfs).sort();
-  console.log('[DO-NIVEL] professores sem nível ('+unNames.length+'):', unNames.join(', ')||'nenhum');
   var unEl=document.getElementById('do-nivel-unmatched');
-  if(unEl) unEl.innerHTML=unNames.length?'<span style="font-size:.75rem;color:var(--gray-400)">Sem nível cadastrado ('+unNames.length+'): '+unNames.map(function(n){return esc(n);}).join(', ')+'</span>':'';
+  if(unEl) unEl.innerHTML='';
 }
 function scSigla_(unidade){
   var words=(unidade||'').trim().toUpperCase().split(/\s+/).filter(Boolean);
@@ -2586,8 +2590,11 @@ function renderDOScatter(){
     notaMap[r.chaveMatricula].notas.push(r.nota);
     notaMap[r.chaveMatricula].coordenador=r.coordenador;
   });
+  var activeSet=new Set();
+  ALL_EMP.forEach(function(e){if(e.ativo&&e.chaveMatriculaDP) activeSet.add(e.chaveMatriculaDP);});
   var profs=[];
   Object.keys(notaMap).forEach(function(k){
+    if(!activeSet.has(k)) return;
     var nm=notaMap[k];
     if(nm.notas.length<fMin) return;
     var unidade=nm.unidade||(dropMap[k]||{}).unidade||'';
@@ -2610,16 +2617,37 @@ function renderDOScatter(){
   if(thrN)thrN.textContent=SC_MED_NOTA.toFixed(1).replace('.',',');
   if(thrD)thrD.textContent=SC_MED_DROP.toFixed(1).replace('.',',');
   var datasets=['tl','tr','bl','br'].map(function(qk){
-    return {label:'__q_'+qk,data:profs.filter(function(p){return scQKey_(p)===qk;}).map(function(p){return{x:p.nota,y:p.dropouts,_p:p};}),
-      backgroundColor:SC_Q_COLORS[qk].bg,borderColor:SC_Q_COLORS[qk].border,borderWidth:1.5,pointRadius:18,pointHoverRadius:20};
+    return {label:'q_'+qk,data:profs.filter(function(p){return scQKey_(p)===qk;}).map(function(p){return{x:p.nota,y:p.dropouts,_p:p};}),
+      backgroundColor:SC_Q_COLORS[qk].bg,borderColor:SC_Q_COLORS[qk].border,borderWidth:1.5,
+      pointRadius:18,pointHoverRadius:20,pointHitRadius:18};
   });
-  datasets.push({label:'__medNota',data:[{x:SC_MED_NOTA,y:0},{x:SC_MED_NOTA,y:yMax+2}],type:'line',borderColor:'#94a3b8',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0});
-  datasets.push({label:'__medDrop',data:[{x:4.5,y:SC_MED_DROP},{x:11,y:SC_MED_DROP}],type:'line',borderColor:'#94a3b8',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0});
+  datasets.push({label:'__medNota',data:[{x:SC_MED_NOTA,y:0},{x:SC_MED_NOTA,y:yMax+2}],type:'line',borderColor:'#94a3b8',borderDash:[5,4],borderWidth:1.5,pointRadius:0,pointHitRadius:0,fill:false,tension:0});
+  datasets.push({label:'__medDrop',data:[{x:4.5,y:SC_MED_DROP},{x:11,y:SC_MED_DROP}],type:'line',borderColor:'#94a3b8',borderDash:[5,4],borderWidth:1.5,pointRadius:0,pointHitRadius:0,fill:false,tension:0});
   if(DO_SCATTER_CHART){DO_SCATTER_CHART.destroy();DO_SCATTER_CHART=null;}
   DO_SCATTER_CHART=new Chart(canvasEl,{type:'scatter',data:{datasets:datasets},plugins:[SC_SIGLA_PLUGIN],options:{
     responsive:true,maintainAspectRatio:false,animation:{duration:250},
-    interaction:{mode:'nearest',intersect:false},
-    plugins:{legend:{display:false},tooltip:{enabled:false}},
+    plugins:{legend:{display:false},tooltip:{
+      mode:'nearest',intersect:true,displayColors:false,
+      filter:function(item){var pt=item.raw;return !!(pt&&pt._p);},
+      callbacks:{
+        title:function(items){
+          if(!items.length) return '';
+          var p=items[0].dataset.data[items[0].dataIndex]._p;
+          return p?p.teacher:'';
+        },
+        label:function(item){
+          var p=item.dataset.data[item.dataIndex]._p; if(!p) return '';
+          var lines=['Unidade: '+(p.unidade||'—')];
+          if(p.nivel) lines.push('Nível: '+p.nivel);
+          lines.push('Nota: '+p.nota.toFixed(1).replace('.',',')+'  ·  Dropouts: '+p.dropouts);
+          return lines;
+        }
+      },
+      backgroundColor:'rgba(15,32,53,0.95)',titleColor:'#fff',bodyColor:'#c0d4e9',
+      titleFont:{weight:'700',size:13,family:"'DM Sans',sans-serif"},
+      bodyFont:{size:12,family:"'DM Sans',sans-serif"},
+      padding:12,cornerRadius:8,boxPadding:4
+    }},
     scales:{
       x:{title:{display:true,text:'Nota Média de Observação',font:{size:12},color:'#64748b'},min:4.5,max:10.5,
          ticks:{stepSize:1,font:{size:11},color:'#64748b',callback:function(v){return Number.isInteger(v)&&v>=5&&v<=10?v:''}},
@@ -2631,29 +2659,11 @@ function renderDOScatter(){
   canvasEl.style.cursor='default';
   canvasEl.onclick=function(evt){
     if(!DO_SCATTER_CHART) return;
-    var rect=canvasEl.getBoundingClientRect();
-    var cx=evt.clientX-rect.left, cy=evt.clientY-rect.top;
-    var els=DO_SCATTER_CHART.getElementsAtEventForMode(evt,'nearest',{intersect:false},false);
+    var els=DO_SCATTER_CHART.getElementsAtEventForMode(evt,'nearest',{intersect:true},false);
     if(!els.length) return;
-    var ds=DO_SCATTER_CHART.data.datasets[els[0].datasetIndex];
-    if(!ds.label||ds.label.startsWith('__')) return;
-    var pt=ds.data[els[0].index]; if(!pt||!pt._p) return;
-    var meta=DO_SCATTER_CHART.getDatasetMeta(els[0].datasetIndex);
-    var el=meta.data[els[0].index]; if(!el) return;
-    if(Math.sqrt(Math.pow(cx-el.x,2)+Math.pow(cy-el.y,2))>24) return;
+    var pt=DO_SCATTER_CHART.data.datasets[els[0].datasetIndex].data[els[0].index];
+    if(!pt||!pt._p) return;
     showSCDetail(pt._p);
-  };
-  canvasEl.onmousemove=function(evt){
-    if(!DO_SCATTER_CHART){canvasEl.style.cursor='default';return;}
-    var rect=canvasEl.getBoundingClientRect();
-    var cx=evt.clientX-rect.left, cy=evt.clientY-rect.top;
-    var els=DO_SCATTER_CHART.getElementsAtEventForMode(evt,'nearest',{intersect:false},false);
-    if(!els.length){canvasEl.style.cursor='default';return;}
-    var ds=DO_SCATTER_CHART.data.datasets[els[0].datasetIndex];
-    if(!ds.label||ds.label.startsWith('__')){canvasEl.style.cursor='default';return;}
-    var meta=DO_SCATTER_CHART.getDatasetMeta(els[0].datasetIndex);
-    var el=meta.data[els[0].index]; if(!el){canvasEl.style.cursor='default';return;}
-    canvasEl.style.cursor=Math.sqrt(Math.pow(cx-el.x,2)+Math.pow(cy-el.y,2))<=24?'pointer':'default';
   };
 }
 function showSCDetail(p){

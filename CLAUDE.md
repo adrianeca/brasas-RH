@@ -431,32 +431,59 @@ Gráfico de dispersão abaixo dos gráficos globais da seção Dropouts & Observ
 **Canvas:** `#chartDOScatter` | **Detail panel:** `#do-sc-detail`
 
 **Filtros próprios** (independentes dos filtros globais da seção):
-- `#do-sc-unidade` — unidade (populado em `initDOFilters()`)
-- `#do-sc-nivel` — nível (opções fixas: BÁSICO / INTERMEDIÁRIO / AVANÇADO)
+- `#do-sc-unidade` — unidade (populado em `initDOFilters()` a partir de `ALL_DROPOUTS`)
+- `#do-sc-nivel` — nível; **populado dinamicamente** de `ALL_NOTAS`, ordenado por `NIVEL_ORDER = ['A','B','1.1','1.2','1.3','1.4','2.1','2.2','2.3','2.4','3.1','3.2','3.3','3.4']`
 - `#do-sc-min-obs` — mínimo de observações (1/2/3)
 
 **Dados:**
-- Eixo X = nota média de `ALL_NOTAS` por `chaveMatricula` (ciclo todo, sem filtro de data)
+- Eixo X = nota média de `ALL_NOTAS` por `chaveMatricula` (ciclo todo, sem filtro de data); **min:4.5, max:10.5**
 - Eixo Y = soma de dropouts de `ALL_DROPOUTS` filtrados para o ciclo atual (nov–out) por `chaveMatricula`
 - Apenas professores com ≥ `fMin` observações entram no gráfico
+- **Apenas professores ativos**: filtro por `Set` de `chaveMatriculaDP` de `ALL_EMP` onde `ativo=true`
+
+**`chaveMatriculaDP` em `getData()`:** `String(row[38]||'').trim().split('|').pop().trim()` — col AM (índice 38) da planilha principal; mesmo formato de matrícula que `chaveMatricula` em dropouts e notas.
 
 **Quadrantes** (divisor = mediana dos dados filtrados):
 - `SC_MED_NOTA` e `SC_MED_DROP` calculados a cada render — armazenados globalmente
-- Labels: "Nota abaixo da média · Dropout alto/baixo" / "Nota acima da média · Dropout alto/baixo"
+- Labels: "Nota abaixo da média · Dropout alto/baixo" / "Nota acima da média · Dropout baixo"
 - Cores: vermelho (TL), âmbar (TR), cinza (BL), verde (BR) — definidas em `SC_Q_COLORS`
 - `SC_Q_LABELS` define o texto dos quadrantes
+
+**Datasets e labels:**
+- Datasets de pontos: `label:'q_tl'`, `'q_tr'`, `'q_bl'`, `'q_br'` — **sem prefixo `__`**
+- Datasets decorativos (linhas de mediana): `label:'__medNota'`, `'__medDrop'` — prefixo `__`
+- `pointHitRadius:18` nos datasets de scatter; `pointHitRadius:0` nos datasets `__med*`
+- O plugin `SC_SIGLA_PLUGIN` pula datasets onde `!ds.label || ds.label.startsWith('__med')` (só processa pontos de scatter)
 
 **Plugin de siglas (`SC_SIGLA_PLUGIN`):**
 - Plugin **local** (não global): passado via `plugins: [SC_SIGLA_PLUGIN]` no config do chart
 - `scSigla_(unidade)` gera sigla dinâmica: 1 palavra → 3 primeiras letras; múltiplas → inicial de cada (ex: "CAMPO GRANDE" → "CG")
 - **Nunca usar `Chart.register()` para esse plugin** — afetaria todos os outros gráficos da página
 
-**Click detection:**
-- Usa `canvas.onclick` + `getElementsAtEventForMode(evt, 'nearest', {intersect:false})` + checagem manual de distância ≤ 24px
-- `options.onClick` / `options.onHover` do Chart.js **não são confiáveis** em iframes do Apps Script — usar canvas events diretamente
-- `canvas.onclick` e `canvas.onmousemove` são atribuídos por propriedade (não addEventListener) para não acumular ao re-renderizar
+**Tooltip (hover nativo do Chart.js):**
+- `mode:'nearest', intersect:true`
+- `filter`: `function(item){ return !!(item.raw && item.raw._p); }` — exclui os `__med*` do tooltip
+- Exibe: nome do professor (title), unidade, nível, nota média, dropouts no ciclo
+- **`options.onClick` / `options.onHover` não são confiáveis** em iframes do Apps Script
+
+**Click detection (painel de detalhe):**
+- `canvas.onclick` com `getElementsAtEventForMode(evt,'nearest',{intersect:true},false)`
+- Verifica `pt._p` antes de chamar `showSCDetail(pt._p)`
+- `canvas.onclick` atribuído por propriedade (não addEventListener) para não acumular listeners ao re-renderizar
 
 **Globals:** `DO_SCATTER_CHART`, `SC_MED_NOTA`, `SC_MED_DROP`, `SC_Q_COLORS`, `SC_Q_LABELS`, `SC_SIGLA_PLUGIN`
+
+---
+
+### Professores — Dropouts por Nível (`chartDONivel`)
+
+Gráfico de barras full-width abaixo dos gráficos globais de top dropouts e distribuição de notas.
+
+- Join entre `ALL_DROPOUTS` (campo `chaveMatricula`) e `ALL_EMP` (campo `chaveMatriculaDP`) para obter o nível do professor
+- Nível de `ALL_EMP` vem da coluna AH (col 33) da planilha principal — mesmo campo `nivel` já presente em `getData()`
+- Professores **sem nível informado são excluídos** do gráfico (não aparecem como "Não informado")
+- `#do-nivel-unmatched` sempre limpo (nenhuma mensagem exibida sobre não-matches)
+- Barras ordenadas por `NIVEL_ORDER`; cores navy/âmbar alternadas
 
 ---
 
