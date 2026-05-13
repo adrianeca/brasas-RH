@@ -285,6 +285,30 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   .header-content{flex-direction:column}.func-row{grid-template-columns:120px 1fr auto}
 }
 @media(max-width:600px){.insight-banner{grid-template-columns:1fr}.gift-kpi-row{grid-template-columns:1fr}.kpi-row{grid-template-columns:1fr 1fr}}
+/* PÓDIO */
+.podium-section{background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);padding:24px;box-shadow:var(--shadow-sm);margin-bottom:24px}
+.podium-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:12px}
+.podium-title{font-size:1rem;font-weight:700;color:var(--navy-800)}
+.podium-subtitle{font-size:.78rem;color:var(--gray-400);margin-top:2px}
+.podium-stage{display:flex;align-items:flex-end;justify-content:center;gap:12px;padding:24px 0 0;min-height:300px}
+.podium-slot{display:flex;flex-direction:column;align-items:center;width:160px}
+.podium-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;display:block;border:4px solid var(--gray-300);background:var(--gray-100)}
+.podium-avatar-wrap{position:relative;margin-bottom:10px}
+.podium-medal{position:absolute;bottom:-6px;right:-4px;font-size:1.3rem;line-height:1}
+.podium-name{font-size:.82rem;font-weight:700;color:var(--navy-800);text-align:center;margin-bottom:2px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.podium-nota{font-size:1.4rem;font-weight:800;color:var(--navy-700);font-family:var(--font-mono);text-align:center;line-height:1}
+.podium-nota-label{font-size:.68rem;color:var(--gray-400);text-align:center;margin-bottom:6px}
+.podium-un{font-size:.7rem;color:var(--gray-500);text-align:center;margin-bottom:8px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.podium-block{width:100%;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;letter-spacing:.02em}
+.podium-slot-1 .podium-avatar{width:96px;height:96px;border-width:5px}
+.podium-slot-1 .podium-nota{font-size:1.8rem}
+.podium-slot-1 .podium-block{background:linear-gradient(160deg,#c9a227,#f0c040);height:100px}
+.podium-slot-2 .podium-block{background:linear-gradient(160deg,#7a8fa6,#aec0d0);height:70px}
+.podium-slot-3 .podium-block{background:linear-gradient(160deg,#8b6240,#b8895a);height:50px}
+.podium-slot-1 .podium-avatar{border-color:#c9a227}
+.podium-slot-2 .podium-avatar{border-color:#9baabb}
+.podium-slot-3 .podium-avatar{border-color:#9a7253}
+.podium-empty{text-align:center;padding:40px;color:var(--gray-400);font-size:.9rem}
 </style>
 </head>
 <body>
@@ -555,6 +579,26 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         <div class="filter-group"><label>Nível</label><select id="f-prof-nivel" onchange="renderProfessores()"><option value="">Todos</option></select></div>
       </div>
       <div class="kpi-row" id="prof-kpis"></div>
+
+      <!-- PÓDIO TOP 3 NOTAS -->
+      <div class="podium-section">
+        <div class="podium-header">
+          <div>
+            <div class="podium-title">🏆 Top 3 · Maiores Médias de Observação</div>
+            <div class="podium-subtitle">Baseado nas notas médias do ciclo · aba Notas Médias</div>
+          </div>
+          <div class="filter-group" style="margin:0;min-width:180px">
+            <label style="font-size:.72rem">Unidade</label>
+            <select id="f-podium-unidade" onchange="renderPodium()" style="font-size:.82rem">
+              <option value="">Todas as unidades</option>
+            </select>
+          </div>
+        </div>
+        <div id="podium-stage" class="podium-stage">
+          <div class="podium-empty">Carregando ranking…</div>
+        </div>
+      </div>
+
       <div class="charts-grid">
         <div class="chart-container"><div class="chart-title">Distribuição por Nível</div><div class="chart-subtitle">Quantidade de professores por nível</div><div class="chart-canvas-wrapper"><canvas id="chartNivel"></canvas></div></div>
         <div class="chart-container"><div class="chart-title">Professores por Unidade</div><div class="chart-subtitle">Headcount por unidade</div><div class="chart-canvas-wrapper"><canvas id="chartProfUnidade"></canvas></div></div>
@@ -1035,6 +1079,8 @@ var ALL_TURMAS=[];
 var ALL_HISTORICO=[];
 var ALL_DESLIG=[];
 var ALL_DROPOUTS=[], ALL_NOTAS=[], DO_CHARTS={};
+var ALL_NOTAS_MEDIAS=[];
+var PODIUM_PH='data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 width%3D%2296%22 height%3D%2296%22%3E%3Ccircle cx%3D%2248%22 cy%3D%2248%22 r%3D%2248%22 fill%3D%22%23e2e8f0%22%2F%3E%3Ccircle cx%3D%2248%22 cy%3D%2236%22 r%3D%2218%22 fill%3D%22%2394a3b8%22%2F%3E%3Cellipse cx%3D%2248%22 cy%3D%2278%22 rx%3D%2226%22 ry%3D%2218%22 fill%3D%22%2394a3b8%22%2F%3E%3C%2Fsvg%3E';
 var DO_SCATTER_CHART=null, SC_MED_NOTA=0, SC_MED_DROP=0;
 var SC_Q_COLORS={tl:{bg:'#ef444455',border:'#dc2626'},tr:{bg:'#f59e0b55',border:'#d97706'},bl:{bg:'#94a3b855',border:'#64748b'},br:{bg:'#22c55e55',border:'#15803d'}};
 var SC_Q_LABELS={tl:'Nota abaixo da média · Dropout alto',tr:'Nota acima da média · Dropout alto',bl:'Nota abaixo da média · Dropout baixo',br:'Nota acima da média · Dropout baixo'};
@@ -1323,7 +1369,7 @@ function loadData(){
       if(allowed.indexOf('professores')>=0){
         renderProfessores();
         setTimeout(function(){ loadTurmasData(); }, 150);
-        setTimeout(function(){ loadDropoutsData(); loadNotasData(); }, 300);
+        setTimeout(function(){ loadDropoutsData(); loadNotasData(); loadNotasMediasData(); }, 300);
       }
       if(allowed.indexOf('cohort')>=0)      renderCohort();
       if(allowed.indexOf('people')>=0)      renderRotatividade();
@@ -2481,6 +2527,57 @@ function loadNotasData(){
       console.error('[NOTAS] erro:',r&&r.error);
     }
   }).getNotasData(TOKEN);
+}
+function loadNotasMediasData(){
+  var stg=document.getElementById('podium-stage');
+  google.script.run
+    .withSuccessHandler(function(r){
+      ALL_NOTAS_MEDIAS=r&&r.ok?r.rows:[];
+      initPodiumFilter();
+      renderPodium();
+    })
+    .withFailureHandler(function(e){
+      console.warn('[PODIUM] falhou:',e&&e.message);
+      if(stg) stg.innerHTML='<div class="podium-empty">Não foi possível carregar o ranking.</div>';
+    })
+    .getNotasMediasData(TOKEN);
+}
+function initPodiumFilter(){
+  var sel=document.getElementById('f-podium-unidade');
+  if(!sel||sel.options.length>1) return;
+  var units=[...new Set(ALL_NOTAS_MEDIAS.map(function(r){return r.unidade;}).filter(Boolean))].sort();
+  units.forEach(function(u){sel.appendChild(new Option(u,u));});
+}
+function renderPodium(){
+  var stg=document.getElementById('podium-stage'); if(!stg) return;
+  var fU=document.getElementById('f-podium-unidade')?document.getElementById('f-podium-unidade').value:'';
+  var data=ALL_NOTAS_MEDIAS.filter(function(r){return !fU||r.unidade===fU;});
+  data.sort(function(a,b){return b.notaMedia-a.notaMedia;});
+  var top=data.slice(0,3);
+  if(!top.length){stg.innerHTML='<div class="podium-empty">Nenhum dado disponível para o filtro selecionado.</div>';return;}
+  // ordem visual: 2º | 1º | 3º
+  var order=[top[1],top[0],top[2]];
+  var slots=[2,1,3];
+  var medals=['🥈','🥇','🥉'];
+  var html='';
+  order.forEach(function(p,i){
+    if(!p){html+='<div style="width:160px"></div>';return;}
+    var pos=slots[i],medal=medals[i];
+    var imgSrc=p.photoId?'https://drive.google.com/thumbnail?id='+p.photoId+'&sz=w200':PODIUM_PH;
+    var nota=p.notaMedia.toFixed(2).replace('.',',');
+    html+='<div class="podium-slot podium-slot-'+pos+'">'+
+      '<div class="podium-avatar-wrap">'+
+        '<img class="podium-avatar" src="'+imgSrc+'" onerror="this.src=PODIUM_PH;this.onerror=null" alt="'+esc(p.apelido)+'">'+
+        '<span class="podium-medal">'+medal+'</span>'+
+      '</div>'+
+      '<div class="podium-name" title="'+esc(p.apelido)+'">'+esc(p.apelido)+'</div>'+
+      '<div class="podium-nota">'+nota+'</div>'+
+      '<div class="podium-nota-label">nota média</div>'+
+      '<div class="podium-un" title="'+esc(p.unidade||'')+'">'+esc(p.unidade||'—')+'</div>'+
+      '<div class="podium-block">'+(pos===1?'1º lugar':pos===2?'2º lugar':'3º lugar')+'</div>'+
+    '</div>';
+  });
+  stg.innerHTML=html;
 }
 function initDOFilters(){
   var units=[...new Set(ALL_DROPOUTS.map(function(r){return r.unidade;}).filter(Boolean))].sort();

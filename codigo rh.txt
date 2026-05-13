@@ -960,3 +960,57 @@ function getNotasData(token) {
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
+// ─── NOTAS MÉDIAS (PÓDIO) ────────────────────────────────────────────────────
+const FOTOS_FOLDER_ID = '1D6fq0r-OPxiK_Pa56rZ4t4BfDkrkDvrs';
+
+function getNotasMediasData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  try {
+    const ss = SpreadsheetApp.openById(NOTAS_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Notas Médias');
+    if (!sheet) return { ok: false, error: 'Aba "Notas Médias" não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: true, rows: [] };
+
+    const hdrs = raw[0].map(h => String(h).trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,''));
+    const ci = name => hdrs.indexOf(name);
+    const iAp = ci('APELIDO');
+    const iNota = ci('NOTA MEDIA');
+    const iUn = ci('UNIDADE PRIMARIA');
+    const iMat = ci('MATRICULA') !== -1 ? ci('MATRICULA') : ci('MATRIC');
+
+    // Mapa de fotos: "APELIDO - UNIDADE" (maiúsculo, sem extensão) → fileId
+    const photoMap = {};
+    try {
+      const folder = DriveApp.getFolderById(FOTOS_FOLDER_ID);
+      const files = folder.getFiles();
+      while (files.hasNext()) {
+        const f = files.next();
+        const key = f.getName().replace(/\.[^.]+$/, '').trim().toUpperCase();
+        photoMap[key] = f.getId();
+      }
+    } catch(e) {}
+
+    const rows = [];
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      const apelido = iAp !== -1 ? String(row[iAp]||'').trim() : '';
+      const unidade = iUn !== -1 ? String(row[iUn]||'').trim() : '';
+      const nota = iNota !== -1 ? parseFloat(String(row[iNota]||'').replace(',','.')) : NaN;
+      if (!apelido || isNaN(nota) || nota <= 0) continue;
+      const mat = iMat !== -1 ? String(row[iMat]||'').trim() : '';
+      const photoKey = (apelido + ' - ' + unidade).toUpperCase();
+      const photoId = photoMap[photoKey] || null;
+      rows.push({ apelido, unidade, notaMedia: Math.round(nota * 100) / 100, matricula: mat, photoId });
+    }
+
+    // diretor vê só sua unidade
+    const filtered = (session.role === 'diretor' && session.unidade)
+      ? rows.filter(r => r.unidade === session.unidade)
+      : rows;
+
+    return { ok: true, rows: filtered };
+  } catch(e) { return { ok: false, error: e.message }; }
+}
+
