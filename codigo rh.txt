@@ -973,12 +973,15 @@ function getNotasMediasData(token) {
     const raw = sheet.getDataRange().getValues();
     if (raw.length < 2) return { ok: true, rows: [] };
 
-    const hdrs = raw[0].map(h => String(h).trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,''));
-    const ci = name => hdrs.indexOf(name);
+    // Remove acentos + indicadores ordinais (º U+00BA, ° U+00B0, ª U+00AA) para tolerância
+    const normH_ = h => String(h||'').trim().toUpperCase().normalize('NFD')
+      .replace(/[̀-ͯ°ºª]/g,'');
+    const hdrs = raw[0].map(normH_);
+    const ci = name => hdrs.indexOf(normH_(name));
     const iAp   = ci('APELIDO');
     const iNota = ci('NOTA MEDIA');
-    const iUn1  = ci('UNIDADE 1°');   // "Unidade 1°"
-    const iUn2  = ci('UNIDADE 2°');   // "Unidade 2°"
+    const iUn1  = ci('UNIDADE 1');   // "Unidade 1°" ou "Unidade 1º"
+    const iUn2  = ci('UNIDADE 2');   // "Unidade 2°" ou "Unidade 2º"
     const iMat  = ci('CHAVE MATRICULA');   // "Chave Matrícula"
 
     const debugHdrs = hdrs.slice(0, 10);
