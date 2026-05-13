@@ -57,6 +57,8 @@ Dashboard interno de RH da rede BRASAS RJ, construído em **Google Apps Script**
 | `getDesligamentosData(token)` | Carrega respostas da entrevista de desligamento |
 | `getDropoutsData(token)` | Carrega linhas de dropout por turma/mês da planilha CONSOLIDADO GERAL |
 | `getNotasData(token)` | Carrega notas de observação de coordenadores da planilha NOVO Teste class observation |
+| `getNotasMediasData(token)` | Carrega médias de notas da aba `Notas Médias` + fotos dos professores em base64 |
+| `diagFotos(token)` | Diagnóstico: lista arquivos da pasta de fotos e testa match com linhas da planilha |
 
 ### Tabela de brindes por anos de casa
 
@@ -497,6 +499,88 @@ Gráfico de barras full-width abaixo dos gráficos globais de top dropouts e dis
 
 - Ordenada por headcount decrescente
 - Funções com percentual arredondado para 0% são agrupadas em **"Outros (N funções)"** — mesmo padrão da pirâmide de funções na aba Professores
+
+---
+
+---
+
+### Professores — Filtros unificados no topo da página
+
+Todos os filtros da aba Professores ficam em uma única barra no topo, afetando toda a página:
+
+| ID | Label | Afeta |
+|---|---|---|
+| `#f-prof-status` | Status | Lista de professores |
+| `#f-prof-unidade` | Unidade | Lista, gráfico de turmas, pódio, dropouts, scatter, timeline |
+| `#f-prof-ano` | Ano | Dropouts e notas |
+| `#f-prof-prof` | Professor | Dropouts, notas, timeline individual |
+
+- **`onProfFilterChange()`** — orquestrador central. Ordem: `refreshProfProf()` PRIMEIRO (reseta o dropdown de professor para a nova unidade), depois `renderProfessores()`, `renderTurmasChart()`, `renderPodium()`, `renderDropoutsNotas()`.
+- **`refreshProfProf()`** — popula `#f-prof-prof` filtrando `ALL_DROPOUTS` pela unidade selecionada. Deve ser chamado ANTES dos renders para evitar filtro por professor da unidade anterior zerando os dados.
+- **`onProfProfChange()`** — chamado só quando o professor muda; renderiza `renderDropoutsNotas()` + `renderDOTimeline()`.
+- **`getDOFiltered()`** — lê `f-prof-unidade`, `f-prof-ano`, `f-prof-prof` e filtra `ALL_DROPOUTS` e `ALL_NOTAS`.
+- **Filtro de Nível removido** da barra — não existe mais `#f-prof-nivel` no HTML.
+
+**Seções de dropouts sem filtros próprios** — todos os filtros locais (do-unidade, do-prof, do-sc-unidade, f-podium-unidade) foram removidos; tudo lê os selects globais.
+
+---
+
+### Professores — Pódio Top 3 (ranking por nota média)
+
+Seção no topo da aba Professores (antes dos KPIs de turmas), logo abaixo dos filtros.
+
+**Backend — `getNotasMediasData(token)`:**
+- Lê aba `Notas Médias` da planilha `NOTAS_SPREADSHEET_ID`
+- Colunas da aba: `Chave Matrícula`, `Nota Média`, `Apelido`, `Unidade 1°`, `Unidade 2°`
+- **Normalização de cabeçalhos (`normH_`)**: remove acentos E indicadores ordinais (° U+00B0, º U+00BA, ª U+00AA) — "Unidade 1º" e "Unidade 1°" ambos mapeiam para "UNIDADE 1"
+- Professor em duas unidades gera **duas entradas** — aparece no ranking de cada unidade
+- Exclui professores cujas unidades são MÉTODOS, EDITORA ou EC NEW (`PODIUM_EXCL_UNITS`)
+- **Fotos:** usa `normPhoto_` (minúsculo + sem acento + replace de non-breaking space) para matching — idêntico ao `normalizeText_` do sistema de dropouts que funciona
+- Busca por arquivo: itera `folderFiles` e compara `normPhoto_(baseName) === target`; fallback por apelido apenas (início do nome antes de " - ")
+- Retorna base64 (`data:image/jpeg;base64,...`) — **NÃO** URL direta (URL direta falha em iframe por CSP do HtmlService)
+- `FOTOS_FOLDER_ID = '1D6fq0r-OPxiK_Pa56rZ4t4BfDkrkDvrs'` — pasta pública com fotos `APELIDO - SIGLA.jpg`
+- Retorna sempre um objeto `debug` com: `folderFileCount`, `fileMapKeys`, `photoDebug` (primeiros 5 lookups com `key` e `found`)
+
+**Backend — `diagFotos(token)`:**
+- Função de diagnóstico que lista até 15 arquivos da pasta, cabeçalhos normalizados da planilha, índices das colunas e testa match para as 5 primeiras linhas
+- Retornado via botão "🔍 Diagnóstico Fotos" no pódio → exibido em painel `#podium-diag`
+
+**Frontend:**
+- Global `ALL_NOTAS_MEDIAS` preenchido por `loadNotasMediasData()` (chamado 300ms após load de professores)
+- `renderPodium()` filtra por `f-prof-unidade` (match case-insensitive via `.toUpperCase()`), ordena desc por `notaMedia`, pega TOP 3
+- Layout visual: 2º lugar (esquerda) | 1º lugar (centro, elevado) | 3º lugar (direita)
+- `PODIUM_PH` = SVG placeholder base64 para professores sem foto
+- Foto no `<img>` com `onerror="this.src=PODIUM_PH;this.onerror=null"` — fallback seguro
+
+**Bug resolvido — URL direta vs base64:**
+- `drive.google.com/uc?id=...&export=view` é bloqueado pela CSP do HtmlService iframe
+- `getThumbnailLink()` falha por SameSite=Lax cookie (cross-origin iframe)
+- **Solução correta: base64 embutido** — único que funciona de forma confiável no iframe
+
+**Bug resolvido — indicador ordinal º vs grau °:**
+- Planilhas usam `º` (U+00BA, indicador ordinal) em "Unidade 1º"
+- Código anterior buscava `°` (U+00B0, grau) — caracteres visualmente idênticos mas diferentes em Unicode
+- Solução: `normH_` remove AMBOS antes de comparar; busca usa `ci('UNIDADE 1')` sem o caractere especial
+
+---
+
+### Brindes — filtros Setor e Anos de Casa (adicionados nesta sessão)
+
+Além dos filtros já existentes:
+- **`f-brinde-setor`** — `"pedagogico"` = funcao inclui PROFESSOR, COORDENADOR ou é GERENTE DE UNIDADE; `"administrativo"` = demais
+- **`f-brinde-anos`** — filtra por anos de casa (5, 10, 15 … 50)
+
+A coluna **Função** foi adicionada à lista de brindes (campo `funcao` da aba `CONSOLIDADO_new`) e ao CSV exportado.
+
+---
+
+### Professores — bug `onProfFilterChange` e dados de dropouts zerados
+
+**Sintoma:** ao trocar de unidade no filtro, dropouts mostravam zero.
+
+**Causa:** `onProfFilterChange()` chamava `renderDropoutsNotas()` ANTES de `refreshProfProf()`. O dropdown `f-prof-prof` ainda tinha o professor da unidade anterior selecionado — `getDOFiltered()` filtrava por ele e não encontrava nada na nova unidade.
+
+**Correção:** `refreshProfProf()` é chamado PRIMEIRO em `onProfFilterChange()`, zerando a seleção de professor antes de renderizar.
 
 ---
 
