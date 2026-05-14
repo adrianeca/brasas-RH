@@ -2506,19 +2506,22 @@ function renderDropoutPodium(){
     var k=r.chaveMatricula; if(!k) return;
     var parts=k.split('|');
     var normK=(parts.length>1?parts[parts.length-1]:parts[0]).trim();
-    if(normK) turmaCount[normK]=(turmaCount[normK]||0)+1;
+    var un=(r.unidade||'').trim().toUpperCase();
+    if(normK&&un) turmaCount[normK+'|'+un]=(turmaCount[normK+'|'+un]||0)+1;
     var ap=(r.apelido||'').trim().toLowerCase();
-    if(ap) turmaCount['__ap__'+ap]=(turmaCount['__ap__'+ap]||0)+1;
+    if(ap&&un) turmaCount['__ap__'+ap+'|'+un]=(turmaCount['__ap__'+ap+'|'+un]||0)+1;
   });
   var map={};
   ALL_DROPOUTS.forEach(function(r){
-    if(fU&&(r.unidade||'').trim().toUpperCase()!==fU) return;
+    var rU=(r.unidade||'').trim().toUpperCase();
+    if(fU&&rU!==fU) return;
     var k=r.chaveMatricula; if(!k) return;
-    var tc=(turmaCount[k]||0)||(turmaCount['__ap__'+(r.teacher||'').trim().toLowerCase()]||0);
+    var tc=(turmaCount[k+'|'+rU]||0)||(turmaCount['__ap__'+(r.teacher||'').trim().toLowerCase()+'|'+rU]||0);
     if(tc<4) return;
-    if(!map[k]) map[k]={teacher:r.teacher,unidade:r.unidade,chaveMatricula:k,totalAlunos:0,totalDropouts:0};
-    map[k].totalAlunos+=r.alunos;
-    map[k].totalDropouts+=r.dropouts;
+    var mk=k+'|'+rU;
+    if(!map[mk]) map[mk]={teacher:r.teacher,unidade:r.unidade,chaveMatricula:k,totalAlunos:0,totalDropouts:0};
+    map[mk].totalAlunos+=r.alunos;
+    map[mk].totalDropouts+=r.dropouts;
   });
   var ranked=Object.values(map)
     .filter(function(p){return (p.totalAlunos+p.totalDropouts)>0;})
