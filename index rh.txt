@@ -292,7 +292,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .podium-subtitle{font-size:.78rem;color:var(--gray-400);margin-top:2px}
 .podium-stage{display:flex;align-items:flex-end;justify-content:center;gap:12px;padding:24px 0 0;min-height:300px}
 .podium-slot{display:flex;flex-direction:column;align-items:center;width:160px}
-.podium-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;display:block;border:4px solid var(--gray-300);background:var(--gray-100)}
+.podium-avatar{width:96px;height:96px;border-radius:50%;object-fit:cover;display:block;border:4px solid var(--gray-300);background:var(--gray-100)}
 .podium-avatar-wrap{position:relative;margin-bottom:10px}
 .podium-medal{position:absolute;bottom:-6px;right:-4px;font-size:1.3rem;line-height:1}
 .podium-name{font-size:.82rem;font-weight:700;color:var(--navy-800);text-align:center;margin-bottom:2px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -587,12 +587,23 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         <div class="podium-header">
           <div>
             <div class="podium-title">🏆 Top 3 · Maiores Médias de Observação</div>
-            <div class="podium-subtitle">Baseado nas notas médias do ciclo · aba Notas Médias</div>
+            <div class="podium-subtitle">Baseado nas notas médias do ciclo</div>
           </div>
-          <button class="btn-clear" onclick="runDiagFotos()" style="font-size:.75rem">🔍 Diagnóstico Fotos</button>
         </div>
-        <div id="podium-diag" style="display:none;background:var(--gray-100);border-radius:8px;padding:12px;margin-bottom:12px;font-size:.75rem;font-family:var(--font-mono);white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto"></div>
         <div id="podium-stage" class="podium-stage">
+          <div class="podium-empty">Carregando ranking…</div>
+        </div>
+      </div>
+
+      <!-- PÓDIO TOP 3 MENORES DROPOUTS -->
+      <div class="podium-section">
+        <div class="podium-header">
+          <div>
+            <div class="podium-title">🎯 Top 3 · Menores % de Dropouts</div>
+            <div class="podium-subtitle">Professores com menor taxa de evasão · histórico completo</div>
+          </div>
+        </div>
+        <div id="dropout-podium-stage" class="podium-stage">
           <div class="podium-empty">Carregando ranking…</div>
         </div>
       </div>
@@ -2229,6 +2240,7 @@ function loadTurmasData(){
     .withSuccessHandler(function(r){
       ALL_TURMAS=r.ok?r.rows:[];
       renderTurmasChart();
+      renderDropoutPodium();
       loadHistoricoData();
     })
     .withFailureHandler(function(e){ console.warn('Turmas falhou:',e.message); })
@@ -2484,6 +2496,74 @@ function renderHistorico(){
   });
 }
 
+function renderDropoutPodium(){
+  var stg=document.getElementById('dropout-podium-stage'); if(!stg) return;
+  if(!ALL_DROPOUTS.length){stg.innerHTML='<div class="podium-empty">Aguardando dados de dropout…</div>';return;}
+  var fU=(v('f-prof-unidade')||'').trim().toUpperCase();
+  var turmaCount={};
+  ALL_TURMAS.forEach(function(r){
+    var k=r.chaveMatricula; if(!k) return;
+    var parts=k.split('|');
+    var normK=(parts.length>1?parts[parts.length-1]:parts[0]).trim();
+    if(normK) turmaCount[normK]=(turmaCount[normK]||0)+1;
+    var ap=(r.apelido||'').trim().toLowerCase();
+    if(ap) turmaCount['__ap__'+ap]=(turmaCount['__ap__'+ap]||0)+1;
+  });
+  var map={};
+  ALL_DROPOUTS.forEach(function(r){
+    if(fU&&(r.unidade||'').trim().toUpperCase()!==fU) return;
+    var k=r.chaveMatricula; if(!k) return;
+    var tc=(turmaCount[k]||0)||(turmaCount['__ap__'+(r.teacher||'').trim().toLowerCase()]||0);
+    if(tc<4) return;
+    if(!map[k]) map[k]={teacher:r.teacher,unidade:r.unidade,chaveMatricula:k,totalAlunos:0,totalDropouts:0};
+    map[k].totalAlunos+=r.alunos;
+    map[k].totalDropouts+=r.dropouts;
+  });
+  var ranked=Object.values(map)
+    .filter(function(p){return (p.totalAlunos+p.totalDropouts)>0;})
+    .map(function(p){
+      var pct=p.totalDropouts/(p.totalAlunos+p.totalDropouts)*100;
+      return {apelido:p.teacher,unidade:p.unidade,pct:Math.round(pct*10)/10,photoUrl:null,chaveMatricula:p.chaveMatricula};
+    })
+    .sort(function(a,b){return a.pct-b.pct;})
+    .slice(0,3);
+  if(!ranked.length){stg.innerHTML='<div class="podium-empty">Nenhum dado disponível para o filtro selecionado.</div>';return;}
+  renderDropoutPodiumHTML(ranked);
+  var entries=ranked.map(function(p){return {apelido:p.apelido,unidade:p.unidade,chaveMatricula:p.chaveMatricula};});
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(!r||!r.ok) return;
+      ranked.forEach(function(p){if(r.fotos[p.chaveMatricula]) p.photoUrl=r.fotos[p.chaveMatricula];});
+      renderDropoutPodiumHTML(ranked);
+    })
+    .getDropoutPodiumFotos(TOKEN,entries);
+}
+function renderDropoutPodiumHTML(ranked){
+  var stg=document.getElementById('dropout-podium-stage'); if(!stg) return;
+  var medals=['🥇','🥈','🥉'];
+  var order=[ranked[1],ranked[0],ranked[2]];
+  var slots=[2,1,3];
+  var html='';
+  order.forEach(function(p,i){
+    if(!p){html+='<div style="width:160px"></div>';return;}
+    var pos=slots[i],medal=medals[pos-1];
+    var imgSrc=p.photoUrl||PODIUM_PH;
+    var pctStr=p.pct.toFixed(1).replace('.',',')+'\%';
+    html+='<div class="podium-slot podium-slot-'+pos+'">'+
+      '<div class="podium-avatar-wrap">'+
+        '<img class="podium-avatar" src="'+imgSrc+'" onerror="this.src=PODIUM_PH;this.onerror=null" alt="'+esc(p.apelido)+'">'+
+        '<span class="podium-medal">'+medal+'</span>'+
+      '</div>'+
+      '<div class="podium-name" title="'+esc(p.apelido)+'">'+esc(p.apelido)+'</div>'+
+      '<div class="podium-nota">'+pctStr+'</div>'+
+      '<div class="podium-nota-label">dropout %</div>'+
+      '<div class="podium-un" title="'+esc(p.unidade||'')+'">'+esc(p.unidade||'—')+'</div>'+
+      '<div class="podium-block">'+(pos===1?'1º lugar':pos===2?'2º lugar':'3º lugar')+'</div>'+
+    '</div>';
+  });
+  stg.innerHTML=html;
+}
+
 // ─── DROPOUTS & OBSERVAÇÕES ──────────────────────────────────────────────────
 function loadDropoutsData(){
   google.script.run.withSuccessHandler(function(r){
@@ -2491,7 +2571,7 @@ function loadDropoutsData(){
       ALL_DROPOUTS=r.rows||[];
       console.log('[DROPOUTS] linhas:',ALL_DROPOUTS.length,'| debug:',JSON.stringify(r.debug||{}));
       if(!ALL_DROPOUTS.length) console.warn('[DROPOUTS] ZERO linhas — coluna de matrícula não encontrada ou vazia');
-      initDOFilters(); renderDropoutsNotas();
+      initDOFilters(); renderDropoutsNotas(); renderDropoutPodium();
     } else {
       console.error('[DROPOUTS] erro:',r&&r.error);
     }
@@ -2515,28 +2595,12 @@ function loadNotasData(){
     }
   }).getNotasData(TOKEN);
 }
-function runDiagFotos(){
-  var el=document.getElementById('podium-diag'); if(!el) return;
-  el.style.display='block'; el.textContent='Carregando diagnóstico...';
-  google.script.run
-    .withSuccessHandler(function(r){ el.textContent=JSON.stringify(r,null,2); })
-    .withFailureHandler(function(e){ el.textContent='ERRO: '+(e&&e.message); })
-    .diagFotos(TOKEN);
-}
 function loadNotasMediasData(){
   var stg=document.getElementById('podium-stage');
   google.script.run
     .withSuccessHandler(function(r){
       ALL_NOTAS_MEDIAS=r&&r.ok?r.rows:[];
-      var dbg=r&&r.debug;
-      console.log('[PODIUM] linhas:',ALL_NOTAS_MEDIAS.length);
-      if(dbg){
-        console.log('[PODIUM] pasta: '+dbg.folderFileCount+' arquivos'+(dbg.folderErr?' ERRO:'+dbg.folderErr:''));
-        console.log('[PODIUM] nomes na pasta:',JSON.stringify(dbg.fileMapKeys));
-        console.log('[PODIUM] lookups de foto:',JSON.stringify(dbg.photoDebug));
-        if(dbg.iAp!=null) console.log('[PODIUM] col indices iAp='+dbg.iAp+' iNota='+dbg.iNota+' iUn1='+dbg.iUn1+' iUn2='+dbg.iUn2+' iMat='+dbg.iMat);
-      }
-      if(ALL_NOTAS_MEDIAS.length) console.log('[PODIUM] exemplo linha 0:',JSON.stringify(ALL_NOTAS_MEDIAS[0]));
+      if(r&&r.debug&&r.debug.iAp!=null) console.log('[PODIUM] debug:',JSON.stringify(r.debug));
       renderPodium();
     })
     .withFailureHandler(function(e){
@@ -2551,6 +2615,7 @@ function onProfFilterChange(){
   renderProfessores();
   if(typeof renderTurmasChart==='function') renderTurmasChart();
   renderPodium();
+  renderDropoutPodium();
   if(ALL_DROPOUTS.length||ALL_NOTAS.length) renderDropoutsNotas();
 }
 function onProfProfChange(){
@@ -2576,14 +2641,7 @@ function clearProfPageFilters(){
   onProfFilterChange();
   renderDOTimeline();
 }
-function renderPodium(){
-  var stg=document.getElementById('podium-stage'); if(!stg) return;
-  var fU=(v('f-prof-unidade')||'').trim().toUpperCase();
-  var data=ALL_NOTAS_MEDIAS.filter(function(r){return !fU||(r.unidade||'').trim().toUpperCase()===fU;});
-  data.sort(function(a,b){return b.notaMedia-a.notaMedia;});
-  var top=data.slice(0,3);
-  if(!top.length){stg.innerHTML='<div class="podium-empty">Nenhum dado disponível para o filtro selecionado.</div>';return;}
-  // ordem visual: 2º | 1º | 3º
+function renderPodiumHTML(top,stg){
   var order=[top[1],top[0],top[2]];
   var slots=[2,1,3];
   var medals=['🥈','🥇','🥉'];
@@ -2606,6 +2664,23 @@ function renderPodium(){
     '</div>';
   });
   stg.innerHTML=html;
+}
+function renderPodium(){
+  var stg=document.getElementById('podium-stage'); if(!stg) return;
+  var fU=(v('f-prof-unidade')||''  ).trim().toUpperCase();
+  var data=ALL_NOTAS_MEDIAS.filter(function(r){return !fU||(r.unidade||''  ).trim().toUpperCase()===fU;});
+  data.sort(function(a,b){return b.notaMedia-a.notaMedia;});
+  var top=data.slice(0,3);
+  if(!top.length){stg.innerHTML='<div class="podium-empty">Nenhum dado disponível para o filtro selecionado.</div>';return;}
+  renderPodiumHTML(top,stg);
+  var entries=top.map(function(p){return {apelido:p.apelido,unidade:p.unidade,chaveMatricula:p.matricula};});
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(!r||!r.ok) return;
+      top.forEach(function(p){if(r.fotos[p.matricula]) p.photoUrl=r.fotos[p.matricula];});
+      renderPodiumHTML(top,stg);
+    })
+    .getDropoutPodiumFotos(TOKEN,entries);
 }
 function initDOFilters(){
   // Ano global

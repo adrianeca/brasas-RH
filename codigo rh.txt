@@ -985,90 +985,30 @@ function getNotasMediasData(token) {
     const iUn2  = ci('UNIDADE 2');   // "Unidade 2°" ou "Unidade 2º"
     const iMat  = ci('CHAVE MATRICULA');   // "Chave Matrícula"
 
-    const debugHdrs = hdrs.slice(0, 10);
-
-    // Normalização idêntica ao sistema de dropouts: minúsculo + sem acento
-    const normPhoto_ = v => String(v||'').trim().replace(/ /g,' ').toLowerCase()
+    const normPhoto_ = v => String(v||''  ).trim().toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
-
-    // Carrega todos os arquivos da pasta UMA vez — mapas para lookup O(1)
-    const folderFiles = [];   // [{name, normName, normApelido, blob: null}]
-    let folderErr = null, folderFileCount = 0;
-    try {
-      const folder = DriveApp.getFolderById(FOTOS_FOLDER_ID);
-      const iter = folder.getFiles();
-      while (iter.hasNext()) {
-        const f = iter.next();
-        const raw_ = f.getName().replace(/\.[^.]+$/, '');
-        const normName = normPhoto_(raw_);
-        const normAp   = normName.split(' - ')[0].trim();
-        folderFiles.push({ f, normName, normAp });
-        folderFileCount++;
-      }
-    } catch(e) { folderErr = e.message; }
-
-    const fileMapKeys = folderFiles.slice(0,8).map(function(o){return o.normName;});
-
-    // Abordagem idêntica ao getTeacherPhotoBase64_ do sistema de dropouts:
-    // itera os arquivos e compara normalized name — sem mapa pré-construído
-    const getPhotoB64_ = (apelido, unidade) => {
-      if (!apelido) return null;
-      const target = normPhoto_(apelido + ' - ' + (unidade||''));
-      const normAp = normPhoto_(apelido);
-      // 1ª passagem: match exato "APELIDO - SIGLA"
-      let found = null;
-      for (let i = 0; i < folderFiles.length; i++) {
-        if (folderFiles[i].normName === target) { found = folderFiles[i].f; break; }
-      }
-      // 2ª passagem: fallback pelo apelido apenas
-      if (!found) {
-        for (let i = 0; i < folderFiles.length; i++) {
-          if (folderFiles[i].normAp === normAp) { found = folderFiles[i].f; break; }
-        }
-      }
-      if (!found) return null;
-      try {
-        const blob = found.getBlob();
-        return 'data:' + (blob.getContentType()||'image/jpeg') + ';base64,' + Utilities.base64Encode(blob.getBytes());
-      } catch(e) { return null; }
-    };
-
     const isExclUnit_ = u => PODIUM_EXCL_UNITS.includes(normPhoto_(u));
 
     const rows = [];
-    const photoDebug = [];
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
-      const apelido = iAp   !== -1 ? String(row[iAp]||'').trim()   : '';
-      const nota    = iNota !== -1 ? parseFloat(String(row[iNota]||'').replace(',','.')) : NaN;
+      const apelido = iAp   !== -1 ? String(row[iAp]||''  ).trim()   : '';
+      const nota    = iNota !== -1 ? parseFloat(String(row[iNota]||''  ).replace(',','.')) : NaN;
       if (!apelido || isNaN(nota) || nota <= 0) continue;
-      const un1 = iUn1 !== -1 ? String(row[iUn1]||'').trim() : '';
-      const un2 = iUn2 !== -1 ? String(row[iUn2]||'').trim() : '';
-      const chaveRaw = iMat !== -1 ? String(row[iMat]||'').trim() : '';
+      const un1 = iUn1 !== -1 ? String(row[iUn1]||''  ).trim() : '';
+      const un2 = iUn2 !== -1 ? String(row[iUn2]||''  ).trim() : '';
+      const chaveRaw = iMat !== -1 ? String(row[iMat]||''  ).trim() : '';
       const pipeParts = chaveRaw.split('|');
       const matricula = (pipeParts.length > 1 ? pipeParts[pipeParts.length-1] : pipeParts[0]).trim();
       const nm = Math.round(nota * 100) / 100;
-      if (un1 && !isExclUnit_(un1)) {
-        const ph = getPhotoB64_(apelido, un1);
-        if (photoDebug.length < 5) photoDebug.push({ key: normPhoto_(apelido+' - '+un1), found: !!ph });
-        rows.push({ apelido, unidade: un1, notaMedia: nm, matricula, photoUrl: ph });
-      }
-      if (un2 && !isExclUnit_(un2)) {
-        const ph = getPhotoB64_(apelido, un2);
-        if (photoDebug.length < 5) photoDebug.push({ key: normPhoto_(apelido+' - '+un2), found: !!ph });
-        rows.push({ apelido, unidade: un2, notaMedia: nm, matricula, photoUrl: ph });
-      }
-      if (!un1 && !un2) {
-        const ph = getPhotoB64_(apelido, '');
-        rows.push({ apelido, unidade: '', notaMedia: nm, matricula, photoUrl: ph });
-      }
+      if (un1 && !isExclUnit_(un1)) rows.push({ apelido, unidade: un1, notaMedia: nm, matricula, photoUrl: null });
+      if (un2 && !isExclUnit_(un2)) rows.push({ apelido, unidade: un2, notaMedia: nm, matricula, photoUrl: null });
+      if (!un1 && !un2)             rows.push({ apelido, unidade: '',  notaMedia: nm, matricula, photoUrl: null });
     }
 
-    const debug = {
-      rows: rows.length, folderFileCount, folderErr,
-      fileMapKeys, photoDebug,
-      ...(rows.length === 0 ? { hdrs: debugHdrs, iAp, iNota, iUn1, iUn2, iMat, totalRaw: raw.length-1 } : {})
-    };
+    const debug = rows.length === 0
+      ? { hdrs: hdrs.slice(0,10), iAp, iNota, iUn1, iUn2, iMat, totalRaw: raw.length-1 }
+      : { rows: rows.length };
 
     // diretor vê só sua unidade
     const filtered = (session.role === 'diretor' && session.unidade)
@@ -1122,3 +1062,44 @@ function diagFotos(token) {
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
+// ─── FOTOS PÓDIO DROPOUTS ─────────────────────────────────────────────────────
+function getDropoutPodiumFotos(token, entries) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  if (!entries || !entries.length) return { ok: true, fotos: {} };
+  try {
+    const normP_ = v => String(v||'').trim().toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+    const folder = DriveApp.getFolderById(FOTOS_FOLDER_ID);
+    const iter = folder.getFiles();
+    const folderFiles = [];
+    while (iter.hasNext()) {
+      const f = iter.next();
+      const raw = f.getName().replace(/\.[^.]+$/, '');
+      const normName = normP_(raw);
+      const normAp = normName.split(' - ')[0].trim();
+      folderFiles.push({ f, normName, normAp });
+    }
+    const fotos = {};
+    entries.forEach(function(e) {
+      const target = normP_((e.apelido||'') + ' - ' + (e.unidade||''));
+      const normAp = normP_(e.apelido||'');
+      let found = null;
+      for (let i = 0; i < folderFiles.length; i++) {
+        if (folderFiles[i].normName === target) { found = folderFiles[i].f; break; }
+      }
+      if (!found) {
+        for (let i = 0; i < folderFiles.length; i++) {
+          if (folderFiles[i].normAp === normAp) { found = folderFiles[i].f; break; }
+        }
+      }
+      if (found) {
+        try {
+          const blob = found.getBlob();
+          fotos[e.chaveMatricula] = 'data:' + (blob.getContentType()||'image/jpeg') + ';base64,' + Utilities.base64Encode(blob.getBytes());
+        } catch(err) {}
+      }
+    });
+    return { ok: true, fotos };
+  } catch(e) { return { ok: false, error: e.message }; }
+}

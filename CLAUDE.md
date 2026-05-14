@@ -57,7 +57,8 @@ Dashboard interno de RH da rede BRASAS RJ, construído em **Google Apps Script**
 | `getDesligamentosData(token)` | Carrega respostas da entrevista de desligamento |
 | `getDropoutsData(token)` | Carrega linhas de dropout por turma/mês da planilha CONSOLIDADO GERAL |
 | `getNotasData(token)` | Carrega notas de observação de coordenadores da planilha NOVO Teste class observation |
-| `getNotasMediasData(token)` | Carrega médias de notas da aba `Notas Médias` + fotos dos professores em base64 |
+| `getNotasMediasData(token)` | Carrega médias de notas da aba `Notas Médias` — retorna `photoUrl: null` (fotos buscadas separadamente via `getDropoutPodiumFotos`) |
+| `getDropoutPodiumFotos(token, entries)` | Busca fotos base64 no Drive para uma lista de até 3 professores — usado por AMBOS os pódios (notas e dropout) |
 | `diagFotos(token)` | Diagnóstico: lista arquivos da pasta de fotos e testa match com linhas da planilha |
 
 ### Tabela de brindes por anos de casa
@@ -515,7 +516,7 @@ Todos os filtros da aba Professores ficam em uma única barra no topo, afetando 
 | `#f-prof-ano` | Ano | Dropouts e notas |
 | `#f-prof-prof` | Professor | Dropouts, notas, timeline individual |
 
-- **`onProfFilterChange()`** — orquestrador central. Ordem: `refreshProfProf()` PRIMEIRO (reseta o dropdown de professor para a nova unidade), depois `renderProfessores()`, `renderTurmasChart()`, `renderPodium()`, `renderDropoutsNotas()`.
+- **`onProfFilterChange()`** — orquestrador central. Ordem: `refreshProfProf()` PRIMEIRO (reseta o dropdown de professor para a nova unidade), depois `renderProfessores()`, `renderTurmasChart()`, `renderPodium()`, `renderDropoutPodium()`, `renderDropoutsNotas()`.
 - **`refreshProfProf()`** — popula `#f-prof-prof` filtrando `ALL_DROPOUTS` pela unidade selecionada. Deve ser chamado ANTES dos renders para evitar filtro por professor da unidade anterior zerando os dados.
 - **`onProfProfChange()`** — chamado só quando o professor muda; renderiza `renderDropoutsNotas()` + `renderDOTimeline()`.
 - **`getDOFiltered()`** — lê `f-prof-unidade`, `f-prof-ano`, `f-prof-prof` e filtra `ALL_DROPOUTS` e `ALL_NOTAS`.
@@ -535,22 +536,30 @@ Seção no topo da aba Professores (antes dos KPIs de turmas), logo abaixo dos f
 - **Normalização de cabeçalhos (`normH_`)**: remove acentos E indicadores ordinais (° U+00B0, º U+00BA, ª U+00AA) — "Unidade 1º" e "Unidade 1°" ambos mapeiam para "UNIDADE 1"
 - Professor em duas unidades gera **duas entradas** — aparece no ranking de cada unidade
 - Exclui professores cujas unidades são MÉTODOS, EDITORA ou EC NEW (`PODIUM_EXCL_UNITS`)
-- **Fotos:** usa `normPhoto_` (minúsculo + sem acento + replace de non-breaking space) para matching — idêntico ao `normalizeText_` do sistema de dropouts que funciona
-- Busca por arquivo: itera `folderFiles` e compara `normPhoto_(baseName) === target`; fallback por apelido apenas (início do nome antes de " - ")
-- Retorna base64 (`data:image/jpeg;base64,...`) — **NÃO** URL direta (URL direta falha em iframe por CSP do HtmlService)
-- `FOTOS_FOLDER_ID = '1D6fq0r-OPxiK_Pa56rZ4t4BfDkrkDvrs'` — pasta pública com fotos `APELIDO - SIGLA.jpg`
-- Retorna sempre um objeto `debug` com: `folderFileCount`, `fileMapKeys`, `photoDebug` (primeiros 5 lookups com `key` e `found`)
+- **Retorna `photoUrl: null` para todas as linhas** — fotos NÃO são buscadas aqui (era lento: lia Drive para ~297 professores). Fotos buscadas separadamente via `getDropoutPodiumFotos` só para o top 3.
 
-**Backend — `diagFotos(token)`:**
-- Função de diagnóstico que lista até 15 arquivos da pasta, cabeçalhos normalizados da planilha, índices das colunas e testa match para as 5 primeiras linhas
-- Retornado via botão "🔍 Diagnóstico Fotos" no pódio → exibido em painel `#podium-diag`
+**Backend — `getDropoutPodiumFotos(token, entries)`:**
+- Recebe lista de até 3 `{apelido, unidade, chaveMatricula}` — usado por AMBOS os pódios
+- Itera a pasta `FOTOS_FOLDER_ID` uma vez; busca em dois passos: 1) match exato `"apelido - sigla"`, 2) fallback por apelido só
+- `normP_` = minúsculo + sem acento (NFD + remove combining marks)
+- Retorna `{ ok: true, fotos: { [chaveMatricula]: 'data:image/jpeg;base64,...' } }`
+- `FOTOS_FOLDER_ID = '1D6fq0r-OPxiK_Pa56rZ4t4BfDkrkDvrs'` — pasta com fotos `APELIDO - SIGLA.jpg`
+- **NÃO usar URL direta**: bloqueado por CSP do HtmlService iframe; base64 é o único método confiável
 
 **Frontend:**
 - Global `ALL_NOTAS_MEDIAS` preenchido por `loadNotasMediasData()` (chamado 300ms após load de professores)
-- `renderPodium()` filtra por `f-prof-unidade` (match case-insensitive via `.toUpperCase()`), ordena desc por `notaMedia`, pega TOP 3
+- Avatar size: **96px** (aumentado de 80px)
+- `renderPodium()` — **renderização em duas fases**: (1) renderiza imediatamente com placeholder via `renderPodiumHTML(top, stg)`, (2) chama `getDropoutPodiumFotos` async para o top 3 e re-renderiza com fotos
+- `renderPodiumHTML(top, stg)` — helper que monta o HTML do pódio (reutilizado nas duas fases)
 - Layout visual: 2º lugar (esquerda) | 1º lugar (centro, elevado) | 3º lugar (direita)
 - `PODIUM_PH` = SVG placeholder base64 para professores sem foto
 - Foto no `<img>` com `onerror="this.src=PODIUM_PH;this.onerror=null"` — fallback seguro
+- Subtítulo: `"Baseado nas notas médias do ciclo"` (sem "· aba Notas Médias")
+- Botão "🔍 Diagnóstico Fotos" e painel `#podium-diag` **removidos** do frontend
+
+**Bug resolvido — performance do ranking de notas:**
+- Antes: `getNotasMediasData` lia o Drive listando ~297 arquivos de foto na carga inicial — lento demais
+- Depois: `getNotasMediasData` retorna instantaneamente (sem Drive); fotos buscadas só para o top 3 via chamada separada assíncrona
 
 **Bug resolvido — URL direta vs base64:**
 - `drive.google.com/uc?id=...&export=view` é bloqueado pela CSP do HtmlService iframe
@@ -561,6 +570,45 @@ Seção no topo da aba Professores (antes dos KPIs de turmas), logo abaixo dos f
 - Planilhas usam `º` (U+00BA, indicador ordinal) em "Unidade 1º"
 - Código anterior buscava `°` (U+00B0, grau) — caracteres visualmente idênticos mas diferentes em Unicode
 - Solução: `normH_` remove AMBOS antes de comparar; busca usa `ci('UNIDADE 1')` sem o caractere especial
+
+---
+
+### Professores — Pódio Top 3 · Menores % de Dropouts
+
+Segundo pódio na aba Professores, imediatamente abaixo do pódio de notas médias.
+
+**Fórmula:** `% dropout = (dropouts / (alunos + dropouts)) * 100`
+
+**Filtro de elegibilidade:** só entram professores com **4 ou mais turmas ativas** na aba `db_max` da planilha `TURMAS_SPREADSHEET_ID`. Contagem via `ALL_TURMAS` (já carregado pelo `getTurmasData`).
+
+**Frontend — `renderDropoutPodium()`:**
+- Constrói `turmaCount` a partir de `ALL_TURMAS` com **chave dupla**:
+  - Chave numérica: parte após `|` de `chaveMatricula` (ex: `"AISHA | 793"` → `"793"`)
+  - Chave por apelido: `"__ap__" + apelido.toLowerCase()` — fallback para casos onde a chave numérica não bate
+- Agrega dropouts/alunos por professor (somando todos os meses/turmas)
+- Filtra por unidade (`f-prof-unidade`) e por `tc >= 4`
+- Ordena pelo % crescente (menor % = melhor)
+- Pega top 3 e renderiza via `renderDropoutPodiumHTML(ranked)`
+- **Renderização em duas fases**: placeholder imediato → fotos async via `getDropoutPodiumFotos`
+
+**Frontend — `renderDropoutPodiumHTML(ranked)`:**
+- Mesmo layout visual do pódio de notas (2º esquerda | 1º centro | 3º direita)
+- Exibe `p.pct.toFixed(1).replace('.',',') + '%'` no lugar da nota
+- Canvas: `#dropout-podium-stage`
+
+**Quando é chamado:**
+- `loadTurmasData` success handler → `renderDropoutPodium()` (garante que turmaCount seja populado)
+- `loadDropoutsData` success handler → `renderDropoutPodium()` (atualiza após dropouts chegarem)
+- `onProfFilterChange()` → `renderDropoutPodium()` (reage ao filtro de unidade)
+
+**Bug resolvido — timing ALL_TURMAS vazio:**
+- `loadDropoutsData` completava antes de `loadTurmasData`, então `turmaCount` ficava vazio e nenhum professor passava no filtro de 4 turmas
+- Solução: chamar `renderDropoutPodium()` também de `loadTurmasData`, garantindo que quando turmas chegam o pódio seja re-renderizado
+
+**Bug resolvido — chaveMatricula mismatch:**
+- `ALL_TURMAS.chaveMatricula` formato: `"AISHA | 793"` (string bruta)
+- `ALL_DROPOUTS.chaveMatricula` formato: `"793"` (número extraído)
+- Solução: `turmaCount` indexado pelo número após `|`, não pelo string completo; mais fallback por apelido
 
 ---
 
