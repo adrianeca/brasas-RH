@@ -2502,6 +2502,7 @@ function renderDropoutPodium(){
   var fU=(v('f-prof-unidade')||'').trim().toUpperCase();
   var turmaCount={};
   ALL_TURMAS.forEach(function(r){
+    if((r.nome||'').trim().toUpperCase().startsWith('FE')) return;
     var k=r.chaveMatricula; if(!k) return;
     var parts=k.split('|');
     var normK=(parts.length>1?parts[parts.length-1]:parts[0]).trim();

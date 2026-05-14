@@ -707,6 +707,7 @@ function getTurmasData(token) {
       const numF = (v) => { const n = parseFloat(String(v||'').replace(',','.')); return isNaN(n) ? 0 : n; };
       rows.push({
         apelido,
+        nome: turmaNome,
         chave: gs(row, 'CHAVE') || apelido,
         chaveMatricula: gs(row, 'CHAVE MATRÍCULA') || apelido,
         nivel: gs(row, 'NÍVEL') || gs(row, 'NIVEL') || '',
