@@ -579,13 +579,17 @@ Segundo pódio na aba Professores, imediatamente abaixo do pódio de notas médi
 
 **Fórmula:** `% dropout = (dropouts / (alunos + dropouts)) * 100`
 
-**Filtro de elegibilidade:** só entram professores com **4 ou mais turmas ativas** na aba `db_max` da planilha `TURMAS_SPREADSHEET_ID`. Contagem via `ALL_TURMAS` (já carregado pelo `getTurmasData`).
+**Filtro de elegibilidade:** só entram professores com **4 ou mais turmas ativas na mesma unidade** na aba `db_max` da planilha `TURMAS_SPREADSHEET_ID`. Um professor com 3 turmas em BJ e 3 em PA não se qualifica para nenhuma das duas.
+
+**Turmas FE excluídas:** turmas cujo nome (col B) começa com `"FE"` não contam para o mínimo de 4 turmas. O campo `nome` é retornado por `getTurmasData` para esse filtro.
 
 **Frontend — `renderDropoutPodium()`:**
-- Constrói `turmaCount` a partir de `ALL_TURMAS` com **chave dupla**:
-  - Chave numérica: parte após `|` de `chaveMatricula` (ex: `"AISHA | 793"` → `"793"`)
-  - Chave por apelido: `"__ap__" + apelido.toLowerCase()` — fallback para casos onde a chave numérica não bate
-- Agrega dropouts/alunos por professor (somando todos os meses/turmas)
+- Constrói `turmaCount` indexado por **chave composta `"normK|UNIDADE"`** (e fallback `"__ap__apelido|UNIDADE"`):
+  - Chave numérica: `(parte após | de chaveMatricula) + "|" + unidade.toUpperCase()`
+  - Fallback por apelido: `"__ap__" + apelido.toLowerCase() + "|" + unidade.toUpperCase()`
+- Eligibilidade checada por unidade: `turmaCount[k+'|'+rU] >= 4` — professor em múltiplas unidades é avaliado independentemente em cada uma
+- `map` separado por `"chaveMatricula|UNIDADE"` — dropouts/alunos agregados por professor+unidade
+- O % de dropout é calculado individualmente para cada unidade onde o professor atua
 - Filtra por unidade (`f-prof-unidade`) e por `tc >= 4`
 - Ordena pelo % crescente (menor % = melhor)
 - Pega top 3 e renderiza via `renderDropoutPodiumHTML(ranked)`
