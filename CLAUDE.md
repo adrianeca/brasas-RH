@@ -444,7 +444,7 @@ Gráfico de dispersão abaixo dos gráficos globais da seção Dropouts & Observ
 
 **Dados:**
 - Eixo X = nota média de `ALL_NOTAS` **filtrado para o ciclo atual (nov–out)** por `chaveMatricula`; **min:4.5, max:10.5**
-- Eixo Y = soma de dropouts de `ALL_DROPOUTS` filtrados para o ciclo atual (nov–out) por `chaveMatricula`; **min:-1.5** (espaço abaixo de 0 para bolinhas não serem cortadas)
+- Eixo Y = soma de dropouts de `ALL_DROPOUTS` filtrados para o ciclo atual (nov–out) por `chaveMatricula`; **min:-4** (espaço abaixo de 0 para bolinhas não serem cortadas — aumentado de -1.5 para -4)
 - Ambos usam a mesma função `inCycSC_` para consistência ciclo × ciclo
 - Apenas professores com ≥ `fMin` observações entram no gráfico
 - **Apenas professores ativos**: filtro por `Set` de `chaveMatriculaDP` de `ALL_EMP` onde `ativo=true`
@@ -552,6 +552,7 @@ Seção no topo da aba Professores (antes dos KPIs de turmas), logo abaixo dos f
 - `renderPodium()` — **renderização em duas fases**: (1) renderiza imediatamente com placeholder via `renderPodiumHTML(top, stg)`, (2) chama `getDropoutPodiumFotos` async para o top 3 e re-renderiza com fotos
 - `renderPodiumHTML(top, stg)` — helper que monta o HTML do pódio (reutilizado nas duas fases)
 - Layout visual: 2º lugar (esquerda) | 1º lugar (centro, elevado) | 3º lugar (direita)
+- **Os dois pódios ficam lado a lado** dentro de um `div.podium-row` (`display:flex; gap:16px`); cada `.podium-section` recebe `flex:1; min-width:0; margin-bottom:0`. O `margin-bottom:24px` fica no `.podium-row`.
 - `PODIUM_PH` = SVG placeholder base64 para professores sem foto
 - Foto no `<img>` com `onerror="this.src=PODIUM_PH;this.onerror=null"` — fallback seguro
 - Subtítulo: `"Baseado nas notas médias do ciclo"` (sem "· aba Notas Médias")
@@ -579,21 +580,25 @@ Segundo pódio na aba Professores, imediatamente abaixo do pódio de notas médi
 
 **Fórmula:** `% dropout = (dropouts / (alunos + dropouts)) * 100`
 
-**Filtro de elegibilidade:** só entram professores com **4 ou mais turmas ativas na mesma unidade** na aba `db_max` da planilha `TURMAS_SPREADSHEET_ID`. Um professor com 3 turmas em BJ e 3 em PA não se qualifica para nenhuma das duas.
+**Filtro de elegibilidade:** só entram professores com **carga horária média ≥ 42h/mês no ciclo atual (nov–out) em pelo menos uma unidade**. A média é calculada individualmente por unidade — não é somada entre unidades diferentes. O ciclo vai de novembro do ano anterior até o mês atual (ex: em maio/2026 = nov/2025 a mai/2026).
 
-**Turmas FE excluídas:** turmas cujo nome (col B) começa com `"FE"` não contam para o mínimo de 4 turmas. O campo `nome` é retornado por `getTurmasData` para esse filtro.
+**Fonte da carga horária:** planilha `Horas_2024+` (`HORAS_SPREADSHEET_ID`), já carregada em `ALL_HORAS`. Soma apenas **col H (`HORAS TURMAS`) + col I (`HORAS TURMAS SÁBADO`)** — extras, substituições e faltas não entram.
 
 **Frontend — `renderDropoutPodium()`:**
-- Constrói `turmaCount` indexado por **chave composta `"normK|UNIDADE"`** (e fallback `"__ap__apelido|UNIDADE"`):
-  - Chave numérica: `(parte após | de chaveMatricula) + "|" + unidade.toUpperCase()`
-  - Fallback por apelido: `"__ap__" + apelido.toLowerCase() + "|" + unidade.toUpperCase()`
-- Eligibilidade checada por unidade: `turmaCount[k+'|'+rU] >= 4` — professor em múltiplas unidades é avaliado independentemente em cada uma
+- Aguarda `ALL_HORAS` estar disponível (guarda similar ao `ALL_DROPOUTS`)
+- Constrói `ciclo`: array de `{m, a}` de novembro do ano anterior até o mês atual (UTC para evitar bugs de fuso)
+- Chama `mediaHorasCiclo_(chaveMatricula, unidade, ciclo)` para cada registro de dropout
+  - Join por matrícula: `ALL_HORAS.matricula` normalizado via `.split('|').pop().trim()` ↔ `ALL_DROPOUTS.chaveMatricula`
+  - Retorna `null` se não há registros no ciclo (professor fica fora do ranking)
+  - Retorna média mensal de `hTurmas + hTurmasSab` nos meses do ciclo
+- Eligibilidade: `mediaH !== null && mediaH >= 42`
 - `map` separado por `"chaveMatricula|UNIDADE"` — dropouts/alunos agregados por professor+unidade
 - O % de dropout é calculado individualmente para cada unidade onde o professor atua
-- Filtra por unidade (`f-prof-unidade`) e por `tc >= 4`
+- Filtra por unidade (`f-prof-unidade`) e por elegibilidade de carga horária
 - Ordena pelo % crescente (menor % = melhor)
 - Pega top 3 e renderiza via `renderDropoutPodiumHTML(ranked)`
 - **Renderização em duas fases**: placeholder imediato → fotos async via `getDropoutPodiumFotos`
+- **`renderDropoutPodium()` é chamada também em `loadHorasData` success** para garantir render após horas chegarem
 
 **Frontend — `renderDropoutPodiumHTML(ranked)`:**
 - Mesmo layout visual do pódio de notas (2º esquerda | 1º centro | 3º direita)

@@ -286,6 +286,8 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 }
 @media(max-width:600px){.insight-banner{grid-template-columns:1fr}.gift-kpi-row{grid-template-columns:1fr}.kpi-row{grid-template-columns:1fr 1fr}}
 /* PÓDIO */
+.podium-row{display:flex;gap:16px;margin-bottom:24px}
+.podium-row .podium-section{flex:1;min-width:0;margin-bottom:0}
 .podium-section{background:var(--white);border-radius:var(--radius);border:1px solid var(--gray-200);padding:24px;box-shadow:var(--shadow-sm);margin-bottom:24px}
 .podium-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:12px}
 .podium-title{font-size:1rem;font-weight:700;color:var(--navy-800)}
@@ -582,29 +584,32 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       </div>
       <div class="kpi-row" id="prof-kpis"></div>
 
-      <!-- PÓDIO TOP 3 NOTAS -->
-      <div class="podium-section">
-        <div class="podium-header">
-          <div>
-            <div class="podium-title">🏆 Top 3 · Maiores Médias de Observação</div>
-            <div class="podium-subtitle">Baseado nas notas médias do ciclo</div>
+      <!-- PÓDIOS LADO A LADO -->
+      <div class="podium-row">
+        <!-- PÓDIO TOP 3 NOTAS -->
+        <div class="podium-section">
+          <div class="podium-header">
+            <div>
+              <div class="podium-title">🏆 Top 3 · Maiores Médias de Observação</div>
+              <div class="podium-subtitle">Baseado nas notas médias do ciclo</div>
+            </div>
+          </div>
+          <div id="podium-stage" class="podium-stage">
+            <div class="podium-empty">Carregando ranking…</div>
           </div>
         </div>
-        <div id="podium-stage" class="podium-stage">
-          <div class="podium-empty">Carregando ranking…</div>
-        </div>
-      </div>
 
-      <!-- PÓDIO TOP 3 MENORES DROPOUTS -->
-      <div class="podium-section">
-        <div class="podium-header">
-          <div>
-            <div class="podium-title">🎯 Top 3 · Menores % de Dropouts</div>
-            <div class="podium-subtitle">Professores com menor taxa de evasão · histórico completo</div>
+        <!-- PÓDIO TOP 3 MENORES DROPOUTS -->
+        <div class="podium-section">
+          <div class="podium-header">
+            <div>
+              <div class="podium-title">🎯 Top 3 · Menores % de Dropouts</div>
+              <div class="podium-subtitle">Professores com menor taxa de evasão · histórico completo</div>
+            </div>
           </div>
-        </div>
-        <div id="dropout-podium-stage" class="podium-stage">
-          <div class="podium-empty">Carregando ranking…</div>
+          <div id="dropout-podium-stage" class="podium-stage">
+            <div class="podium-empty">Carregando ranking…</div>
+          </div>
         </div>
       </div>
 
@@ -2496,28 +2501,38 @@ function renderHistorico(){
   });
 }
 
+function mediaHorasCiclo_(chaveMatricula,unidade,ciclo){
+  var total=0,count=0,unUp=unidade.toUpperCase();
+  ALL_HORAS.forEach(function(h){
+    var hMat=String(h.matricula||'').split('|').pop().trim();
+    if(hMat!==chaveMatricula) return;
+    if((h.unidade||'').toUpperCase()!==unUp) return;
+    var hM=Number(h.mes),hA=Number(h.ano);
+    if(!ciclo.some(function(c){return c.m===hM&&c.a===hA;})) return;
+    total+=(h.hTurmas||0)+(h.hTurmasSab||0);
+    count++;
+  });
+  return count>0?total/count:null;
+}
 function renderDropoutPodium(){
   var stg=document.getElementById('dropout-podium-stage'); if(!stg) return;
   if(!ALL_DROPOUTS.length){stg.innerHTML='<div class="podium-empty">Aguardando dados de dropout…</div>';return;}
+  if(!ALL_HORAS.length){stg.innerHTML='<div class="podium-empty">Aguardando dados de horas…</div>';return;}
   var fU=(v('f-prof-unidade')||'').trim().toUpperCase();
-  var turmaCount={};
-  ALL_TURMAS.forEach(function(r){
-    if((r.nome||'').trim().toUpperCase().startsWith('FE')) return;
-    var k=r.chaveMatricula; if(!k) return;
-    var parts=k.split('|');
-    var normK=(parts.length>1?parts[parts.length-1]:parts[0]).trim();
-    var un=(r.unidade||'').trim().toUpperCase();
-    if(normK&&un) turmaCount[normK+'|'+un]=(turmaCount[normK+'|'+un]||0)+1;
-    var ap=(r.apelido||'').trim().toLowerCase();
-    if(ap&&un) turmaCount['__ap__'+ap+'|'+un]=(turmaCount['__ap__'+ap+'|'+un]||0)+1;
-  });
+  var hoje=new Date();
+  var anoIni=hoje.getUTCMonth()>=10?hoje.getUTCFullYear():hoje.getUTCFullYear()-1;
+  var ciclo=[],d=new Date(Date.UTC(anoIni,10,1));
+  while(d.getUTCFullYear()<hoje.getUTCFullYear()||(d.getUTCFullYear()===hoje.getUTCFullYear()&&d.getUTCMonth()<=hoje.getUTCMonth())){
+    ciclo.push({m:d.getUTCMonth()+1,a:d.getUTCFullYear()});
+    d.setUTCMonth(d.getUTCMonth()+1);
+  }
   var map={};
   ALL_DROPOUTS.forEach(function(r){
     var rU=(r.unidade||'').trim().toUpperCase();
     if(fU&&rU!==fU) return;
     var k=r.chaveMatricula; if(!k) return;
-    var tc=(turmaCount[k+'|'+rU]||0)||(turmaCount['__ap__'+(r.teacher||'').trim().toLowerCase()+'|'+rU]||0);
-    if(tc<4) return;
+    var mediaH=mediaHorasCiclo_(k,rU,ciclo);
+    if(mediaH===null||mediaH<42) return;
     var mk=k+'|'+rU;
     if(!map[mk]) map[mk]={teacher:r.teacher,unidade:r.unidade,chaveMatricula:k,totalAlunos:0,totalDropouts:0};
     map[mk].totalAlunos+=r.alunos;
@@ -2856,7 +2871,7 @@ function renderDOScatter(){
          ticks:{font:{size:11},color:'#64748b'},
          afterBuildTicks:function(axis){axis.ticks=[5,6,7,8,9,10].map(function(v){return{value:v};});},
          grid:{color:'#e2e8f0'},border:{color:'#e2e8f0'}},
-      y:{title:{display:true,text:'Dropouts no Ciclo',font:{size:12},color:'#64748b'},min:-1.5,max:yMax,
+      y:{title:{display:true,text:'Dropouts no Ciclo',font:{size:12},color:'#64748b'},min:-4,max:yMax,
          ticks:{font:{size:11},color:'#64748b',precision:0,callback:function(v){return v<0?'':v;}},grid:{color:'#e2e8f0'},border:{color:'#e2e8f0'}}
     }
   }});
@@ -3067,6 +3082,7 @@ function loadHorasData(){
       initHorasFilters();
       renderHoras();
       renderFaltas();
+      renderDropoutPodium();
     })
     .withFailureHandler(function(e){ console.warn('Horas falhou:',e.message); })
     .getHorasData(TOKEN);
