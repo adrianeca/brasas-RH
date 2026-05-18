@@ -26,16 +26,20 @@ Dashboard interno de RH da rede BRASAS RJ, construído em **Google Apps Script**
 | `COPA_SPREADSHEET_ID` | `1MGlfK7DXbnLpl55zc7AnzJvxDnsEA1umCeAbWRL5HhA` | `oficial_coparticipação` |
 | `TURMAS_SPREADSHEET_ID` | `1O5mYkfiFKpSd0aFxWVWjXJFxlbw6jYnDZX0SbiDda5M` | `db_max` |
 
-### Autenticação
+### Autenticação (Google SSO via Hub)
 
-- Usuários ficam na aba `USUARIOS` da planilha principal (colunas: email, senha, nome, role, unidade).
-- Login gera um UUID que fica no `CacheService` por `SESSION_TTL = 8h`.
-- Toda função de dados exige token válido — sem sessão retorna `{ ok: false, error: '...' }`.
+- Login via conta Google Workspace (`brasas.com`) — sem formulário de email/senha.
+- `doGet()` chama `getGoogleSession_()` que usa `Session.getActiveUser().getEmail()` para identificar o usuário.
+- O email é consultado na aba `USUARIOS` da planilha principal (colunas: email, ~~senha~~, nome, role, unidade — a coluna senha não é mais usada).
+- Se a sessão for criada no servidor, o token é injetado no HTML via template scriptlet `<?!= initialSession ?>`.
+- Se `Session.getActiveUser()` retornar vazio (configuração de deploy), o frontend chama `loginWithGoogle()` como fallback via `google.script.run`.
+- Sessão cria UUID no `CacheService` com `SESSION_TTL = 8h`. Todas as funções de dados exigem token válido.
+- **Configuração de deploy necessária:** o webapp deve estar publicado com acesso restrito a usuários do domínio `brasas.com` (não anônimo), para que `Session.getActiveUser()` retorne o email correto.
 
 ### Roles
 
 - **`admin`** — vê todos os dados de todas as unidades.
-- **`diretor`** — vê apenas os dados da própria unidade (filtro aplicado no backend).
+- **`diretor`** — vê Visão Geral, People, Professores, Brindes, Horas, Faltas e VR — filtrado pela própria unidade no backend.
 - **`marketing`** — acesso às abas Visão Geral e Brindes.
 - **`dp`** — acesso às abas Visão Geral, People, Desligamentos, Horas, Faltas, VR e Coparticipação.
 
@@ -43,8 +47,9 @@ Dashboard interno de RH da rede BRASAS RJ, construído em **Google Apps Script**
 
 | Função | O que faz |
 |---|---|
-| `doGet()` | Ponto de entrada — serve o `Index.html` |
-| `login(email, password)` | Autentica e cria sessão |
+| `doGet()` | Ponto de entrada — detecta email Google, cria sessão e injeta token no template |
+| `getGoogleSession_()` | Helper — obtém email via `Session.getActiveUser()`, consulta USUARIOS, cria token no cache |
+| `loginWithGoogle()` | Fallback chamado pelo frontend se `doGet()` não conseguiu criar sessão |
 | `logout(token)` | Remove sessão do cache |
 | `checkSession(token)` | Valida token e retorna dados da sessão |
 | `getData(token)` | Carrega colaboradores da aba `RJ - UNIDADES` |
@@ -108,6 +113,13 @@ Anos calculados: 2025, 2026, 2027 (constante `GIFT_YEARS`).
 | `engajamento` | Engajamento | Respostas do questionário de engajamento |
 | `desligamentos` | Desligamentos | Análise das entrevistas de desligamento |
 | `copa` | Coparticipação | Coparticipação do plano de saúde |
+
+### Navbar
+
+- Logo **🏫 BRASAS Analytics** à esquerda.
+- Botão **🏠 Hub** logo após o logo — link para o Hub central (`target="_top"` para sair do iframe). Estilo `.hub-btn`.
+- Abas de navegação na sequência.
+- Lado direito (`.cockpit-nav-right`): nome do usuário + botão **Sair**.
 
 ### Sistema de design (variáveis CSS)
 

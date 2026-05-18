@@ -46,27 +46,36 @@ const GIFT_TABLE = {
 };
 const GIFT_YEARS = [2025, 2026, 2027];
 
+function getGoogleSession_() {
+  try {
+    const email = Session.getActiveUser().getEmail();
+    if (!email) return null;
+    const users = getUsers_();
+    const user = users[email.toLowerCase()];
+    if (!user) return null;
+    const token = Utilities.getUuid();
+    CacheService.getScriptCache().put(
+      'sess_' + token,
+      JSON.stringify({ email: email.toLowerCase(), name: user.name, role: user.role, unidade: user.unidade||'' }),
+      SESSION_TTL
+    );
+    return { token, name: user.name, role: user.role, unidade: user.unidade||'' };
+  } catch(e) { return null; }
+}
+
 function doGet() {
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
+  const template = HtmlService.createTemplateFromFile('Index');
+  template.initialSession = JSON.stringify(getGoogleSession_());
+  return template.evaluate()
     .setTitle('BRASAS Analytics · RH')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function login(email, password) {
-  try {
-    if (!email || !password) return { ok: false, error: 'Preencha e-mail e senha.' };
-    const key = String(email).trim().toLowerCase();
-    const users = getUsers_();
-    const user = users[key];
-    if (!user || user.password !== String(password).trim())
-      return { ok: false, error: 'E-mail ou senha inválidos.' };
-    const token = Utilities.getUuid();
-    CacheService.getScriptCache().put('sess_' + token,
-      JSON.stringify({ email: key, name: user.name, role: user.role, unidade: user.unidade||'' }), SESSION_TTL);
-    return { ok: true, token, name: user.name, role: user.role, unidade: user.unidade||'' };
-  } catch (e) { return { ok: false, error: 'Erro interno: ' + e.message }; }
+function loginWithGoogle() {
+  const sess = getGoogleSession_();
+  if (!sess) return { ok: false, error: 'Usuário não autorizado ou não identificado. Certifique-se de estar logado com sua conta @brasas.com.' };
+  return { ok: true, ...sess };
 }
 
 function logout(token) {

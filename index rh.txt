@@ -31,20 +31,14 @@
 html{font-size:15px}
 body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900);line-height:1.6;min-height:100vh}
 #loginOverlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 60%,var(--navy-600) 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
-.login-card{background:rgba(255,255,255,.04);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:48px 44px;width:100%;max-width:420px}
+.login-card{background:rgba(255,255,255,.04);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:48px 44px;width:100%;max-width:420px;text-align:center}
 .login-logo{text-align:center;margin-bottom:32px}
 .login-logo-brand{font-size:1.1rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:#fff;margin-top:10px}
 .login-logo-sub{font-size:.7rem;letter-spacing:.1em;color:var(--navy-200);text-transform:uppercase;margin-top:2px}
-.login-desc{font-size:.82rem;color:var(--navy-200);text-align:center;margin-bottom:28px}
-.login-field{margin-bottom:16px}
-.login-field label{display:block;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--navy-200);margin-bottom:6px}
-.login-field input{width:100%;padding:12px 16px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.9rem;color:#fff;transition:border-color .2s}
-.login-field input::placeholder{color:var(--navy-300)}
-.login-field input:focus{outline:none;border-color:var(--navy-300)}
-.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--navy-400),var(--navy-500));border:none;border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.92rem;font-weight:700;color:#fff;cursor:pointer;margin-top:8px;transition:opacity .2s,transform .15s}
-.login-btn:hover{opacity:.9;transform:translateY(-1px)}
-.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.login-desc{font-size:.82rem;color:var(--navy-200);text-align:center;margin-bottom:16px}
 .login-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius-sm);padding:10px 14px;font-size:.82rem;color:#fca5a5;margin-top:12px;display:none}
+.login-spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--navy-300);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 20px}
+@keyframes spin{to{transform:rotate(360deg)}}
 .cockpit-nav{background:var(--navy-900);border-bottom:1px solid rgba(255,255,255,.08);padding:0 32px}
 .cockpit-nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:4px}
 .cockpit-nav-logo{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-300);padding:10px 16px 10px 0;margin-right:8px;border-right:1px solid rgba(255,255,255,.1);white-space:nowrap}
@@ -57,6 +51,8 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .nav-user strong{color:var(--navy-100)}
 .logout-btn{font-size:.72rem;font-weight:600;color:var(--navy-400);background:none;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:4px 10px;cursor:pointer;transition:color .15s,border-color .15s;font-family:var(--font-main)}
 .logout-btn:hover{color:#fff;border-color:rgba(255,255,255,.25)}
+.hub-btn{font-size:.72rem;font-weight:600;color:var(--navy-200);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:4px 10px;cursor:pointer;transition:background .15s,color .15s;font-family:var(--font-main);text-decoration:none;display:flex;align-items:center;gap:5px}
+.hub-btn:hover{background:rgba(255,255,255,.12);color:#fff}
 .app-header{background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 100%);padding:28px 32px 24px;color:#fff;position:relative;overflow:hidden}
 .app-header::after{content:'';position:absolute;top:-50%;right:-10%;width:400px;height:400px;background:radial-gradient(circle,rgba(90,138,186,.15) 0%,transparent 70%);border-radius:50%}
 .header-content{position:relative;z-index:1;max-width:1400px;margin:0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
@@ -322,10 +318,8 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       <div class="login-logo-brand">🏫 BRASAS</div>
       <div class="login-logo-sub">Analytics · Dashboard RH</div>
     </div>
-    <div class="login-desc">Acesso restrito a colaboradores autorizados</div>
-    <div class="login-field"><label>E-mail</label><input type="email" id="loginEmail" placeholder="seu@brasas.com" autocomplete="username"></div>
-    <div class="login-field"><label>Senha</label><input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"></div>
-    <button class="login-btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+    <div class="login-spinner" id="loginSpinner"></div>
+    <div class="login-desc" id="loginStatus">Verificando acesso...</div>
     <div class="login-error" id="loginErr"></div>
   </div>
 </div>
@@ -335,6 +329,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   <nav class="cockpit-nav">
     <div class="cockpit-nav-inner">
       <div class="cockpit-nav-logo">🏫 BRASAS Analytics</div>
+      <a class="hub-btn" href="https://script.google.com/a/macros/brasas.com/s/AKfycbyF7BArYMYFtcQY7_4RTGGPw89yNohAjR7eGptItP-EsnWhNfiZR2ISRaHdAkwlLSlr/exec" target="_top">🏠 Hub</a>
       <button class="cockpit-tab active" onclick="switchTab('geral',this)"><span class="tab-icon">👥</span> Visão Geral</button>
       <button class="cockpit-tab" onclick="switchTab('people',this)"><span class="tab-icon">📊</span> People Analytics</button>
       <button class="cockpit-tab" onclick="switchTab('professores',this)"><span class="tab-icon">🎓</span> Professores</button>
@@ -1074,6 +1069,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 
 <script>
 // GLOBAIS
+var INITIAL_SESSION = <?!= initialSession ?>;
 var TOKEN=null, USER_INFO=null;
 var ALL_EMP=[], FILTERED=[];
 var ENG_DATA=[];
@@ -1117,7 +1113,7 @@ var ROLE_TABS={
   'admin':     ['geral','people','brindes','professores','cohort','engajamento','desligamentos','horas','faltas','vr','copa'],
   'viewer':    ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
   'marketing': ['geral','brindes'],
-  'diretor':   ['geral','people','brindes','horas','faltas','vr'],
+  'diretor':   ['geral','people','professores','brindes','horas','faltas','vr'],
   'dp':        ['geral','people','desligamentos','horas','faltas','vr','copa']
 };
 
@@ -1305,37 +1301,36 @@ function renderEngajamento(){
 }
 
 // AUTENTICAÇÃO
-function doLogin(){
-  var email=document.getElementById('loginEmail').value.trim();
-  var pass=document.getElementById('loginPass').value;
-  var btn=document.getElementById('loginBtn'),err=document.getElementById('loginErr');
-  if(!email||!pass){ showLoginErr('Preencha e-mail e senha.'); return; }
-  btn.disabled=true; btn.textContent='Entrando…'; err.style.display='none';
-  google.script.run
-    .withSuccessHandler(function(r){
-      btn.disabled=false; btn.textContent='Entrar';
-      if(!r.ok){ showLoginErr(r.error); return; }
-      TOKEN=r.token; USER_INFO={name:r.name,role:r.role,unidade:r.unidade||''};
-      sessionStorage.setItem('rh_token',r.token);
-      sessionStorage.setItem('rh_user',JSON.stringify(USER_INFO));
-      afterLogin();
-    })
-    .withFailureHandler(function(e){ btn.disabled=false; btn.textContent='Entrar'; showLoginErr('Erro: '+e.message); })
-    .login(email,pass);
+function showLoginErr(msg){
+  var el=document.getElementById('loginErr');
+  var sp=document.getElementById('loginSpinner');
+  var st=document.getElementById('loginStatus');
+  el.textContent=msg; el.style.display='block';
+  if(sp) sp.style.display='none';
+  if(st) st.textContent='Acesso não autorizado';
 }
-function showLoginErr(msg){ var el=document.getElementById('loginErr'); el.textContent=msg; el.style.display='block'; }
 function doLogout(){
   if(TOKEN) google.script.run.logout(TOKEN);
-  sessionStorage.clear(); TOKEN=null; USER_INFO=null; ALL_EMP=[];
+  TOKEN=null; USER_INFO=null; ALL_EMP=[];
   document.getElementById('app').style.display='none';
-  document.getElementById('loginOverlay').style.display='flex';
-  document.getElementById('loginPass').value='';
+  var overlay=document.getElementById('loginOverlay');
+  var sp=document.getElementById('loginSpinner');
+  var st=document.getElementById('loginStatus');
+  overlay.style.display='flex';
+  if(sp) sp.style.display='none';
+  if(st) st.textContent='Você saiu. Feche esta aba ou acesse o Hub para entrar novamente.';
+}
+function tryGoogleLogin_(){
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(!r.ok){ showLoginErr(r.error); return; }
+      TOKEN=r.token; USER_INFO={name:r.name,role:r.role,unidade:r.unidade||''};
+      afterLogin();
+    })
+    .withFailureHandler(function(e){ showLoginErr('Erro ao verificar acesso: '+e.message); })
+    .loginWithGoogle();
 }
 window.addEventListener('load',function(){
-  var lp=document.getElementById('loginPass');
-  if(lp) lp.addEventListener('keydown',function(e){ if(e.key==='Enter') doLogin(); });
-  var le=document.getElementById('loginEmail');
-  if(le) le.addEventListener('keydown',function(e){ if(e.key==='Enter') document.getElementById('loginPass').focus(); });
   document.addEventListener('click',function(e){
     if(!e.target.closest('#mdUnidade'))        closeMd('mdUnidade');
     if(!e.target.closest('#mdBrindeAno'))      closeMd('mdBrindeAno');
@@ -1343,8 +1338,13 @@ window.addEventListener('load',function(){
     if(!e.target.closest('#mdBrindeLocal')) closeMd('mdBrindeLocal');
     if(!e.target.closest('#dl-ano-wrap')){ var m=document.getElementById('dl-ano-menu'); if(m) m.style.display='none'; }
   });
-  var t=sessionStorage.getItem('rh_token'),u=sessionStorage.getItem('rh_user');
-  if(t&&u){ TOKEN=t; USER_INFO=JSON.parse(u); afterLogin(); }
+  if(INITIAL_SESSION && INITIAL_SESSION.token){
+    TOKEN=INITIAL_SESSION.token;
+    USER_INFO={name:INITIAL_SESSION.name,role:INITIAL_SESSION.role,unidade:INITIAL_SESSION.unidade||''};
+    afterLogin();
+  } else {
+    tryGoogleLogin_();
+  }
 });
 function afterLogin(){
   document.getElementById('loginOverlay').style.display='none';
