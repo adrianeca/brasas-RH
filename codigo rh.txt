@@ -54,30 +54,62 @@ function _getRolePermissions_(role) {
     const raw = sheet.getDataRange().getValues();
     if (raw.length < 2) return null;
 
+    // Normalização: minúsculo, sem acento, sem espaços duplos
+    const norm_ = v => String(v||'').trim().toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ');
+    // Considera valor "falso" se vazio, "nao", "no", "false" ou "0"
+    const isFalsy_ = v => { const s=norm_(String(v||'')); return !s||s==='nao'||s==='no'||s==='false'||s==='0'; };
+
+    const headers = raw[0].map(norm_);
+
+    // Mapeamento colunas rh_* → IDs de aba do dashboard RH
+    const RH_MAP = {
+      'rh_visao':         'geral',
+      'rh_people':        'people',
+      'rh_professores':   'professores',
+      'rh_cohort':        'cohort',
+      'rh_engajamento':   'engajamento',
+      'rh_desligamentos': 'desligamentos',
+      'rh_dp':            ['horas','faltas','vr','copa'],
+      'rh_brindes':       'brindes',
+    };
     const KNOWN_TABS = ['geral','people','brindes','professores','cohort','engajamento','desligamentos','horas','faltas','vr','copa'];
-    const headers = raw[0].map(h => String(h||'').trim().toLowerCase());
 
-    // Detecta formato: matriz (colunas = IDs de aba) ou duas colunas (role, páginas CSV)
-    const isMatrix = headers.slice(1).some(h => KNOWN_TABS.includes(h));
-    const normRole = String(role||'').trim().toLowerCase();
+    // Detecta se a aba usa o formato rh_* (Hub) ou formato legado (IDs diretos ou CSV)
+    const hasRhCols = headers.some(h => h === 'rh' || h.startsWith('rh_'));
 
+    const normRole = norm_(role);
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
-      if (String(row[0]||'').trim().toLowerCase() !== normRole) continue;
+      if (norm_(String(row[0]||'')) !== normRole) continue;
 
-      if (isMatrix) {
+      if (hasRhCols) {
+        // Verifica flag geral de acesso ao app RH (coluna "rh")
+        const rhIdx = headers.indexOf('rh');
+        if (rhIdx !== -1 && isFalsy_(row[rhIdx])) return [];
+
+        // Coleta páginas permitidas a partir das colunas rh_*
         const allowed = [];
-        for (let c = 1; c < headers.length; c++) {
-          const tabId = headers[c];
-          if (!KNOWN_TABS.includes(tabId)) continue;
-          const val = String(row[c]||'').trim().toLowerCase();
-          if (val && val !== 'não' && val !== 'nao' && val !== 'no' && val !== 'false' && val !== '0') {
-            allowed.push(tabId);
-          }
+        for (let c = 0; c < headers.length; c++) {
+          const mapped = RH_MAP[headers[c]];
+          if (!mapped || isFalsy_(row[c])) continue;
+          const tabs = Array.isArray(mapped) ? mapped : [mapped];
+          tabs.forEach(t => { if (!allowed.includes(t)) allowed.push(t); });
         }
-        return allowed;
+        // Se rh está habilitado mas nenhuma página foi marcada → acesso completo (fallback)
+        return allowed.length > 0 ? allowed : null;
       } else {
-        return String(row[1]||'').split(',').map(p => p.trim().toLowerCase()).filter(p => KNOWN_TABS.includes(p));
+        // Formato legado: matriz com IDs diretos ou col 1 = CSV
+        const isMatrix = headers.slice(1).some(h => KNOWN_TABS.includes(h));
+        if (isMatrix) {
+          const allowed = [];
+          for (let c = 1; c < headers.length; c++) {
+            if (!KNOWN_TABS.includes(headers[c]) || isFalsy_(row[c])) continue;
+            allowed.push(headers[c]);
+          }
+          return allowed;
+        }
+        return String(row[1]||'').split(',').map(norm_).filter(p => KNOWN_TABS.includes(p));
       }
     }
     return null;
