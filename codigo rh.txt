@@ -46,6 +46,44 @@ const GIFT_TABLE = {
 };
 const GIFT_YEARS = [2025, 2026, 2027];
 
+function _getRolePermissions_(role) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('ROLES');
+    if (!sheet) return null;
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return null;
+
+    const KNOWN_TABS = ['geral','people','brindes','professores','cohort','engajamento','desligamentos','horas','faltas','vr','copa'];
+    const headers = raw[0].map(h => String(h||'').trim().toLowerCase());
+
+    // Detecta formato: matriz (colunas = IDs de aba) ou duas colunas (role, páginas CSV)
+    const isMatrix = headers.slice(1).some(h => KNOWN_TABS.includes(h));
+    const normRole = String(role||'').trim().toLowerCase();
+
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      if (String(row[0]||'').trim().toLowerCase() !== normRole) continue;
+
+      if (isMatrix) {
+        const allowed = [];
+        for (let c = 1; c < headers.length; c++) {
+          const tabId = headers[c];
+          if (!KNOWN_TABS.includes(tabId)) continue;
+          const val = String(row[c]||'').trim().toLowerCase();
+          if (val && val !== 'não' && val !== 'nao' && val !== 'no' && val !== 'false' && val !== '0') {
+            allowed.push(tabId);
+          }
+        }
+        return allowed;
+      } else {
+        return String(row[1]||'').split(',').map(p => p.trim().toLowerCase()).filter(p => KNOWN_TABS.includes(p));
+      }
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
 function getGoogleSession_() {
   try {
     const email = Session.getActiveUser().getEmail();
@@ -54,12 +92,13 @@ function getGoogleSession_() {
     const user = users[email.toLowerCase()];
     if (!user) return null;
     const token = Utilities.getUuid();
-    CacheService.getScriptCache().put(
-      'sess_' + token,
-      JSON.stringify({ email: email.toLowerCase(), name: user.name, role: user.role, unidade: user.unidade||'' }),
-      SESSION_TTL
-    );
-    return { token, name: user.name, role: user.role, unidade: user.unidade||'' };
+    const allowedPages = _getRolePermissions_(user.role);
+    const sessData = { email: email.toLowerCase(), name: user.name, role: user.role, unidade: user.unidade||'' };
+    if (allowedPages) sessData.allowedPages = allowedPages;
+    CacheService.getScriptCache().put('sess_' + token, JSON.stringify(sessData), SESSION_TTL);
+    const result = { token, name: user.name, role: user.role, unidade: user.unidade||'' };
+    if (allowedPages) result.allowedPages = allowedPages;
+    return result;
   } catch(e) { return null; }
 }
 

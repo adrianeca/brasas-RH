@@ -1109,18 +1109,27 @@ var NIVEL_ORDER=['A','B','1.1','1.2','1.3','1.4','2.1','2.2','2.3','2.4','3.1','
 var MONTHS_PT=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 var BRINDE_SEL={'mdBrindeLocal':[],'mdBrindeTipo':[]}; 
 
+var HUB_URL='https://script.google.com/a/macros/brasas.com/s/AKfycbyF7BArYMYFtcQY7_4RTGGPw89yNohAjR7eGptItP-EsnWhNfiZR2ISRaHdAkwlLSlr/exec';
+
 var ROLE_TABS={
   'admin':     ['geral','people','brindes','professores','cohort','engajamento','desligamentos','horas','faltas','vr','copa'],
   'viewer':    ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
   'marketing': ['geral','brindes'],
   'diretor':   ['geral','people','professores','brindes','horas','faltas','vr'],
-  'dp':        ['geral','people','desligamentos','horas','faltas','vr','copa']
+  'dp':        ['geral','people','desligamentos','horas','faltas','vr','copa'],
+  'g&g':       ['geral','people','professores']
 };
+
+// Retorna páginas permitidas: prefere allowedPages da sessão (da aba ROLES), senão usa ROLE_TABS
+function getAllowed_(){
+  if(USER_INFO && USER_INFO.allowedPages && USER_INFO.allowedPages.length) return USER_INFO.allowedPages;
+  var role=USER_INFO?USER_INFO.role:'viewer';
+  return ROLE_TABS[role]||ROLE_TABS['viewer'];
+}
 
 // ACESSO
 function applyRoleAccess(){
-  var role=USER_INFO?USER_INFO.role:'viewer';
-  var allowed=ROLE_TABS[role]||ROLE_TABS['viewer'];
+  var allowed=getAllowed_();
   document.querySelectorAll('.cockpit-tab').forEach(function(btn){
     var match=(btn.getAttribute('onclick')||'').match(/switchTab\('([^']+)'/);
     if(!match) return;
@@ -1131,8 +1140,7 @@ function applyRoleAccess(){
   if(dpWrap) dpWrap.style.display=dpAllowed?'':'none';
 }
 function canAccess(tabId){
-  var role=USER_INFO?USER_INFO.role:'viewer';
-  return (ROLE_TABS[role]||ROLE_TABS['viewer']).indexOf(tabId)>=0;
+  return getAllowed_().indexOf(tabId)>=0;
 }
 
 // ENGAJAMENTO VARS
@@ -1312,22 +1320,16 @@ function showLoginErr(msg){
 function doLogout(){
   if(TOKEN) google.script.run.logout(TOKEN);
   TOKEN=null; USER_INFO=null; ALL_EMP=[];
-  document.getElementById('app').style.display='none';
-  var overlay=document.getElementById('loginOverlay');
-  var sp=document.getElementById('loginSpinner');
-  var st=document.getElementById('loginStatus');
-  overlay.style.display='flex';
-  if(sp) sp.style.display='none';
-  if(st) st.textContent='Você saiu. Feche esta aba ou acesse o Hub para entrar novamente.';
+  window.top.location.href=HUB_URL;
 }
 function tryGoogleLogin_(){
   google.script.run
     .withSuccessHandler(function(r){
-      if(!r.ok){ showLoginErr(r.error); return; }
-      TOKEN=r.token; USER_INFO={name:r.name,role:r.role,unidade:r.unidade||''};
+      if(!r.ok){ window.top.location.href=HUB_URL; return; }
+      TOKEN=r.token; USER_INFO={name:r.name,role:r.role,unidade:r.unidade||'',allowedPages:r.allowedPages||null};
       afterLogin();
     })
-    .withFailureHandler(function(e){ showLoginErr('Erro ao verificar acesso: '+e.message); })
+    .withFailureHandler(function(){ window.top.location.href=HUB_URL; })
     .loginWithGoogle();
 }
 window.addEventListener('load',function(){
@@ -1340,7 +1342,7 @@ window.addEventListener('load',function(){
   });
   if(INITIAL_SESSION && INITIAL_SESSION.token){
     TOKEN=INITIAL_SESSION.token;
-    USER_INFO={name:INITIAL_SESSION.name,role:INITIAL_SESSION.role,unidade:INITIAL_SESSION.unidade||''};
+    USER_INFO={name:INITIAL_SESSION.name,role:INITIAL_SESSION.role,unidade:INITIAL_SESSION.unidade||'',allowedPages:INITIAL_SESSION.allowedPages||null};
     afterLogin();
   } else {
     tryGoogleLogin_();
@@ -1365,8 +1367,7 @@ function loadData(){
       ALL_EMP=r.employees||[];
       document.getElementById('headerMeta').textContent=ALL_EMP.length+' colaboradores carregados · '+fmtNow();
       initFilters();
-      var role=USER_INFO?USER_INFO.role:'viewer';
-      var allowed=ROLE_TABS[role]||ROLE_TABS['viewer'];
+      var allowed=getAllowed_();
       if(allowed.indexOf('geral')>=0)       applyFilters();
       if(allowed.indexOf('people')>=0)      renderPeople();
       if(allowed.indexOf('professores')>=0){
