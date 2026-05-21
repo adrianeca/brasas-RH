@@ -134,53 +134,58 @@ function getGoogleSession_() {
   } catch(e) { return null; }
 }
 
-// Valida token criado pelo Hub (lê aba SESSOES do spreadsheet principal)
-function _validateHubSession_(token) {
-  if (!token) return null;
+// ID da planilha onde o Hub armazena as sessões (aba SESSOES).
+// Por padrão igual ao spreadsheet do RH; alterar se o Hub usar planilha própria.
+const HUB_SPREADSHEET_ID = SPREADSHEET_ID;
+
+// Valida token do Hub e cria sessão local no CacheService.
+// Chamada assincronamente pelo frontend para não bloquear o carregamento da página.
+function validateAndCreateSession(hubToken) {
+  if (!hubToken) return { ok: false, error: 'Token não fornecido.' };
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ss = SpreadsheetApp.openById(HUB_SPREADSHEET_ID);
     const sheet = ss.getSheetByName('SESSOES');
-    if (!sheet) return null;
+    if (!sheet) return { ok: false, error: 'Aba SESSOES não encontrada.' };
     const raw = sheet.getDataRange().getValues();
     const now = new Date();
+
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
-      if (String(row[0]||'').trim() !== token.trim()) continue;
-      // Valida expiração (col 6)
+      if (String(row[0]||'').trim() !== String(hubToken).trim()) continue;
+
+      // Valida expiração (col G = índice 6)
       const expiryRaw = row[6];
       if (expiryRaw) {
         const expiry = expiryRaw instanceof Date ? expiryRaw : new Date(expiryRaw);
-        if (!isNaN(expiry.getTime()) && expiry < now) return null;
+        if (!isNaN(expiry.getTime()) && expiry < now) return { ok: false, error: 'Sessão expirada.' };
       }
+
       const email = String(row[1]||'').trim().toLowerCase();
-      if (!email) return null;
-      // Busca dados do usuário na aba USUARIOS (fonte de verdade de role/unidade)
+      if (!email) return { ok: false, error: 'Email não encontrado na sessão.' };
+
       const user = getUsers_()[email];
-      if (!user) return null;
-      return { email, name: user.name, role: user.role, unidade: user.unidade || '' };
+      if (!user) return { ok: false, error: 'Usuário não cadastrado no sistema RH.' };
+
+      const localToken = Utilities.getUuid();
+      const allowedPages = _getRolePermissions_(user.role);
+      const sessData = { email, name: user.name, role: user.role, unidade: user.unidade || '' };
+      if (allowedPages) sessData.allowedPages = allowedPages;
+      CacheService.getScriptCache().put('sess_' + localToken, JSON.stringify(sessData), SESSION_TTL);
+
+      const result = { ok: true, token: localToken, name: user.name, role: user.role, unidade: user.unidade || '' };
+      if (allowedPages) result.allowedPages = allowedPages;
+      return result;
     }
-    return null;
-  } catch(e) { return null; }
+    return { ok: false, error: 'Token não encontrado.' };
+  } catch(e) {
+    return { ok: false, error: 'Erro ao validar sessão: ' + e.message };
+  }
 }
 
 function doGet(e) {
   const template = HtmlService.createTemplateFromFile('Index');
-  // Única forma de entrar: token do Hub passado via ?s=TOKEN
-  const hubToken = (e && e.parameter && e.parameter.s) || '';
-  let sessionData = null;
-  if (hubToken) {
-    const userData = _validateHubSession_(hubToken);
-    if (userData) {
-      const localToken = Utilities.getUuid();
-      const allowedPages = _getRolePermissions_(userData.role);
-      const sessData = { email: userData.email, name: userData.name, role: userData.role, unidade: userData.unidade };
-      if (allowedPages) sessData.allowedPages = allowedPages;
-      CacheService.getScriptCache().put('sess_' + localToken, JSON.stringify(sessData), SESSION_TTL);
-      sessionData = { token: localToken, name: userData.name, role: userData.role, unidade: userData.unidade };
-      if (allowedPages) sessionData.allowedPages = allowedPages;
-    }
-  }
-  template.initialSession = JSON.stringify(sessionData);
+  // Passa o token bruto do Hub para o frontend; validação acontece assincronamente
+  template.hubToken = (e && e.parameter && e.parameter.s) || '';
   return template.evaluate()
     .setTitle('BRASAS Analytics · RH')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')

@@ -1069,7 +1069,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 
 <script>
 // GLOBAIS
-var INITIAL_SESSION = <?!= initialSession ?>;
+var HUB_TOKEN = '<?!= hubToken ?>';
 var TOKEN=null, USER_INFO=null;
 var ALL_EMP=[], FILTERED=[];
 var ENG_DATA=[];
@@ -1330,12 +1330,19 @@ window.addEventListener('load',function(){
     if(!e.target.closest('#mdBrindeLocal')) closeMd('mdBrindeLocal');
     if(!e.target.closest('#dl-ano-wrap')){ var m=document.getElementById('dl-ano-menu'); if(m) m.style.display='none'; }
   });
-  if(INITIAL_SESSION && INITIAL_SESSION.token){
-    TOKEN=INITIAL_SESSION.token;
-    USER_INFO={name:INITIAL_SESSION.name,role:INITIAL_SESSION.role,unidade:INITIAL_SESSION.unidade||'',allowedPages:INITIAL_SESSION.allowedPages||null};
-    afterLogin();
+  if(HUB_TOKEN){
+    // Valida token do Hub assincronamente (mantém "Verificando acesso…" enquanto processa)
+    google.script.run
+      .withSuccessHandler(function(r){
+        if(!r.ok){ window.top.location.href=HUB_URL; return; }
+        TOKEN=r.token;
+        USER_INFO={name:r.name,role:r.role,unidade:r.unidade||'',allowedPages:r.allowedPages||null};
+        afterLogin();
+      })
+      .withFailureHandler(function(){ window.top.location.href=HUB_URL; })
+      .validateAndCreateSession(HUB_TOKEN);
   } else {
-    // Sem token válido do Hub → redireciona para o Hub
+    // Sem token do Hub → redireciona para o Hub
     window.top.location.href=HUB_URL;
   }
 });
