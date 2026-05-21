@@ -134,9 +134,53 @@ function getGoogleSession_() {
   } catch(e) { return null; }
 }
 
-function doGet() {
+// Valida token criado pelo Hub (lê aba SESSOES do spreadsheet principal)
+function _validateHubSession_(token) {
+  if (!token) return null;
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('SESSOES');
+    if (!sheet) return null;
+    const raw = sheet.getDataRange().getValues();
+    const now = new Date();
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      if (String(row[0]||'').trim() !== token.trim()) continue;
+      // Valida expiração (col 6)
+      const expiryRaw = row[6];
+      if (expiryRaw) {
+        const expiry = expiryRaw instanceof Date ? expiryRaw : new Date(expiryRaw);
+        if (!isNaN(expiry.getTime()) && expiry < now) return null;
+      }
+      const email = String(row[1]||'').trim().toLowerCase();
+      if (!email) return null;
+      // Busca dados do usuário na aba USUARIOS (fonte de verdade de role/unidade)
+      const user = getUsers_()[email];
+      if (!user) return null;
+      return { email, name: user.name, role: user.role, unidade: user.unidade || '' };
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
+function doGet(e) {
   const template = HtmlService.createTemplateFromFile('Index');
-  template.initialSession = JSON.stringify(getGoogleSession_());
+  // Única forma de entrar: token do Hub passado via ?s=TOKEN
+  const hubToken = (e && e.parameter && e.parameter.s) || '';
+  let sessionData = null;
+  if (hubToken) {
+    const userData = _validateHubSession_(hubToken);
+    if (userData) {
+      const localToken = Utilities.getUuid();
+      const allowedPages = _getRolePermissions_(userData.role);
+      const sessData = { email: userData.email, name: userData.name, role: userData.role, unidade: userData.unidade };
+      if (allowedPages) sessData.allowedPages = allowedPages;
+      CacheService.getScriptCache().put('sess_' + localToken, JSON.stringify(sessData), SESSION_TTL);
+      sessionData = { token: localToken, name: userData.name, role: userData.role, unidade: userData.unidade };
+      if (allowedPages) sessionData.allowedPages = allowedPages;
+    }
+  }
+  template.initialSession = JSON.stringify(sessionData);
   return template.evaluate()
     .setTitle('BRASAS Analytics · RH')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')

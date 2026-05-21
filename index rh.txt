@@ -1322,16 +1322,6 @@ function doLogout(){
   TOKEN=null; USER_INFO=null; ALL_EMP=[];
   window.top.location.href=HUB_URL;
 }
-function tryGoogleLogin_(){
-  google.script.run
-    .withSuccessHandler(function(r){
-      if(!r.ok){ window.top.location.href=HUB_URL; return; }
-      TOKEN=r.token; USER_INFO={name:r.name,role:r.role,unidade:r.unidade||'',allowedPages:r.allowedPages||null};
-      afterLogin();
-    })
-    .withFailureHandler(function(){ window.top.location.href=HUB_URL; })
-    .loginWithGoogle();
-}
 window.addEventListener('load',function(){
   document.addEventListener('click',function(e){
     if(!e.target.closest('#mdUnidade'))        closeMd('mdUnidade');
@@ -1345,7 +1335,8 @@ window.addEventListener('load',function(){
     USER_INFO={name:INITIAL_SESSION.name,role:INITIAL_SESSION.role,unidade:INITIAL_SESSION.unidade||'',allowedPages:INITIAL_SESSION.allowedPages||null};
     afterLogin();
   } else {
-    tryGoogleLogin_();
+    // Sem token válido do Hub → redireciona para o Hub
+    window.top.location.href=HUB_URL;
   }
 });
 function afterLogin(){
