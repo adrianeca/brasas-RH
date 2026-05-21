@@ -238,6 +238,9 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .dl-aval-bar-wrap{height:22px;background:var(--gray-100);border-radius:4px;overflow:hidden;display:flex}
 .dl-aval-score{font-family:var(--font-mono);font-size:.73rem;font-weight:700;text-align:right}
 .dl-comment-card{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px}
+#dl-wordcloud{display:flex;flex-wrap:wrap;gap:8px 10px;padding:8px 0;align-items:center;justify-content:center;min-height:80px}
+.wc-word{padding:3px 11px;border-radius:20px;cursor:default;transition:transform .15s,box-shadow .15s;line-height:1.5;user-select:none}
+.wc-word:hover{transform:scale(1.1);box-shadow:var(--shadow-sm)}
 .dl-comment-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .dl-comment-badge{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--navy-50);color:var(--navy-600)}
 .dl-comment-text{font-size:.82rem;color:var(--navy-700);line-height:1.6}
@@ -255,8 +258,12 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .sc-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
 .sc-legend-item{display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--gray-500)}
 .sc-legend-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,.15)}
-#do-sc-detail{width:230px;flex-shrink:0;background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow-lg);border:1px solid var(--gray-200);padding:18px 18px 16px;position:relative;opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:none}
-#do-sc-detail.visible{opacity:1;transform:none;pointer-events:auto}
+#do-sc-detail{width:230px;flex-shrink:0;border-radius:var(--radius);padding:18px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--navy-25);border:1.5px dashed var(--gray-200);min-height:180px}
+#do-sc-detail.has-data{background:var(--white);border:1px solid var(--gray-200);box-shadow:var(--shadow-lg);align-items:stretch;justify-content:flex-start}
+#do-sc-detail:not(.has-data) .sc-det-close{display:none}
+#do-sc-detail:not(.has-data) #do-sc-det-body{display:none}
+#do-sc-detail.has-data .sc-hint{display:none}
+.sc-hint{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;width:100%;padding:8px 0}
 .sc-det-close{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--gray-400);font-size:.9rem;cursor:pointer;line-height:1;padding:3px 6px;border-radius:4px}
 .sc-det-close:hover{background:var(--navy-50);color:var(--navy-700)}
 .sc-det-name{font-size:.95rem;font-weight:700;color:var(--navy-800);margin-bottom:6px;padding-right:20px}
@@ -598,12 +605,12 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         <div class="podium-section">
           <div class="podium-header">
             <div>
-              <div class="podium-title">🎯 Top 3 · Menores % de Dropouts</div>
-              <div class="podium-subtitle">Professores com menor taxa de evasão · histórico completo</div>
+              <div class="podium-title">🎯 Top 3 · Menores % de Dropouts <span style="font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--warning-100);color:var(--warning-600);border-radius:4px;padding:2px 8px;margin-left:6px;vertical-align:middle">Em breve</span></div>
+              <div class="podium-subtitle">Em desenvolvimento · em breve disponível</div>
             </div>
           </div>
           <div id="dropout-podium-stage" class="podium-stage">
-            <div class="podium-empty">Carregando ranking…</div>
+            <div class="podium-empty" style="color:var(--warning-600)">🚧 Em desenvolvimento</div>
           </div>
         </div>
       </div>
@@ -690,6 +697,11 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
             </div>
             <div id="do-sc-detail">
               <button class="sc-det-close" onclick="closeSCDetail()">✕</button>
+              <div class="sc-hint">
+                <div style="font-size:1.9rem">👆</div>
+                <div style="font-size:.83rem;font-weight:600;color:var(--navy-600)">Clique em um ponto</div>
+                <div style="font-size:.76rem;color:var(--gray-400);line-height:1.5">Selecione qualquer bolinha no gráfico para ver o nome, nível, nota média e dropouts do professor no ciclo.</div>
+              </div>
               <div id="do-sc-det-body"></div>
             </div>
           </div>
@@ -1057,6 +1069,24 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       </div>
       <div class="section">
         <div class="section-header">
+          <span class="section-title">Nuvem de Palavras dos Comentários</span>
+          <span class="section-badge" id="dl-wc-badge">—</span>
+        </div>
+        <div style="padding:0 24px 24px">
+          <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:.75rem;color:var(--gray-500)">
+            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--success-500)"></span>Positiva</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--danger-500)"></span>Negativa</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--navy-400)"></span>Neutra</span>
+            <span style="color:var(--gray-300)">·</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:18px;height:12px;border-radius:3px;border:1.5px dashed var(--navy-400)"></span>Frase (2 palavras)</span>
+            <span style="color:var(--gray-300)">·</span>
+            <span>Tamanho = frequência · mín. 2 menções</span>
+          </div>
+          <div id="dl-wordcloud"></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-header">
           <span class="section-title">Comentários</span>
           <span class="section-badge" id="dl-comments-count">0</span>
         </div>
@@ -1094,6 +1124,29 @@ var SC_SIGLA_PLUGIN={id:'scSiglaPlugin',afterDatasetsDraw:function(chart){
 }};
 var DL_ANOS_SEL=[];
 var ENG_COLORS={pos:'#22c55e',neg:'#ef4444',neu:'#f59e0b',def:'#3d6b99'};
+// Plugin de rótulos de dados para gráficos de barras
+var BAR_LABEL_PLUGIN={id:'barLabelPlugin',afterDatasetsDraw:function(chart){
+  var ctx=chart.ctx;
+  chart.data.datasets.forEach(function(ds,di){
+    var meta=chart.getDatasetMeta(di);
+    if(meta.type!=='bar'||meta.hidden) return;
+    meta.data.forEach(function(bar,j){
+      var val=ds.data[j];
+      if(val===null||val===undefined||val===0) return;
+      ctx.save();
+      ctx.font='600 10px DM Sans,sans-serif';
+      ctx.fillStyle='#334155';
+      if(chart.options.indexAxis==='y'){
+        ctx.textAlign='left';ctx.textBaseline='middle';
+        ctx.fillText(val,bar.x+4,bar.y);
+      } else {
+        ctx.textAlign='center';ctx.textBaseline='bottom';
+        ctx.fillText(val,bar.x,bar.y-3);
+      }
+      ctx.restore();
+    });
+  });
+}};
 var CHARTS={};
 var SORT_EMP={col:'nome',dir:1};
 var SORT_UNIT={col:'ativos',dir:-1};
@@ -1330,20 +1383,40 @@ window.addEventListener('load',function(){
     if(!e.target.closest('#mdBrindeLocal')) closeMd('mdBrindeLocal');
     if(!e.target.closest('#dl-ano-wrap')){ var m=document.getElementById('dl-ano-menu'); if(m) m.style.display='none'; }
   });
+  function _goHub_(){ try{ window.top.location.href=HUB_URL; }catch(ex){ try{ window.location.href=HUB_URL; }catch(ex2){} } }
+  function _showAuthErr_(msg){
+    var sp=document.getElementById('loginSpinner');
+    var st=document.getElementById('loginStatus');
+    var el=document.getElementById('loginErr');
+    if(sp) sp.style.display='none';
+    if(st) st.textContent=msg||'Acesso negado.';
+    if(el){ el.innerHTML='<a href="'+HUB_URL+'" style="color:#93c5fd;text-decoration:underline;font-size:.85rem">→ Voltar ao Hub</a>'; el.style.display='block'; }
+  }
   if(HUB_TOKEN){
-    // Valida token do Hub assincronamente (mantém "Verificando acesso…" enquanto processa)
+    // Timeout: se validação demorar mais de 20s, mostra link manual para o Hub
+    var _authTimeout_=setTimeout(function(){
+      _showAuthErr_('Verificação demorou. Clique para voltar ao Hub.');
+    }, 20000);
     google.script.run
       .withSuccessHandler(function(r){
-        if(!r.ok){ window.top.location.href=HUB_URL; return; }
+        clearTimeout(_authTimeout_);
+        if(!r||!r.ok){
+          _showAuthErr_(r&&r.error ? r.error : 'Acesso não autorizado.');
+          setTimeout(_goHub_, 3000);
+          return;
+        }
         TOKEN=r.token;
         USER_INFO={name:r.name,role:r.role,unidade:r.unidade||'',allowedPages:r.allowedPages||null};
         afterLogin();
       })
-      .withFailureHandler(function(){ window.top.location.href=HUB_URL; })
+      .withFailureHandler(function(err){
+        clearTimeout(_authTimeout_);
+        _showAuthErr_('Erro de conexão. Clique para voltar ao Hub.');
+        setTimeout(_goHub_, 3000);
+      })
       .validateAndCreateSession(HUB_TOKEN);
   } else {
-    // Sem token do Hub → redireciona para o Hub
-    window.top.location.href=HUB_URL;
+    _goHub_();
   }
 });
 function afterLogin(){
@@ -2138,7 +2211,8 @@ if(ctxS) CHARTS['chartProfSemestre']=new Chart(ctxS,{
       x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}}},
       y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true}
     }
-  }
+  },
+  plugins:[BAR_LABEL_PLUGIN]
 });
   renderTurmasChart();
 }
@@ -2324,7 +2398,8 @@ function renderTurmasChart(){
           x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:10},maxRotation:90,minRotation:45,autoSkip:false}},
           y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true}
         }
-      }
+      },
+      plugins:[BAR_LABEL_PLUGIN]
     });
   }
 }
@@ -2515,6 +2590,9 @@ function mediaHorasCiclo_(chaveMatricula,unidade,ciclo){
 }
 function renderDropoutPodium(){
   var stg=document.getElementById('dropout-podium-stage'); if(!stg) return;
+  // Em breve — desabilitar renderização até ajustes concluídos
+  stg.innerHTML='<div class="podium-empty" style="color:var(--warning-600)">🚧 Em desenvolvimento</div>';
+  return;
   if(!ALL_DROPOUTS.length){stg.innerHTML='<div class="podium-empty">Aguardando dados de dropout…</div>';return;}
   if(!ALL_HORAS.length){stg.innerHTML='<div class="podium-empty">Aguardando dados de horas…</div>';return;}
   var fU=(v('f-prof-unidade')||'').trim().toUpperCase();
@@ -2747,7 +2825,7 @@ function renderDOChartTop(d,n){
   var list=Object.entries(profMap).filter(function(e){return e[1].dropouts>0;}).sort(function(a,b){return b[1].dropouts-a[1].dropouts;}).slice(0,20);
   var ctx=document.getElementById('chartTopDropouts'); if(!ctx) return;
   if(DO_CHARTS.top) DO_CHARTS.top.destroy();
-  DO_CHARTS.top=new Chart(ctx,{type:'bar',data:{labels:list.map(function(e){return e[1].teacher;}),datasets:[{label:'Dropouts',data:list.map(function(e){return e[1].dropouts;}),backgroundColor:list.map(function(e){return obsSet.has(e[0])?'#c9a227':'#2a4d76';})}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}}});
+  DO_CHARTS.top=new Chart(ctx,{type:'bar',data:{labels:list.map(function(e){return e[1].teacher;}),datasets:[{label:'Dropouts',data:list.map(function(e){return e[1].dropouts;}),backgroundColor:list.map(function(e){return obsSet.has(e[0])?'#c9a227':'#2a4d76';})}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}},plugins:[BAR_LABEL_PLUGIN]});
 }
 function renderDOChartNotas(n){
   var nowD=new Date(),cycleY=nowD.getMonth()>=10?nowD.getFullYear():nowD.getFullYear()-1;
@@ -2756,7 +2834,7 @@ function renderDOChartNotas(n){
   var ranges=[{l:'< 6',min:0,max:6},{l:'6 – 7',min:6,max:7},{l:'7 – 8',min:7,max:8},{l:'8 – 9',min:8,max:9},{l:'9 – 10',min:9,max:10.1}];
   var ctx=document.getElementById('chartNotasDist'); if(!ctx) return;
   if(DO_CHARTS.notas) DO_CHARTS.notas.destroy();
-  DO_CHARTS.notas=new Chart(ctx,{type:'bar',data:{labels:ranges.map(function(r){return r.l;}),datasets:[{label:'Observações',data:ranges.map(function(r){return nCyc.filter(function(o){return o.nota>=r.min&&o.nota<r.max;}).length;}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:'Ciclo nov/'+String(cycleY).slice(2)+'–out/'+String(cycleY+1).slice(2),font:{size:11},color:'#64748b',padding:{bottom:4}}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+  DO_CHARTS.notas=new Chart(ctx,{type:'bar',data:{labels:ranges.map(function(r){return r.l;}),datasets:[{label:'Observações',data:ranges.map(function(r){return nCyc.filter(function(o){return o.nota>=r.min&&o.nota<r.max;}).length;}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},title:{display:true,text:'Ciclo nov/'+String(cycleY).slice(2)+'–out/'+String(cycleY+1).slice(2),font:{size:11},color:'#64748b',padding:{bottom:4}}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}},plugins:[BAR_LABEL_PLUGIN]});
 }
 function renderDONivelChart(d){
   var nivelMap={};
@@ -2771,7 +2849,7 @@ function renderDONivelChart(d){
   keys.sort(function(a,b){var ia=NIVEL_ORDER.indexOf(a),ib=NIVEL_ORDER.indexOf(b);return (ia===-1?99:ia)-(ib===-1?99:ib);});
   var ctx=document.getElementById('chartDONivel'); if(!ctx) return;
   if(DO_CHARTS.nivel) DO_CHARTS.nivel.destroy();
-  DO_CHARTS.nivel=new Chart(ctx,{type:'bar',data:{labels:keys,datasets:[{label:'Dropouts',data:keys.map(function(k){return nivelDrops[k];}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{precision:0}}}}});
+  DO_CHARTS.nivel=new Chart(ctx,{type:'bar',data:{labels:keys,datasets:[{label:'Dropouts',data:keys.map(function(k){return nivelDrops[k];}),backgroundColor:'#2a4d76'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{precision:0}}}},plugins:[BAR_LABEL_PLUGIN]});
   var unEl=document.getElementById('do-nivel-unmatched');
   if(unEl) unEl.innerHTML='';
 }
@@ -2895,9 +2973,9 @@ function showSCDetail(p){
     +'<div class="sc-det-row"><span class="sc-det-lbl">Nível</span><span class="sc-det-val">'+esc(p.nivel||'—')+'</span></div>'
     +'<div class="sc-det-row"><span class="sc-det-lbl">Observações</span><span class="sc-det-val">'+p.numObs+'</span></div>'
     +(p.coordenador?'<div class="sc-det-row"><span class="sc-det-lbl">Coordenador</span><span class="sc-det-val">'+esc(p.coordenador)+'</span></div>':'');
-  document.getElementById('do-sc-detail').classList.add('visible');
+  document.getElementById('do-sc-detail').classList.add('has-data');
 }
-function closeSCDetail(){document.getElementById('do-sc-detail').classList.remove('visible');}
+function closeSCDetail(){document.getElementById('do-sc-detail').classList.remove('has-data');}
 
 function renderDOTimeline(){
   var chave=v('f-prof-prof');
@@ -3050,7 +3128,7 @@ function mkChart(canvasId,type,labels,data,label,opts){
   var bgColors=type==='doughnut'
     ?labels.map(function(_,i){ return colors[i%colors.length]; })
     :(colors.length===1?labels.map(function(){ return colors[0]; }):labels.map(function(_,i){ return colors[i%colors.length]; }));
-  CHARTS[canvasId]=new Chart(ctx,{
+  var _chartCfg_={
     type,
     data:{labels,datasets:[{label,data,backgroundColor:bgColors,borderColor:type==='doughnut'?'#fff':bgColors,borderWidth:type==='doughnut'?2:0,borderRadius:type==='bar'?4:0,barThickness:opts.barThickness}]},
     options:{
@@ -3064,7 +3142,9 @@ function mkChart(canvasId,type,labels,data,label,opts){
         y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:'DM Sans',size:11}},beginAtZero:true}
       }
     }
-  });
+  };
+  if(type==='bar') _chartCfg_.plugins=[BAR_LABEL_PLUGIN];
+  CHARTS[canvasId]=new Chart(ctx,_chartCfg_);
 }
 
 var ALL_HORAS=[];
@@ -3712,6 +3792,7 @@ function renderDesligamentos(){
   renderDlSalCompat(rows);
   renderDlAvaliacoes(rows);
   renderDlInsights(rows);
+  renderDlWordCloud(rows);
   renderDlComentarios(rows);
 }
 
@@ -4012,6 +4093,143 @@ function renderDlInsights(rows){
         '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--gray-500);text-align:right"><strong style="color:var(--navy-700)">'+t.count+'</strong> ('+pctCom+'%)</div>'+
       '</div>';
     }).join('');
+}
+
+function renderDlWordCloud(rows){
+  var el=document.getElementById('dl-wordcloud');
+  var badge=document.getElementById('dl-wc-badge');
+  if(!el) return;
+
+  var withC=rows.filter(function(r){ return r.comentario&&r.comentario.length>8; });
+  if(!withC.length){ el.innerHTML='<div class="table-empty">Nenhum comentário para analisar</div>'; if(badge) badge.textContent='0'; return; }
+
+  var STOPS=new Set([
+    'a','e','o','as','os','um','uma','uns','umas',
+    'de','da','do','das','dos','em','na','no','nas','nos','ao','aos',
+    'pelo','pela','pelos','pelas','ante','apos','ate','sobre','entre',
+    'durante','desde','com','sem','para','por','alem',
+    'num','numa','nuns','numas','dum','duma',
+    'nesse','nessa','neste','nesta','naquele','naquela',
+    'eu','me','mim','meu','minha','meus','minhas',
+    'nos','voce','voces','seu','sua','seus','suas',
+    'ele','ela','eles','elas','se','si','lhe','lhes',
+    'isso','isto','aquilo','esse','essa','esses','essas','este','esta','estes','estas',
+    'aquele','aquela','aqueles','aquelas','quem','que','qual','quais',
+    'sou','ser','foi','era','eram','estou','esta','esteve','estao','estar','sendo','sido',
+    'fui','fez','fazer','fico','ficar','ficou','ficam','ficando','ficaria',
+    'tenho','tem','ter','tive','tinha','tivemos','tiveram','tendo','tido',
+    'vou','vai','ir','vim','veio','vir','indo',
+    'dou','dar','dei','deu','dando','dado',
+    'sei','saber','soube','sabendo',
+    'quero','quer','queria','queriam','querer','querendo',
+    'posso','pode','poder','podia','puderam','podendo','poderia',
+    'falo','fala','falar','falou','falei','falando','falado',
+    'acho','acha','achar','achou','achei','achando',
+    'vejo','ver','vi','viu','vendo','visto',
+    'deixo','deixar','deixei','deixou','deixando','deixado',
+    'saindo','sair','sai','saiu','saido',
+    'levo','levar','levou','levei','levando',
+    'pedi','pedir','pediu','pedindo',
+    'precisei','precisava','precisar','preciso','precisando',
+    'buscar','busquei','buscando','busca','busco',
+    'coloco','colocar','colocou','colocado',
+    'disse','dizer','dito',
+    'passou','passar','passado','passando',
+    'porque','como','quando','onde','enquanto','embora','porem','portanto',
+    'entao','assim','tambem','apenas','ainda','ja','so','nem','ou','mas','nao','nao',
+    'sim','nada','tudo','todo','toda','todos','todas',
+    'algum','alguma','alguns','algumas','nenhum','nenhuma','ninguem','alguem',
+    'qualquer','cada','outro','outra','outros','outras',
+    'muito','muita','muitos','muitas','pouco','pouca','poucos','poucas',
+    'mais','menos','mesmo','mesma','mesmos','mesmas',
+    'bem','mal','aqui','la','alem','talvez','certamente','realmente',
+    'alias','contudo','todavia','logo','pois','bastante',
+    'hoje','agora','depois','antes','sempre','nunca','vez','vezes',
+    'ano','anos','mes','meses','dia','dias','tempo','periodo','momento',
+    'semana','semanas','hora','horas',
+    'brasas','empresa','escola','sala','unidade','trabalho','trabalhar',
+    'colega','colegas','equipe','time','pessoa','pessoas','gente',
+    'area','setor','parte','cargo','funcao','funcoes',
+    'professor','professora','professores','professoras',
+    'coordenador','coordenadora','coordenadores','gestor','gestora',
+    'historia','conta','comigo','dentro','muita',
+    'necessario','importante','acordo','forma','caso','tipo','coisa','coisas',
+    'motivo','razao','decisao','situacao','processo',
+    'inicio','comeco','final','fim','lugar','local','lado','ponto',
+    'ne','ta','pra','pro','ca','ai','ah','oh','oi','ali',
+    'novo','nova','novos','novas',
+    'proprio','propria','proprios','proprias',
+    'longo','desses','foram','algo','conheci','vida','duas','havia','seria',
+    'tres','quatro','cinco','dois','uma','uns',
+    'isso','aqui','nao','sim',
+  ]);
+
+  var POSITIVE=new Set(['bom','boa','bons','boas','otimo','otima','otimos','otimas','excelente','excelentes','incrivel','incriveis','maravilhoso','maravilhosa','feliz','satisfeito','satisfeita','satisfacao','gratidao','grato','grata','aprendizado','aprendizagem','crescimento','oportunidade','oportunidades','positivo','positiva','positivos','positivas','saudade','amizade','amizades','respeito','confianca','parceria','parcerias','elogio','elogios','agradavel','tranquilo','tranquila','organizado','organizada','motivado','motivada','motivacao','evolucao','dedicado','dedicada','comprometido','comprometida','sucesso','qualidade','exito','recomendo','recomendaria','cresci','aprendi','desenvolveu','desenvolvimento','estrutura','estruturado','aberto','aberta','receptivo','receptiva','acolhido','acolhida','colaborativo','colaborativa','dinamico','dinamica','estimulo','incentivo','flexibilidade','flexivel','autonomia','reconhecido','reconhecida','reconhecimento','promovido','promovida','promocao','valorizado','valorizada','valorizacao','pertencimento','engajado','engajada','estabilidade','estavel']);
+
+  var NEGATIVE=new Set(['ruim','ruins','horrivel','horriveis','pessimo','pessima','pessimos','pessimas','estresse','pressao','sobrecarga','sobrecarregado','frustrado','frustrada','frustracao','dificil','dificeis','dificuldade','dificuldades','inadequado','inadequada','injusto','injusta','conflito','conflitos','problema','problemas','falta','falha','falhas','ausencia','distante','desorganizado','desorganizada','desmotivado','desmotivada','desmotivacao','insatisfeito','insatisfeita','insatisfacao','baixo','baixa','desrespeito','humilhacao','assedio','favorecimento','nepotismo','limitado','limitada','engessado','engessada','triste','tristeza','decepcionado','decepcionada','decepcao','chateado','chateada','cansado','cansada','esgotado','esgotada','esgotamento','descaso','desconsiderado','injustica','cobranca','excesso','agressivo','agressiva','toxica','toxico','prejudicado','prejudicada','prejudicial','abandono','abandonado','desvalorizado','desvalorizada','desvalorizacao','sobreposicao','salario','instabilidade','instavel','desgaste','desgastante','desgastado','desgastada','conflituoso','conflituosa','assediado','assediada','desrespeitado','desrespeitada','acumulo','acumulado']);
+
+  var norm=function(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); };
+
+  // Tokeniza preservando sequência para extração de bigramas
+  var allSeqs=[];
+  withC.forEach(function(r){
+    var text=(r.comentario||'')+' '+(r.motivoOutros||'');
+    allSeqs.push(
+      text.split(/[\s,;:.!?()[\]{}"'\/\\|]+/)
+        .map(function(w){ return norm(w.replace(/[^a-zà-ÿ]/gi,'')); })
+    );
+  });
+
+  // Conta palavras individuais significativas (mín. 4 letras)
+  var counts={};
+  allSeqs.forEach(function(tokens){
+    tokens.forEach(function(w){
+      if(w.length<4||STOPS.has(w)) return;
+      counts[w]=(counts[w]||0)+1;
+    });
+  });
+
+  // Extrai bigramas: dois tokens significativos consecutivos
+  var bigramCounts={};
+  allSeqs.forEach(function(tokens){
+    var sig=tokens.map(function(w){ return (w.length>=4&&!STOPS.has(w))?w:null; });
+    for(var i=0;i<tokens.length-1;i++){
+      if(sig[i]&&sig[i+1]) bigramCounts[sig[i]+' '+sig[i+1]]=(bigramCounts[sig[i]+' '+sig[i+1]]||0)+1;
+    }
+  });
+
+  var sortedWords=Object.entries(counts).filter(function(e){ return e[1]>=2; }).sort(function(a,b){ return b[1]-a[1]; }).slice(0,35);
+  var sortedBigrams=Object.entries(bigramCounts).filter(function(e){ return e[1]>=2; }).sort(function(a,b){ return b[1]-a[1]; }).slice(0,18);
+
+  var combined=sortedBigrams.map(function(e){ return {w:e[0],f:e[1],bigram:true}; })
+    .concat(sortedWords.map(function(e){ return {w:e[0],f:e[1],bigram:false}; }));
+
+  if(!combined.length){ el.innerHTML='<div class="table-empty">Palavras insuficientes (nenhuma com 2+ menções)</div>'; if(badge) badge.textContent='0'; return; }
+
+  var allF=combined.map(function(c){ return c.f; });
+  var maxF=Math.max.apply(null,allF), minF=Math.min.apply(null,allF), range=maxF-minF||1;
+
+  var top=combined.slice(0,10), rest=combined.slice(10);
+  for(var i=rest.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=rest[i]; rest[i]=rest[j]; rest[j]=t; }
+  combined=top.concat(rest);
+
+  if(badge) badge.textContent=(sortedBigrams.length?sortedBigrams.length+' frases · ':'')+sortedWords.length+' palavras';
+
+  el.innerHTML=combined.map(function(item){
+    var word=item.w, freq=item.f, isBigram=item.bigram;
+    var scale=(freq-minF)/range;
+    var size=(0.78+scale*1.45).toFixed(2);
+    var weight=scale>0.6?'700':scale>0.3?'600':'400';
+    var words=item.w.split(' ');
+    var hasPOS=words.some(function(w){ return POSITIVE.has(w); });
+    var hasNEG=words.some(function(w){ return NEGATIVE.has(w); });
+    var color,bg;
+    if(hasPOS&&!hasNEG){ color='var(--success-600)'; bg='var(--success-50)'; }
+    else if(hasNEG&&!hasPOS){ color='var(--danger-600)'; bg='var(--danger-50)'; }
+    else { color='var(--navy-600)'; bg='var(--navy-50)'; }
+    var extra=isBigram?';border:1.5px dashed currentColor':'';
+    return '<span class="wc-word" title="'+freq+' menção'+(freq!==1?'ões':'')+'" style="font-size:'+size+'rem;font-weight:'+weight+';color:'+color+';background:'+bg+extra+'">'+esc(word)+'</span>';
+  }).join('');
 }
 
 function renderDlComentarios(rows){

@@ -46,9 +46,9 @@ const GIFT_TABLE = {
 };
 const GIFT_YEARS = [2025, 2026, 2027];
 
-function _getRolePermissions_(role) {
+function _getRolePermissions_(role, ss) {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    if (!ss) ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sheet = ss.getSheetByName('ROLES');
     if (!sheet) return null;
     const raw = sheet.getDataRange().getValues();
@@ -153,26 +153,30 @@ function validateAndCreateSession(hubToken) {
       const row = raw[r];
       if (String(row[0]||'').trim() !== String(hubToken).trim()) continue;
 
-      // Valida expiração (col G = índice 6)
+      // Valida expiração (col G = índice 6); parseDate_ suporta DD/MM/YYYY HH:MM:SS
       const expiryRaw = row[6];
       if (expiryRaw) {
-        const expiry = expiryRaw instanceof Date ? expiryRaw : new Date(expiryRaw);
-        if (!isNaN(expiry.getTime()) && expiry < now) return { ok: false, error: 'Sessão expirada.' };
+        const expiry = expiryRaw instanceof Date ? expiryRaw : parseDate_(expiryRaw);
+        if (expiry && !isNaN(expiry.getTime()) && expiry < now) return { ok: false, error: 'Sessão expirada.' };
       }
 
       const email = String(row[1]||'').trim().toLowerCase();
       if (!email) return { ok: false, error: 'Email não encontrado na sessão.' };
 
-      const user = getUsers_()[email];
-      if (!user) return { ok: false, error: 'Usuário não cadastrado no sistema RH.' };
+      // Lê nome, role e unidade diretamente do SESSOES — elimina chamada a getUsers_()
+      const name    = String(row[2]||'').trim() || email;
+      const role    = String(row[3]||'').trim().toLowerCase() || 'viewer';
+      const unidade = String(row[4]||'').trim();
 
       const localToken = Utilities.getUuid();
-      const allowedPages = _getRolePermissions_(user.role);
-      const sessData = { email, name: user.name, role: user.role, unidade: user.unidade || '' };
+      // Reutiliza ss quando Hub e RH usam a mesma planilha — evita segundo openById
+      const ssForRoles = HUB_SPREADSHEET_ID === SPREADSHEET_ID ? ss : null;
+      const allowedPages = _getRolePermissions_(role, ssForRoles);
+      const sessData = { email, name, role, unidade };
       if (allowedPages) sessData.allowedPages = allowedPages;
       CacheService.getScriptCache().put('sess_' + localToken, JSON.stringify(sessData), SESSION_TTL);
 
-      const result = { ok: true, token: localToken, name: user.name, role: user.role, unidade: user.unidade || '' };
+      const result = { ok: true, token: localToken, name, role, unidade };
       if (allowedPages) result.allowedPages = allowedPages;
       return result;
     }
@@ -378,8 +382,9 @@ function parseDate_(val) {
   if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
   const s = String(val).trim();
   if (!s) return null;
-  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  // DD/MM/YYYY or DD/MM/YYYY HH:MM:SS (format used in SESSOES tab)
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0));
   m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) return new Date(+m[1], +m[2]-1, +m[3]);
   const d = new Date(s);

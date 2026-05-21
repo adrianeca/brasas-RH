@@ -653,6 +653,35 @@ A coluna **Função** foi adicionada à lista de brindes (campo `funcao` da aba 
 
 ---
 
+### Desligamentos — Nuvem de Palavras (`renderDlWordCloud`)
+
+Nuvem de sentimentos na aba Desligamentos, construída a partir dos campos `comentario` e `motivoOutros`.
+
+**Análise dupla — palavras + bigramas:**
+- Tokeniza cada comentário e filtra stop words
+- Conta palavras individuais significativas (mín. 4 letras, mín. 2 menções, top 35)
+- Extrai **bigramas**: pares de tokens significativos consecutivos (mín. 2 menções, top 18)
+- Bigramas aparecem primeiro no cloud e são exibidos com **borda tracejada** para diferenciá-los de palavras soltas
+- Badge mostra `"N frases · M palavras"`
+
+**Stop words:**
+- Lista extensa (~150 entradas) cobrindo artigos, preposições, pronomes, verbos auxiliares, conjunções, advérbios, tempo, numerais e palavras institucionais genéricas
+- Palavras institucionais bloqueadas explicitamente: `brasas`, `empresa`, `escola`, `sala`, `unidade`, `professor`, `coordenador`, `gestor`, `colega`, `equipe`, `gente`
+- Verbos comuns bloqueados: `tive`, `tinha`, `havia`, `seria`, `quero`, `posso`, `deixo`, `saindo`, `levo`, `fui`, `foi`, `foram`, etc.
+- Conectivos e advérbios: `nao`, `sao`, `tambem`, `porque`, `porem`, `entao`, `assim`, `apenas`, `ainda`, `ja`, `so`, `algo`, `longo`, `desses`, etc.
+- Para adicionar novas stop words, editar o array `STOPS` em `renderDlWordCloud`
+
+**Sentimento:**
+- `POSITIVE` e `NEGATIVE` são Sets de palavras-chave
+- Bigramas: classificados se qualquer uma das duas palavras bater com o Set (mas não ambas simultaneamente no sentido contrário)
+- Verde = positivo, Vermelho = negativo, Azul-navy = neutro
+
+**Legenda visual** (HTML acima do `#dl-wordcloud`):
+- Bolinhas coloridas para Positiva/Negativa/Neutra
+- Ícone de borda tracejada para "Frase (2 palavras)"
+
+---
+
 ## Fluxo de trabalho no Git
 
 Esse projeto não tem CI nem deploy automático. As alterações são:
