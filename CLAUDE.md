@@ -131,6 +131,27 @@ Paleta navy escuro como base, com tokens semânticos:
 
 ## Bugs conhecidos e corrigidos
 
+### Cálculo de Turnover na aba People Analytics (`computePeriod`)
+
+**Sintoma:** o Turnover exibido na tabela de Rotatividade era aproximadamente o dobro do valor esperado pelo mercado.
+
+**Causa raiz:** a fórmula usada era `(Entradas + Saídas) / Efetivo Médio`, que equivale à soma das taxas admissional e demissional. A fórmula padrão ABRH divide por 2 antes de dividir pelo efetivo médio.
+
+**Solução:** dividir a rotatividade bruta por 2 antes de dividir pelo efetivo médio.
+
+```javascript
+// Antes (errado):
+var turnover = rot / media;
+
+// Depois (fórmula ABRH):
+var turnover = (rot / 2) / media;
+// onde rot = contrat + demiss, media = (saldoInicio + saldoFim) / 2
+```
+
+**Tooltip adicionado:** ao passar o mouse sobre "Turnover | Rotatividade ⓘ" na tabela, aparece a explicação da fórmula. Implementado com `<span class="th-tip" data-tip="...">` (mesmo padrão CSS dos outros tooltips do projeto). Aplicado em ambas as views (anual e mensal).
+
+---
+
 ### Filtro de Mês/Ano na aba Coparticipação (`getCopaData`)
 
 **Sintoma:** o filtro não mostrava todos os meses — fevereiro e abril de 2026, por exemplo, sumiam do dropdown ou apareciam com o mês errado (fev → jan, abr → mar).

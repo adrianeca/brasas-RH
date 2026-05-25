@@ -1976,7 +1976,7 @@ function computePeriod(emps,from,to){
   var rot=contrat+demiss,variacao=saldoFim-saldoInicio;
   var media=(saldoInicio+saldoFim)/2||1;
   var taxaVar=saldoInicio?variacao/saldoInicio:0;
-  var turnover=rot/media,taxaAdm=contrat/media,taxaDem=demiss/media;
+  var turnover=(rot/2)/media,taxaAdm=contrat/media,taxaDem=demiss/media;
   var deslig6m=emps.filter(function(e){
     if(!e.desligYear) return false;
     var dd=empDeslig(e); if(!dd||dd<from||dd>=to) return false;
@@ -2018,7 +2018,7 @@ function renderRotAnual(emps){
   html+=row('(=) Variação',periods.map(function(p){ return p.d.variacao; }),totVar,'',function(x){ return x===null?'—':x>0?'+'+fmt(x):fmt(x); });
   html+=row('Taxa de Variação',periods.map(function(p){ return p.d.taxaVar; }),totTaxaVar,'rot-bold',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
-  html+=row('Turnover | Rotatividade',periods.map(function(p){ return p.d.turnover; }),totTO,'rot-highlight',fmtPct);
+  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Fórmula ABRH: ((Entradas + Saídas) ÷ 2) ÷ Efetivo Médio. Efetivo Médio = (Saldo Início + Saldo Fim) ÷ 2.">Turnover | Rotatividade ⓘ</span>',periods.map(function(p){ return p.d.turnover; }),totTO,'rot-highlight',fmtPct);
   html+=row('Turnover | Acumulado Anual',acumTOs,totTO,'rot-sub',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
   html+=row('Taxa | Rotatividade Admissional',periods.map(function(p){ return p.d.taxaAdm; }),totTaxaAdm,'rot-sub',fmtPct);
@@ -2051,7 +2051,7 @@ function renderRotMensal(emps,year){
   html+=row('(=) Variação',periods.map(function(p){ return p.d.variacao; }),totd.variacao,'',function(x){ return x===null?'—':x>0?'+'+fmt(x):'<span class="'+(x<0?'rot-neg':'')+'">'+fmt(x)+'</span>'; });
   html+=row('Taxa de Variação',periods.map(function(p){ return p.d.taxaVar; }),totd.taxaVar,'rot-bold',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
-  html+=row('Turnover | Rotatividade',periods.map(function(p){ return p.d.turnover; }),totd.turnover,'rot-highlight',fmtPct);
+  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Fórmula ABRH: ((Entradas + Saídas) ÷ 2) ÷ Efetivo Médio. Efetivo Médio = (Saldo Início + Saldo Fim) ÷ 2.">Turnover | Rotatividade ⓘ</span>',periods.map(function(p){ return p.d.turnover; }),totd.turnover,'rot-highlight',fmtPct);
   html+=row('Turnover | Acumulado no Ano',acumTOs,totd.turnover,'rot-sub',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
   html+=row('Taxa | Rotatividade Admissional',periods.map(function(p){ return p.d.taxaAdm; }),totd.taxaAdm,'rot-sub',fmtPct);
