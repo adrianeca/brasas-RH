@@ -131,6 +131,26 @@ Paleta navy escuro como base, com tokens semânticos:
 
 ## Bugs conhecidos e corrigidos
 
+### Acesso à aba Desligamentos para roles customizados (ex: `g&g`)
+
+**Sintoma:** usuários com roles definidos via aba `ROLES` (ex: `g&g`) que tinham `rh_desligamentos = true` conseguiam ver a aba no frontend, mas ao carregar os dados recebiam erro "Sem permissão".
+
+**Causa raiz:** `getDesligamentosData` tinha um check hardcoded `if (role !== 'admin' && role !== 'dp')` que ignorava completamente o `allowedPages` armazenado na sessão (gerado pela aba `ROLES`).
+
+**Solução:** substituir o check hardcoded por verificação dinâmica que prioriza `session.allowedPages`:
+
+```javascript
+const allowed = session.allowedPages || null;
+const canAccess = allowed
+  ? allowed.includes('desligamentos')
+  : (role === 'admin' || role === 'dp');
+if (!canAccess) return { ok: false, error: 'Sem permissão.' };
+```
+
+> **Regra geral:** nunca usar check hardcoded de role em funções de dados. Sempre verificar `session.allowedPages` primeiro — é o que reflete a configuração real da aba `ROLES`. O fallback por role só deve existir para compatibilidade com sessões antigas que não carregaram `allowedPages`.
+
+---
+
 ### Cálculo de Turnover na aba People Analytics (`computePeriod`)
 
 **Sintoma:** o Turnover exibido na tabela de Rotatividade era aproximadamente o dobro do valor esperado pelo mercado.
@@ -317,7 +337,7 @@ Seção abaixo do gráfico combinado com evolução mensal de turmas e alunos po
 
 ### Aba Desligamentos (`getDesligamentosData`)
 
-Acesso restrito a `admin` e `dp`. Lê a planilha de entrevistas de desligamento.
+Acesso restrito por permissão — verifica `session.allowedPages` (aba `ROLES`) antes de cair no fallback hardcoded (`admin` ou `dp`). Lê a planilha de entrevistas de desligamento.
 
 **Constantes no backend:**
 - `DESLIG_SPREADSHEET_ID = '1ZDvSlEsZOHUdPO7y2YexSoA4TqO_nltCF9TlqpMFRN8'`

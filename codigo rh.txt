@@ -714,7 +714,11 @@ function getDesligamentosData(token) {
   const session = checkSession(token);
   if (!session) return { ok: false, error: 'Sessão expirada.' };
   const role = session.role;
-  if (role !== 'admin' && role !== 'dp') return { ok: false, error: 'Sem permissão.' };
+  const allowed = session.allowedPages || null;
+  const canAccess = allowed
+    ? allowed.includes('desligamentos')
+    : (role === 'admin' || role === 'dp');
+  if (!canAccess) return { ok: false, error: 'Sem permissão.' };
   try {
     const ss = SpreadsheetApp.openById(DESLIG_SPREADSHEET_ID);
     // Busca pela aba: tenta pelo GID numérico primeiro, depois pelo nome
