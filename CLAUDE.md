@@ -723,6 +723,105 @@ Nuvem de sentimentos na aba Desligamentos, construída a partir dos campos `come
 
 ---
 
+### Abrir no Sheets — botões nas abas DP
+
+Botão "↗ Abrir no Sheets" adicionado ao lado de "⬇ Exportar CSV" nas tabelas das 4 abas do DP:
+**Horas** (`#sheets-horas`), **VR Administrativo** (`#sheets-vra`), **VR Docente** (`#sheets-vrd`), **Coparticipação** (`#sheets-copa`).
+
+**Backend — `createTempSheet(token, title, headers, rows)`:**
+- Cria uma nova planilha Google com os dados filtrados
+- Cabeçalho formatado: fundo `#162d4a`, texto branco, negrito
+- Linha 1 congelada, colunas auto-redimensionadas
+- Retorna `{ ok: true, url }` — frontend abre a URL em nova aba
+
+**Frontend — helper `_openSheets_(btn, title, headers, rows)`:**
+- Desabilita o botão e mostra "⏳ Criando…" durante a chamada
+- Chama `google.script.run.createTempSheet(TOKEN, title, headers, rows)`
+- Em sucesso: `window.open(r.url, '_blank')`
+
+**Funções individuais:** `openHorasSheets`, `openVRAdmSheets`, `openVRDocSheets`, `openCopaSheets` — usam os mesmos dados e filtros ativos das funções de CSV correspondentes.
+
+**CSS:** `.btn-sheets` — verde `#1a7340` / fundo `#e6f4ea`
+
+---
+
+## 🚧 EM ANDAMENTO — Aba Wellhub (implementar na próxima sessão)
+
+### Contexto
+
+Nova aba **"💪 Wellhub"** no dashboard — benefício de academia/wellness da BRASAS.
+- Aba separada na navbar (não faz parte do menu DP)
+- Acesso: roles `dp` e `admin`
+- Planilha fonte: `WELLHUB_SPREADSHEET_ID = '1bFjtYHLn1R4_ZgkSnNyxrb3a6JhYJ72bHmwtoBg1Wzs'`, aba `Wellhub`
+
+### Estrutura dos dados (`Wellhub`)
+
+**Colunas relevantes:**
+| Campo | Header na planilha | Notas |
+|---|---|---|
+| `mes` | `Mês de Referência` | formato `YYYY-MM` |
+| `empresa` | `Ajuste Empresa` | abreviação curta: BRASAS BR · PO · DT · IP |
+| `colaborador` | `Colaborador` | nome completo |
+| `emailColab` | `Email do colaborador` | |
+| `dependente` | `Dependente` | nome do dependente (se houver) |
+| `tipo` | `Tipo` | `Employee` / `Family Member` |
+| `plano` | `Plano` | DIGITAL · BASIC · BASIC+ · SILVER · SILVER+ · GOLD · GOLD+ |
+| `precoFinal` | `Preço após desconto` | valor que o colaborador paga |
+| `dataInicio` | `Data de início do plano` | |
+| `status` | `Status` | `Active` / `Cancelled` / `Paused` |
+
+**Meses no histórico:** 2025-03 · 2026-03 · 2026-04 (cresce mensalmente)
+
+### O que implementar — Backend
+
+```
+const WELLHUB_SPREADSHEET_ID = '1bFjtYHLn1R4_ZgkSnNyxrb3a6JhYJ72bHmwtoBg1Wzs';
+```
+
+**`getWellhubData(token)`:**
+- Lê aba `Wellhub` da planilha acima
+- Localiza colunas com `normalizeH_`
+- Controle de acesso via `session.allowedPages` → fallback `role === 'admin' || role === 'dp'`
+- Converte preços: `parseFloat(String(val).replace(',', '.'))` — planilha usa vírgula como separador decimal
+- Retorna `{ ok: true, rows: [{mes, empresa, colaborador, emailColab, dependente, tipo, plano, precoFinal, dataInicio, status}] }`
+
+### O que implementar — Frontend
+
+**Navbar:** tab "💪 Wellhub" após Brindes
+
+**`ROLE_TABS`:** adicionar `'wellhub'` ao role `'dp'` (e `'admin'` já tem acesso completo)
+
+**Filtros (IDs):**
+| ID | Label |
+|---|---|
+| `wh-mes` | Mês de Referência |
+| `wh-empresa` | Empresa |
+| `wh-plano` | Plano |
+| `wh-status` | Status |
+
+**4 KPIs:**
+1. **Assinantes Ativos** — `tipo=Employee` + `status=Active` no mês filtrado
+2. **Dependentes Ativos** — `tipo=Family Member` + `status=Active` no mês filtrado
+3. **Custo Total Mensal** — soma `precoFinal` dos `Active` no mês filtrado
+4. **Plano Mais Popular** — plano com mais assinantes `Active`
+
+**3 Gráficos:**
+1. `chartWellhubPlano` — donut: distribuição por plano (Employees ativos)
+2. `chartWellhubStatus` — barras horizontais: Active · Cancelled · Paused
+3. `chartWellhubMes` — linha: assinantes ativos por mês (usa `ALL_WELLHUB` completo, ignora filtro de mês)
+
+**Ordem dos planos:** `DIGITAL → BASIC → BASIC+ → SILVER → SILVER+ → GOLD → GOLD+`
+
+**Tabela:** Mês · Empresa · Colaborador · Dependente · Tipo · Plano · Preço Final · Status · Início
+
+**Exportação:** ⬇ CSV + ↗ Sheets (mesmo padrão das outras abas)
+
+**Globais JS:** `ALL_WELLHUB = []`
+
+**Funções JS a criar:** `loadWellhubData`, `filteredWellhub`, `renderWellhub`, `renderWellhubKPIs`, `renderWellhubCharts`, `renderWellhubTable`, `downloadWellhubCSV`, `openWellhubSheets`, `clearWellhubFilters`
+
+---
+
 ## Fluxo de trabalho no Git
 
 Esse projeto não tem CI nem deploy automático. As alterações são:

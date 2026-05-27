@@ -87,6 +87,9 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .btn-clear:hover{border-color:var(--navy-300);color:var(--navy-600)}
 .btn-download{border:1.5px solid var(--success-500);background:var(--success-50);color:var(--success-600);display:flex;align-items:center;gap:5px}
 .btn-download:hover{background:var(--success-100)}
+.btn-sheets{border:1.5px solid #1a7340;background:#e6f4ea;color:#1a7340;display:flex;align-items:center;gap:5px}
+.btn-sheets:hover{background:#c8e6c9}
+.btn-sheets:disabled{opacity:.55;cursor:default}
 .multi-dropdown{position:relative;min-height:38px}
 .multi-dropdown-btn{width:100%;padding:9px 32px 9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.85rem;color:var(--navy-800);background:var(--gray-50);cursor:pointer;text-align:left;min-height:38px;display:flex;justify-content:space-between;align-items:center;transition:border-color .2s}
 .multi-dropdown-btn:hover,.multi-dropdown-btn.open{border-color:var(--navy-400)}
@@ -793,6 +796,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       <div class="section-actions">
         <div class="section-badge" id="horas-badge">0 registros</div>
         <button class="btn-download" onclick="downloadHorasCSV()">⬇ Exportar CSV</button>
+        <button class="btn-sheets" id="sheets-horas" onclick="openHorasSheets(this)">↗ Abrir no Sheets</button>
       </div>
     </div>
     <div class="table-scroll">
@@ -878,6 +882,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         <div class="section-actions">
           <div class="section-badge" id="vra-badge">0 registros</div>
           <button class="btn-download" onclick="downloadVRAdmCSV()">⬇ Exportar CSV</button>
+          <button class="btn-sheets" id="sheets-vra" onclick="openVRAdmSheets(this)">↗ Abrir no Sheets</button>
         </div>
       </div>
       <div class="table-scroll">
@@ -916,6 +921,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         <div class="section-actions">
           <div class="section-badge" id="vrd-badge">0 registros</div>
           <button class="btn-download" onclick="downloadVRDocCSV()">⬇ Exportar CSV</button>
+          <button class="btn-sheets" id="sheets-vrd" onclick="openVRDocSheets(this)">↗ Abrir no Sheets</button>
         </div>
       </div>
       <div class="table-scroll">
@@ -954,6 +960,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       <div class="section-actions">
         <div class="section-badge" id="copa-badge">0 registros</div>
         <button class="btn-download" onclick="downloadCopaCSV()">⬇ Exportar CSV</button>
+        <button class="btn-sheets" id="sheets-copa" onclick="openCopaSheets(this)">↗ Abrir no Sheets</button>
       </div>
     </div>
     <div class="table-scroll">
@@ -3671,6 +3678,64 @@ function downloadCopaCSV(){
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a'); a.href=url; a.download='coparticipacao_'+new Date().toISOString().slice(0,10)+'.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function _openSheets_(btn, title, headers, rows) {
+  var orig=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='⏳ Criando…';
+  google.script.run
+    .withSuccessHandler(function(r){
+      btn.disabled=false; btn.innerHTML=orig;
+      if(!r||!r.ok){ alert('Erro ao criar planilha: '+(r&&r.error||'desconhecido')); return; }
+      window.open(r.url,'_blank');
+    })
+    .withFailureHandler(function(e){
+      btn.disabled=false; btn.innerHTML=orig;
+      alert('Erro: '+e.message);
+    })
+    .createTempSheet(TOKEN, title, headers, rows);
+}
+
+function openHorasSheets(btn){
+  var data=filteredHoras();
+  var headers=['Unidade','Apelido','Nome','Nível','Mês','Ano','H.Turmas','H.Sáb','Extras','Subs','SubsOutras','F.Desc','F.Abon','Total Horas','Custo F.Desc','Custo F.Abon'];
+  var rows=data.map(function(r){ return [r.unidade,r.apelido,r.nome,r.nivel,r.mes,r.ano,r.hTurmas,r.hTurmasSab,r.extras,r.subs,r.subsOutras,r.fDesc,r.fAbon,r.totalHoras,r.custoFDesc,r.custoFAbon]; });
+  _openSheets_(btn,'Horas BRASAS '+new Date().toISOString().slice(0,10),headers,rows);
+}
+
+function openVRAdmSheets(btn){
+  var uni=v('vra-unidade'),mes=v('vra-mes'),ano=v('vra-ano'),nome=v('vra-nome');
+  var data=ALL_VR_ADM.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var headers=['Unidade','Mês','Ano','Matrícula','Nome','Dias Previsto Mês','Diferença Mês Anterior (Dias)','Dias a Pagar','Valor a Pagar','Valor a Descontar'];
+  var rows=data.map(function(r){ return [r.unidade,r.mes,r.ano,r.matricula,r.nome,r.diasPrevisto,r.difMesAnt,r.diasPagar,r.valorPagar,r.valorDesc]; });
+  _openSheets_(btn,'VR Administrativo BRASAS '+new Date().toISOString().slice(0,10),headers,rows);
+}
+
+function openVRDocSheets(btn){
+  var uni=v('vrd-unidade'),mes=v('vrd-mes'),ano=v('vrd-ano'),nome=v('vrd-nome');
+  var data=ALL_VR_DOC.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var headers=['Unidade','Mês','Ano','Matrícula','Docente','CH Previsto','Diferença Mês Anterior (Horas)','Horas a Pagar','Valor a Pagar','Valor a Descontar'];
+  var rows=data.map(function(r){ return [r.unidade,r.mes,r.ano,r.matricula,r.nome,r.chPrevisto,r.difMesAnt,r.horasPagar,r.valorPagar,r.valorDesc]; });
+  _openSheets_(btn,'VR Docente BRASAS '+new Date().toISOString().slice(0,10),headers,rows);
+}
+
+function openCopaSheets(btn){
+  var data=filteredCopa();
+  var headers=['Unidade','Mês Faturamento','Matrícula','Beneficiário','Valor Coparticipação'];
+  var rows=data.map(function(r){ return [r.unidade,r.mesAno,r.matricula,r.beneficiario,r.valor]; });
+  _openSheets_(btn,'Coparticipação BRASAS '+new Date().toISOString().slice(0,10),headers,rows);
 }
 
 // ─── DESLIGAMENTOS ────────────────────────────────────────────────────────────

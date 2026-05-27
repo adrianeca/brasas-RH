@@ -1242,3 +1242,30 @@ function getDropoutPodiumFotos(token, entries) {
     return { ok: true, fotos };
   } catch(e) { return { ok: false, error: e.message }; }
 }
+
+
+function createTempSheet(token, title, headers, rows) {
+  const session = checkSession(token);
+  if (!session || !session.ok) return { ok: false, error: 'Sessão inválida.' };
+  try {
+    const ss = SpreadsheetApp.create(title);
+    const sheet = ss.getActiveSheet();
+    sheet.setName('Dados');
+    if (headers && headers.length) {
+      const hRange = sheet.getRange(1, 1, 1, headers.length);
+      hRange.setValues([headers]);
+      hRange.setBackground('#162d4a');
+      hRange.setFontColor('#ffffff');
+      hRange.setFontWeight('bold');
+      hRange.setFontSize(10);
+    }
+    if (rows && rows.length) {
+      sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+    }
+    if (headers && headers.length) {
+      sheet.autoResizeColumns(1, headers.length);
+    }
+    sheet.setFrozenRows(1);
+    return { ok: true, url: ss.getUrl() };
+  } catch(e) { return { ok: false, error: e.message }; }
+}
