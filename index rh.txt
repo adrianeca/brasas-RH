@@ -399,6 +399,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
             </div>
           </div>
         </div>
+        <div class="filter-group" style="min-width:160px;flex:1"><label>Efetivo em</label><select id="f-efetivo-em" onchange="applyFilters()"><option value="">Situação atual</option><option value="2022-12-31">Final de 2022</option><option value="2023-12-31">Final de 2023</option><option value="2024-12-31">Final de 2024</option><option value="2025-12-31">Final de 2025</option></select></div>
         <div class="filter-group"><label>Status</label><select id="f-status" onchange="applyFilters()"><option value="" selected>Todos</option><option value="Ativo">Ativos</option><option value="Inativo">Inativos</option></select></div>
         <div class="filter-group"><label>Função</label><select id="f-funcao" onchange="applyFilters()"><option value="">Todas</option></select></div>
         <div class="filter-group" style="min-width:100px;flex:0.6"><label>Sexo</label><select id="f-sexo" onchange="applyFilters()"><option value="">Todos</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
@@ -1814,23 +1815,31 @@ function downloadBrindesCSV(){
 }
 
 function applyFilters(){
+  var fEfetivo=v('f-efetivo-em');
   var fS=v('f-status'),fF=v('f-funcao'),fX=v('f-sexo'),fN=v('f-nome','').trim().toLowerCase();
   var admDe=v('f-adm-de'),admAte=v('f-adm-ate'),desDe=v('f-des-de'),desAte=v('f-des-ate');
   var fMesNasc=v('f-nasc-mes');
   FILTERED=ALL_EMP.filter(function(e){
     if(SELECTED_UNITS.length&&!e.todasUnidades.some(function(u){ return SELECTED_UNITS.includes(u); })) return false;
-    if(fS&&e.status!==fS) return false;
     if(fF&&e.funcao!==fF) return false;
     if(fX&&e.sexo!==fX) return false;
     if(fN&&!e.nome.toLowerCase().includes(fN)) return false;
-    if(fMesNasc){ var p=e.dataNasc?e.dataNasc.split('/'):null; if(!p||p[1]!==fMesNasc) return false; }
-    var admIso=toISO(e.dataAdm);
-    if(admDe&&admIso&&admIso<admDe) return false;
-    if(admAte&&admIso&&admIso>admAte) return false;
-    if(admDe&&!admIso) return false;
-    var desISO=toISO(e.dataDeslig);
-    if(desDe&&desISO&&desISO<desDe) return false;
-    if(desAte&&desISO&&desISO>desAte) return false;
+    if(fEfetivo){
+      // Modo histórico: estava ativo na data de referência?
+      var admISO=toISO(e.dataAdm); var desISO=toISO(e.dataDeslig);
+      if(!admISO||admISO>fEfetivo) return false;
+      if(desISO&&desISO<=fEfetivo) return false;
+    } else {
+      if(fS&&e.status!==fS) return false;
+      if(fMesNasc){ var p=e.dataNasc?e.dataNasc.split('/'):null; if(!p||p[1]!==fMesNasc) return false; }
+      var admIso=toISO(e.dataAdm);
+      if(admDe&&admIso&&admIso<admDe) return false;
+      if(admAte&&admIso&&admIso>admAte) return false;
+      if(admDe&&!admIso) return false;
+      var desISO=toISO(e.dataDeslig);
+      if(desDe&&desISO&&desISO<desDe) return false;
+      if(desAte&&desISO&&desISO>desAte) return false;
+    }
     return true;
   });
   EMP_PAGE=0;
@@ -1843,35 +1852,39 @@ function clearFilters(){
   updateMdDisplay();
   ['f-funcao','f-sexo','f-nasc-mes'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('f-status').value='';
-  ['f-nome','f-adm-de','f-adm-ate','f-des-de','f-des-ate'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['f-nome','f-adm-de','f-adm-ate','f-des-de','f-des-ate','f-efetivo-em'].forEach(function(id){ document.getElementById(id).value=''; });
   applyFilters();
 }
 
 // RENDER: VISÃO GERAL
 function renderGeral(){
-  var ativos=FILTERED.filter(function(e){ return e.ativo; });
-  var inativos=FILTERED.filter(function(e){ return !e.ativo; });
+  var fEfetivo=v('f-efetivo-em');
+  var ativos,inativos;
+  if(fEfetivo){ ativos=FILTERED; inativos=[]; }
+  else { ativos=FILTERED.filter(function(e){ return e.ativo; }); inativos=FILTERED.filter(function(e){ return !e.ativo; }); }
   var unitsSet=[...new Set(ativos.map(function(e){ return e.unidade; }).filter(Boolean))];
   set('ins-total',fmt(FILTERED.length)); set('ins-ativos',fmt(ativos.length));
   set('ins-inativos',fmt(inativos.length)); set('ins-unidades',unitsSet.length);
-  set('ins-total-d','no filtro atual');
-  set('ins-ativos-d',pct(ativos.length,FILTERED.length)+'% do total');
-  set('ins-inativos-d',pct(inativos.length,FILTERED.length)+'% do total');
+  var refLabel=fEfetivo?'em '+fEfetivo.split('-').reverse().join('/'):'no filtro atual';
+  set('ins-total-d',refLabel);
+  set('ins-ativos-d',fEfetivo?refLabel:pct(ativos.length,FILTERED.length)+'% do total');
+  set('ins-inativos-d',fEfetivo?'—':pct(inativos.length,FILTERED.length)+'% do total');
   set('kpi-retencao',(FILTERED.length?pct(ativos.length,FILTERED.length):0)+'%');
-  var tempos=ativos.map(function(e){ return e.tenureYears; }).filter(function(t){ return t!==null&&t!==undefined&&!isNaN(t)&&isFinite(t); });
+  var getTenure=fEfetivo?function(e){ return tenureAt_(e.dataAdm,fEfetivo); }:function(e){ return e.tenureYears; };
+  var tempos=ativos.map(getTenure).filter(function(t){ return t!==null&&t!==undefined&&!isNaN(t)&&isFinite(t); });
   set('kpi-tempo-medio',tempos.length?avg(tempos).toFixed(1):'—');
-  var comTenure=ativos.filter(function(e){ return validNum(e.tenureYears); }).sort(function(a,b){ return b.tenureYears-a.tenureYears; });
+  var comTenure=ativos.map(function(e){ return {e:e,t:getTenure(e)}; }).filter(function(x){ return validNum(x.t); }).sort(function(a,b){ return b.t-a.t; });
   if(comTenure.length){
     var oldest=comTenure[0];
-    set('kpi-mais-antigo',oldest.tenureYears+' anos'); set('kpi-mais-antigo-nome',oldest.nome);
-    set('kpi-mais-antigo-d',(oldest.funcao||'—')+' · '+(oldest.unidade||'—'));
+    set('kpi-mais-antigo',oldest.t+' anos'); set('kpi-mais-antigo-nome',oldest.e.nome);
+    set('kpi-mais-antigo-d',(oldest.e.funcao||'—')+' · '+(oldest.e.unidade||'—'));
   } else { set('kpi-mais-antigo','—'); set('kpi-mais-antigo-nome',''); set('kpi-mais-antigo-d',''); }
   var byAdm=[...ativos].filter(function(e){ return e.admYear; }).sort(function(a,b){
     return new Date(b.admYear,(b.admMonth||1)-1,b.admDay||1)-new Date(a.admYear,(a.admMonth||1)-1,a.admDay||1);
   });
   if(byAdm.length){
-    var rec=byAdm[0];
-    set('kpi-mais-recente',validNum(rec.tenureYears)?rec.tenureYears+' anos':'—');
+    var rec=byAdm[0]; var recT=getTenure(rec);
+    set('kpi-mais-recente',validNum(recT)?recT+' anos':'—');
     set('kpi-mais-recente-nome',rec.nome);
     set('kpi-mais-recente-d',(rec.funcao||'—')+' · '+(rec.unidade||'—'));
   } else { set('kpi-mais-recente','—'); set('kpi-mais-recente-nome',''); set('kpi-mais-recente-d',''); }
@@ -4327,6 +4340,7 @@ function validNum(x){ return x!==null&&x!==undefined&&!isNaN(x)&&isFinite(x); }
 function fmtNow(){ var n=new Date(); return n.toLocaleDateString('pt-BR')+' às '+n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function groupBy(arr,key){ return arr.reduce(function(acc,e){ var k=e[key]||'(não informado)'; if(!acc[k]) acc[k]=[]; acc[k].push(e); return acc; },{}); }
 function toISO(str){ if(!str||str==='—') return ''; var m=str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); return m?m[3]+'-'+m[2]+'-'+m[1]:''; }
+function tenureAt_(admStr,refISO){ var a=toISO(admStr); if(!a||!refISO) return null; var ap=a.split('-').map(Number),rp=refISO.split('-').map(Number); var d=rp[0]-ap[0]; if(rp[1]<ap[1]||(rp[1]===ap[1]&&rp[2]<ap[2])) d--; return d>=0?d:null; }
 function fmtDateBr(val){
   if(!val) return '—';
   var d=new Date(val);
