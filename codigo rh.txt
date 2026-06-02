@@ -72,8 +72,9 @@ function _getRolePermissions_(role, ss) {
       'rh_desligamentos': 'desligamentos',
       'rh_dp':            ['horas','faltas','vr','copa'],
       'rh_brindes':       'brindes',
+      'rh_wellhub':       'wellhub',
     };
-    const KNOWN_TABS = ['geral','people','brindes','professores','cohort','engajamento','desligamentos','horas','faltas','vr','copa'];
+    const KNOWN_TABS = ['geral','people','brindes','professores','cohort','engajamento','desligamentos','horas','faltas','vr','copa','wellhub'];
 
     // Detecta se a aba usa o formato rh_* (Hub) ou formato legado (IDs diretos ou CSV)
     const hasRhCols = headers.some(h => h === 'rh' || h.startsWith('rh_'));
@@ -1243,6 +1244,67 @@ function getDropoutPodiumFotos(token, entries) {
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
+
+// ─── WELLHUB ─────────────────────────────────────────────────────────────────
+const WELLHUB_SPREADSHEET_ID = '1bFjtYHLn1R4_ZgkSnNyxrb3a6JhYJ72bHmwtoBg1Wzs';
+
+function getWellhubData(token) {
+  const session = checkSession(token);
+  if (!session) return { ok: false, error: 'Sessão expirada.' };
+  const role = session.role;
+  const allowed = session.allowedPages || null;
+  const canAccess = allowed
+    ? allowed.includes('wellhub')
+    : (role === 'admin' || role === 'dp');
+  if (!canAccess) return { ok: false, error: 'Sem permissão.' };
+  try {
+    const ss = SpreadsheetApp.openById(WELLHUB_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Wellhub');
+    if (!sheet) return { ok: false, error: 'Aba "Wellhub" não encontrada.' };
+    const raw = sheet.getDataRange().getValues();
+    if (raw.length < 2) return { ok: false, error: 'Sem dados.' };
+
+    const col = {};
+    raw[0].forEach((h, i) => { col[normalizeH_(h)] = i; });
+    const g = (row, name) => {
+      const i = col[normalizeH_(name)];
+      return i !== undefined ? String(row[i] === null || row[i] === undefined ? '' : row[i]).trim() : '';
+    };
+
+    const rows = [];
+    for (let r = 1; r < raw.length; r++) {
+      const row = raw[r];
+      const colaborador = g(row, 'Colaborador');
+      if (!colaborador) continue;
+      const precoFinal = parseFloat(String(g(row, 'Preço após desconto')).replace(',', '.')) || 0;
+      const dataInicioRaw = row[col[normalizeH_('Data de início do plano')]];
+      const dataInicioParsed = dataInicioRaw instanceof Date ? dataInicioRaw : parseDate_(String(dataInicioRaw||''));
+      // Mês de Referência é célula de data → usa UTC para evitar bug de fuso (mesmo padrão do getCopaData)
+      const mesRaw = row[col[normalizeH_('Mês de Referência')]];
+      let mesStr;
+      if (mesRaw instanceof Date && !isNaN(mesRaw.getTime())) {
+        mesStr = String(mesRaw.getUTCMonth()+1).padStart(2,'0') + '/' + mesRaw.getUTCFullYear();
+      } else {
+        mesStr = String(mesRaw||'').trim();
+      }
+      rows.push({
+        mes:        mesStr,
+        empresa:    g(row, 'Ajuste Empresa'),
+        colaborador,
+        emailColab: g(row, 'Email do colaborador'),
+        dependente: g(row, 'Dependente'),
+        tipo:       g(row, 'Tipo'),
+        plano:      g(row, 'Plano'),
+        precoFinal,
+        dataInicio: fmtDate_(dataInicioParsed) || g(row, 'Data de início do plano'),
+        status:     g(row, 'Status'),
+      });
+    }
+    return { ok: true, rows };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
 
 function createTempSheet(token, title, headers, rows) {
   const session = checkSession(token);

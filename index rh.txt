@@ -358,6 +358,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         </div>
       </div>
       <button class="cockpit-tab tab-brindes-nav" onclick="switchTab('brindes',this)"><span class="tab-icon">🎁</span> Brindes</button>
+      <button class="cockpit-tab" onclick="switchTab('wellhub',this)"><span class="tab-icon">💪</span> Wellhub</button>
       <div class="cockpit-nav-right">
         <div class="nav-user">👤 <strong id="navUserName">—</strong></div>
         <button class="logout-btn" onclick="doLogout()">Sair</button>
@@ -1006,6 +1007,56 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   </div>
 </div><!-- /tab-copa -->
 
+<div id="tab-wellhub" class="tab-content">
+  <div class="filters-bar">
+    <div class="filter-group"><label>Mês de Referência</label><select id="wh-mes" onchange="renderWellhub()"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Empresa</label><select id="wh-empresa" onchange="renderWellhub()"><option value="">Todas</option></select></div>
+    <div class="filter-group"><label>Plano</label><select id="wh-plano" onchange="renderWellhub()"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Status</label><select id="wh-status" onchange="renderWellhub()"><option value="">Todos</option></select></div>
+    <div class="filter-actions"><button class="btn-clear" onclick="clearWellhubFilters()">Limpar</button></div>
+  </div>
+
+  <div class="kpi-row" id="wh-kpis"></div>
+
+  <div class="charts-grid" style="margin-bottom:24px">
+    <div class="chart-container">
+      <div class="chart-title">Distribuição por Plano</div>
+      <div class="chart-subtitle">Employees ativos no período filtrado</div>
+      <div class="chart-canvas-wrapper"><canvas id="chartWellhubPlano"></canvas></div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-title">Status das Assinaturas</div>
+      <div class="chart-subtitle">Todos os registros no período filtrado</div>
+      <div class="chart-canvas-wrapper"><canvas id="chartWellhubStatus"></canvas></div>
+    </div>
+    <div class="chart-container full">
+      <div class="chart-title">Evolução de Assinantes Ativos</div>
+      <div class="chart-subtitle">Employees ativos por mês · histórico completo</div>
+      <div class="chart-canvas-wrapper" style="height:220px"><canvas id="chartWellhubMes"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div><div class="section-title">Detalhamento Wellhub</div><div class="section-subtitle">Todos os registros no período selecionado</div></div>
+      <div class="section-actions">
+        <div class="section-badge" id="wh-badge">0 registros</div>
+        <button class="btn-download" onclick="downloadWellhubCSV()">⬇ Exportar CSV</button>
+        <button class="btn-sheets" id="sheets-wellhub" onclick="openWellhubSheets(this)">↗ Abrir no Sheets</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr>
+          <th>Mês</th><th>Empresa</th><th>Colaborador</th><th>Dependente</th>
+          <th>Tipo</th><th>Plano</th><th class="num">Preço Final</th><th>Status</th><th>Início</th>
+        </tr></thead>
+        <tbody id="tblWellhubBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div><!-- /tab-wellhub -->
+
 
     <!-- TAB: DESLIGAMENTOS -->
     <div id="tab-desligamentos" class="tab-content">
@@ -1173,11 +1224,11 @@ var BRINDE_SEL={'mdBrindeLocal':[],'mdBrindeTipo':[]};
 var HUB_URL='https://script.google.com/a/macros/brasas.com/s/AKfycbyF7BArYMYFtcQY7_4RTGGPw89yNohAjR7eGptItP-EsnWhNfiZR2ISRaHdAkwlLSlr/exec';
 
 var ROLE_TABS={
-  'admin':     ['geral','people','brindes','professores','cohort','engajamento','desligamentos','horas','faltas','vr','copa'],
+  'admin':     ['geral','people','brindes','professores','cohort','engajamento','desligamentos','horas','faltas','vr','copa','wellhub'],
   'viewer':    ['geral','people','brindes','professores','cohort','engajamento','horas','faltas','vr','copa'],
   'marketing': ['geral','brindes'],
   'diretor':   ['geral','people','professores','brindes','horas','faltas','vr'],
-  'dp':        ['geral','people','desligamentos','horas','faltas','vr','copa'],
+  'dp':        ['geral','people','desligamentos','horas','faltas','vr','copa','wellhub'],
   'g&g':       ['geral','people','professores']
 };
 
@@ -1490,6 +1541,10 @@ function loadData(){
       }
       if(allowed.indexOf('desligamentos')>=0){
         setTimeout(function(){ loadDesligamentosData(); },500);
+      }
+      if(allowed.indexOf('wellhub')>=0){
+        showTabLoading('wellhub');
+        setTimeout(function(){ loadWellhubData(); },600);
       }
     })
     .withFailureHandler(function(e){
@@ -3749,6 +3804,163 @@ function openCopaSheets(btn){
   var headers=['Unidade','Mês Faturamento','Matrícula','Beneficiário','Valor Coparticipação'];
   var rows=data.map(function(r){ return [r.unidade,r.mesAno,r.matricula,r.beneficiario,r.valor]; });
   _openSheets_(btn,'Coparticipação BRASAS '+new Date().toISOString().slice(0,10),headers,rows);
+}
+
+// ─── WELLHUB ─────────────────────────────────────────────────────────────────
+var ALL_WELLHUB=[];
+var WH_CHARTS={};
+var WH_PLANO_ORDER=['DIGITAL','BASIC','BASIC+','SILVER','SILVER+','GOLD','GOLD+'];
+
+function loadWellhubData(){
+  google.script.run
+    .withSuccessHandler(function(r){
+      hideTabLoading('wellhub');
+      if(!r.ok){ console.warn('Wellhub:',r.error); return; }
+      ALL_WELLHUB=r.rows||[];
+      initWellhubFilters();
+      renderWellhub();
+    })
+    .withFailureHandler(function(e){ hideTabLoading('wellhub'); console.warn('Wellhub falhou:',e.message); })
+    .getWellhubData(TOKEN);
+}
+
+function initWellhubFilters(){
+  var meses=[...new Set(ALL_WELLHUB.map(function(r){ return r.mes; }).filter(Boolean))].sort().reverse();
+  var empresas=[...new Set(ALL_WELLHUB.map(function(r){ return r.empresa; }).filter(Boolean))].sort();
+  var planos=WH_PLANO_ORDER.filter(function(p){ return ALL_WELLHUB.some(function(r){ return r.plano===p; }); });
+  var statuses=[...new Set(ALL_WELLHUB.map(function(r){ return r.status; }).filter(Boolean))].sort();
+  var whMes=document.getElementById('wh-mes');
+  if(whMes) meses.forEach(function(m){ whMes.appendChild(new Option(m,m)); });
+  var whEmp=document.getElementById('wh-empresa');
+  if(whEmp) empresas.forEach(function(e){ whEmp.appendChild(new Option(e,e)); });
+  var whPl=document.getElementById('wh-plano');
+  if(whPl) planos.forEach(function(p){ whPl.appendChild(new Option(p,p)); });
+  var whSt=document.getElementById('wh-status');
+  if(whSt) statuses.forEach(function(s){ whSt.appendChild(new Option(s,s)); });
+  // Seleciona mês mais recente por padrão
+  if(whMes&&meses.length) whMes.value=meses[0];
+}
+
+function filteredWellhub(){
+  var mes=v('wh-mes'),emp=v('wh-empresa'),plano=v('wh-plano'),status=v('wh-status');
+  return ALL_WELLHUB.filter(function(r){
+    if(mes&&r.mes!==mes) return false;
+    if(emp&&r.empresa!==emp) return false;
+    if(plano&&r.plano!==plano) return false;
+    if(status&&r.status!==status) return false;
+    return true;
+  });
+}
+
+function renderWellhub(){
+  var data=filteredWellhub();
+  renderWellhubKPIs(data);
+  renderWellhubCharts(data);
+  renderWellhubTable(data);
+}
+
+function renderWellhubKPIs(data){
+  var ativos=data.filter(function(r){ return r.tipo==='Employee'&&r.status==='Active'; });
+  var deps=data.filter(function(r){ return r.tipo==='Family Member'&&r.status==='Active'; });
+  var custoTotal=data.filter(function(r){ return r.status==='Active'; })
+    .reduce(function(s,r){ return s+r.precoFinal; },0);
+  var planosCount={};
+  ativos.forEach(function(r){ planosCount[r.plano]=(planosCount[r.plano]||0)+1; });
+  var planoPop=Object.keys(planosCount).sort(function(a,b){ return planosCount[b]-planosCount[a]; })[0]||'—';
+  document.getElementById('wh-kpis').innerHTML=
+    '<div class="kpi-card highlight"><div class="kpi-label">Assinantes Ativos</div><div class="kpi-value">'+ativos.length+'</div><div class="kpi-sub">Employees · Active</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Dependentes Ativos</div><div class="kpi-value">'+deps.length+'</div><div class="kpi-sub">Family Member · Active</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Custo Total Mensal</div><div class="kpi-value">'+fmtBRL(custoTotal)+'</div><div class="kpi-sub">registros Active</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Plano Mais Popular</div><div class="kpi-value" style="font-size:1.1rem">'+esc(planoPop)+'</div><div class="kpi-sub">'+(planoPop!=='—'?planosCount[planoPop]+' assinantes':'—')+'</div></div>';
+}
+
+function renderWellhubCharts(data){
+  var donutColors=['#0d9488','#2a4d76','#3d6b99','#5a8aba','#89afd4','#f59e0b','#c9a227'];
+
+  // Barras — distribuição por plano (Employees ativos)
+  var ativosEmp=data.filter(function(r){ return r.tipo==='Employee'&&r.status==='Active'; });
+  var planoCount={};
+  ativosEmp.forEach(function(r){ planoCount[r.plano]=(planoCount[r.plano]||0)+1; });
+  var planoLabels=WH_PLANO_ORDER.filter(function(p){ return planoCount[p]; });
+  if(WH_CHARTS.plano) WH_CHARTS.plano.destroy();
+  var ctxP=document.getElementById('chartWellhubPlano');
+  if(ctxP) WH_CHARTS.plano=new Chart(ctxP,{
+    type:'bar',
+    data:{labels:planoLabels,datasets:[{data:planoLabels.map(function(p){ return planoCount[p]; }),backgroundColor:donutColors.slice(0,planoLabels.length),borderRadius:6,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{precision:0}}}}
+  });
+
+  // Barras horizontais — status
+  var statusCount={};
+  data.forEach(function(r){ statusCount[r.status]=(statusCount[r.status]||0)+1; });
+  var stLabels=['Active','Paused','Cancelled'].filter(function(s){ return statusCount[s]; });
+  var stColors=stLabels.map(function(s){ return s==='Active'?'#22c55e':s==='Paused'?'#f59e0b':'#ef4444'; });
+  if(WH_CHARTS.status) WH_CHARTS.status.destroy();
+  var ctxS=document.getElementById('chartWellhubStatus');
+  if(ctxS) WH_CHARTS.status=new Chart(ctxS,{
+    type:'bar',
+    data:{labels:stLabels,datasets:[{data:stLabels.map(function(s){ return statusCount[s]||0; }),backgroundColor:stColors,borderRadius:6}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{display:false}}}}
+  });
+
+  // Linha — assinantes ativos por mês (histórico completo, ignora filtro de mês)
+  var mesMap={};
+  ALL_WELLHUB.filter(function(r){ return r.tipo==='Employee'&&r.status==='Active'; })
+    .forEach(function(r){ mesMap[r.mes]=(mesMap[r.mes]||0)+1; });
+  var mesLabels=Object.keys(mesMap).sort();
+  if(WH_CHARTS.mes) WH_CHARTS.mes.destroy();
+  var ctxM=document.getElementById('chartWellhubMes');
+  if(ctxM) WH_CHARTS.mes=new Chart(ctxM,{
+    type:'line',
+    data:{labels:mesLabels,datasets:[{label:'Assinantes Ativos',data:mesLabels.map(function(m){ return mesMap[m]; }),borderColor:'#2a4d76',backgroundColor:'rgba(42,77,118,.1)',tension:0.3,fill:true,pointRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'}},x:{grid:{display:false}}}}
+  });
+}
+
+function renderWellhubTable(data){
+  set('wh-badge',data.length+' registros');
+  var html=data.map(function(r){
+    var sc=r.status==='Active'?'var(--success-600)':r.status==='Paused'?'var(--warning-600)':'var(--danger-600)';
+    return '<tr>'+
+      '<td>'+esc(r.mes)+'</td>'+
+      '<td>'+esc(r.empresa)+'</td>'+
+      '<td>'+esc(r.colaborador)+'</td>'+
+      '<td>'+esc(r.dependente||'—')+'</td>'+
+      '<td>'+esc(r.tipo)+'</td>'+
+      '<td><span class="badge badge-nivel">'+esc(r.plano)+'</span></td>'+
+      '<td class="num">'+fmtBRL(r.precoFinal)+'</td>'+
+      '<td><span style="color:'+sc+';font-weight:600">'+esc(r.status)+'</span></td>'+
+      '<td style="font-size:.78rem;color:var(--gray-500)">'+esc(r.dataInicio)+'</td>'+
+      '</tr>';
+  }).join('');
+  var tbody=document.getElementById('tblWellhubBody');
+  if(tbody) tbody.innerHTML=html||'<tr><td colspan="9" class="table-empty">Nenhum registro</td></tr>';
+}
+
+function clearWellhubFilters(){
+  var el;
+  el=document.getElementById('wh-empresa'); if(el) el.value='';
+  el=document.getElementById('wh-plano');   if(el) el.value='';
+  el=document.getElementById('wh-status');  if(el) el.value='';
+  renderWellhub();
+}
+
+function downloadWellhubCSV(){
+  var data=filteredWellhub();
+  var headers=['Mês','Empresa','Colaborador','E-mail','Dependente','Tipo','Plano','Preço Final','Status','Data Início'];
+  var rows=data.map(function(r){ return [r.mes,r.empresa,r.colaborador,r.emailColab,r.dependente,r.tipo,r.plano,r.precoFinal,r.status,r.dataInicio]; });
+  var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c===null||c===undefined?'':c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='wellhub_brasas_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function openWellhubSheets(btn){
+  var data=filteredWellhub();
+  var headers=['Mês','Empresa','Colaborador','E-mail','Dependente','Tipo','Plano','Preço Final','Status','Data Início'];
+  var rows=data.map(function(r){ return [r.mes,r.empresa,r.colaborador,r.emailColab,r.dependente,r.tipo,r.plano,r.precoFinal,r.status,r.dataInicio]; });
+  _openSheets_(btn,'Wellhub BRASAS '+new Date().toISOString().slice(0,10),headers,rows);
 }
 
 // ─── DESLIGAMENTOS ────────────────────────────────────────────────────────────
