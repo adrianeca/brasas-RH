@@ -116,10 +116,11 @@ Anos calculados: 2025, 2026, 2027 (constante `GIFT_YEARS`).
 
 ### Navbar
 
-- Logo **🏫 BRASAS Analytics** à esquerda.
+- Logo **BRASAS Analytics** à esquerda (sem emoji).
 - Botão **🏠 Hub** logo após o logo — link para o Hub central (`target="_top"` para sair do iframe). Estilo `.hub-btn`.
 - Abas de navegação na sequência.
 - Lado direito (`.cockpit-nav-right`): nome do usuário + botão **Sair**.
+- `.cockpit-nav-inner` usa `width:100%` (sem `max-width`) para aproveitar a largura total da tela.
 
 ### Sistema de design (variáveis CSS)
 
@@ -720,6 +721,28 @@ Nuvem de sentimentos na aba Desligamentos, construída a partir dos campos `come
 **Legenda visual** (HTML acima do `#dl-wordcloud`):
 - Bolinhas coloridas para Positiva/Negativa/Neutra
 - Ícone de borda tracejada para "Frase (2 palavras)"
+
+---
+
+### DP — Filtro por Responsável (Jessica / Priscila)
+
+Dropdown **"Responsável"** adicionado à barra de filtros de todas as 5 abas DP: Horas, Faltas, VR Administrativo, VR Docente e Coparticipação.
+
+**Mapeamento de siglas** (definido no frontend em `DP_JESSICA_UNITS` / `DP_PRISCILA_UNITS`):
+- **Jessica:** ME, BOD, BR, GR, NT, VP, VO, NL, MRI, MR, TJ, CG, CX, DT, ED, EC NEW, RC
+- **Priscila:** IT, BF, IG, NI, FG, PC, LJ, IP, TQ, CP, VQ, NS, CH, BG, PN, PO
+- `MRI` e `MR` são variantes da mesma empresa (Meier) — ambas mapeadas para Jessica
+- `NS` e `CH` são variantes da mesma empresa (Cachambi) — ambas mapeadas para Priscila
+
+**Função helper:** `getDPResp(u)` — converte sigla em `'jessica'` ou `'priscila'` (string `.toUpperCase()` + `indexOf`)
+
+**IDs dos filtros:** `h-resp` (horas), `f2-resp` (faltas), `vra-resp` (VR adm), `vrd-resp` (VR doc), `cp-resp` (copa)
+
+**Funções afetadas:** `filteredHoras`, `filteredFaltas`, `renderVRAdm`, `renderVRDoc`, `filteredCopa` — cada uma lê seu respectivo `resp` e aplica `getDPResp(r.unidade) !== resp` como condição de exclusão.
+
+**Botão Limpar:** cada `clearXFilters()` já inclui o campo `resp` correspondente.
+
+> O filtro é **manual** (visível na UI, qualquer usuário pode usar). Não há filtragem automática por sessão/login.
 
 ---
 

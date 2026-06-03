@@ -40,9 +40,9 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .login-spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--navy-300);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 20px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .cockpit-nav{background:var(--navy-900);border-bottom:1px solid rgba(255,255,255,.08);padding:0 32px}
-.cockpit-nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:4px}
+.cockpit-nav-inner{width:100%;display:flex;align-items:center;gap:6px}
 .cockpit-nav-logo{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-300);padding:10px 16px 10px 0;margin-right:8px;border-right:1px solid rgba(255,255,255,.1);white-space:nowrap}
-.cockpit-tab{display:inline-flex;align-items:center;gap:7px;padding:10px 16px;font-size:.78rem;font-weight:600;color:var(--navy-300);text-decoration:none;border-bottom:2.5px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font-main)}
+.cockpit-tab{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;font-size:.78rem;font-weight:600;color:var(--navy-300);text-decoration:none;border-bottom:2.5px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font-main)}
 .cockpit-tab:hover{color:var(--white)}
 .cockpit-tab.active{color:var(--white);border-bottom-color:var(--navy-300)}
 .cockpit-tab .tab-icon{font-size:.9rem}
@@ -338,7 +338,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 <div id="app">
   <nav class="cockpit-nav">
     <div class="cockpit-nav-inner">
-      <div class="cockpit-nav-logo">🏫 BRASAS Analytics</div>
+      <div class="cockpit-nav-logo">BRASAS Analytics</div>
       <a class="hub-btn" href="https://script.google.com/a/macros/brasas.com/s/AKfycbyF7BArYMYFtcQY7_4RTGGPw89yNohAjR7eGptItP-EsnWhNfiZR2ISRaHdAkwlLSlr/exec" target="_top">🏠 Hub</a>
       <button class="cockpit-tab active" onclick="switchTab('geral',this)"><span class="tab-icon">👥</span> Visão Geral</button>
       <button class="cockpit-tab" onclick="switchTab('people',this)"><span class="tab-icon">📊</span> People Analytics</button>
@@ -787,6 +787,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
     <div class="filter-group"><label>Ano</label><select id="h-ano" onchange="renderHoras()"><option value="">Todos</option></select></div>
     <div class="filter-group"><label>Mês</label><select id="h-mes" onchange="renderHoras()"><option value="">Todos</option></select></div>
     <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="h-unidade" onchange="renderHoras()"><option value="">Todas</option></select></div>
+    <div class="filter-group"><label>Responsável</label><select id="h-resp" onchange="renderHoras()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
     <div class="filter-group"><label>Nível</label><select id="h-nivel" onchange="renderHoras()"><option value="">Todos</option></select></div>
     <div class="filter-group"><label>Buscar nome/apelido</label><input type="text" id="h-nome" placeholder="Digite…" oninput="renderHoras()" style="background-image:none"></div>
     <div class="filter-actions"><button class="btn-clear" onclick="clearHorasFilters()">Limpar</button></div>
@@ -830,6 +831,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
     <div class="filter-group"><label>Ano</label><select id="f2-ano" onchange="renderFaltas()"><option value="">Todos</option></select></div>
     <div class="filter-group"><label>Mês</label><select id="f2-mes" onchange="renderFaltas()"><option value="">Todos</option></select></div>
     <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="f2-unidade" onchange="renderFaltas()"><option value="">Todas</option></select></div>
+    <div class="filter-group"><label>Responsável</label><select id="f2-resp" onchange="renderFaltas()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
     <div class="filter-actions"><button class="btn-clear" onclick="clearFaltasFilters()">Limpar</button></div>
   </div>
   <div class="kpi-row" id="faltas-kpis"></div>
@@ -869,6 +871,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   <div id="vr-adm-panel">
     <div class="filters-bar">
       <div class="filter-group"><label>Unidade</label><select id="vra-unidade" onchange="renderVRAdm()"><option value="">Todas</option></select></div>
+      <div class="filter-group"><label>Responsável</label><select id="vra-resp" onchange="renderVRAdm()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
       <div class="filter-group"><label>Mês</label><select id="vra-mes" onchange="renderVRAdm()"><option value="">Todos</option></select></div>
       <div class="filter-group"><label>Ano</label><select id="vra-ano" onchange="renderVRAdm()"><option value="">Todos</option></select></div>
       <div class="filter-group" style="flex:2"><label>Nome</label><select id="vra-nome" onchange="renderVRAdm()"><option value="">Todos</option></select></div>
@@ -908,6 +911,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   <div id="vr-doc-panel" style="display:none">
     <div class="filters-bar">
       <div class="filter-group"><label>Unidade</label><select id="vrd-unidade" onchange="renderVRDoc()"><option value="">Todas</option></select></div>
+      <div class="filter-group"><label>Responsável</label><select id="vrd-resp" onchange="renderVRDoc()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
       <div class="filter-group"><label>Mês</label><select id="vrd-mes" onchange="renderVRDoc()"><option value="">Todos</option></select></div>
       <div class="filter-group"><label>Ano</label><select id="vrd-ano" onchange="renderVRDoc()"><option value="">Todos</option></select></div>
       <div class="filter-group" style="flex:2"><label>Docente</label><select id="vrd-nome" onchange="renderVRDoc()"><option value="">Todos</option></select></div>
@@ -948,6 +952,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 <div id="tab-copa" class="tab-content">
   <div class="filters-bar">
     <div class="filter-group"><label>Unidade</label><select id="cp-unidade" onchange="renderCopa()"><option value="">Todas</option></select></div>
+    <div class="filter-group"><label>Responsável</label><select id="cp-resp" onchange="renderCopa()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
     <div class="filter-group"><label>Mês/Ano</label><select id="cp-mes" onchange="renderCopa()"><option value="">Todos</option></select></div>
     <div class="filter-group" style="flex:2"><label>Buscar beneficiário</label><input type="text" id="cp-nome" placeholder="Digite um nome…" oninput="renderCopa()" style="background-image:none"></div>
     <div class="filter-actions"><button class="btn-clear" onclick="clearCopaFilters()">Limpar</button></div>
@@ -3226,6 +3231,10 @@ var ALL_HORAS=[];
 var HORAS_PAGE=0;
 var HORAS_PAGE_SIZE=50;
 
+var DP_JESSICA_UNITS  = ['ME','BOD','BR','GR','NT','VP','VO','NL','MRI','MR','TJ','CG','CX','DT','ED','EC NEW','RC'];
+var DP_PRISCILA_UNITS = ['IT','BF','IG','NI','FG','PC','LJ','IP','TQ','CP','VQ','NS','CH','BG','PN','PO'];
+function getDPResp(u){ var s=(u||'').trim().toUpperCase(); if(DP_JESSICA_UNITS.indexOf(s)>=0) return 'jessica'; if(DP_PRISCILA_UNITS.indexOf(s)>=0) return 'priscila'; return ''; }
+
 function loadHorasData(){
   google.script.run
     .withSuccessHandler(function(r){
@@ -3274,10 +3283,11 @@ function initHorasFilters(){
 }
 
 function filteredHoras(){
-  var ano=v('h-ano'),mes=v('h-mes'),uni=v('h-unidade'),niv=v('h-nivel');
+  var ano=v('h-ano'),mes=v('h-mes'),uni=v('h-unidade'),niv=v('h-nivel'),resp=v('h-resp');
   var nome=v('h-nome','').trim().toLowerCase();
   return ALL_HORAS.filter(function(r){
     if(ano&&r.ano!==ano) return false;
+    if(resp&&getDPResp(r.unidade)!==resp) return false;
     if(mes&&r.mes!==mes) return false;
     if(uni&&r.unidade!==uni) return false;
     if(niv&&r.nivel!==niv) return false;
@@ -3287,10 +3297,11 @@ function filteredHoras(){
 }
 
 function filteredFaltas(){
-  var ano=v('f2-ano'),mes=v('f2-mes'),uni=v('f2-unidade');
+  var ano=v('f2-ano'),mes=v('f2-mes'),uni=v('f2-unidade'),resp=v('f2-resp');
   return ALL_HORAS.filter(function(r){
     if(ano&&r.ano!==ano) return false;
     if(mes&&r.mes!==mes) return false;
+    if(resp&&getDPResp(r.unidade)!==resp) return false;
     if(uni&&r.unidade!==uni) return false;
     return true;
   });
@@ -3348,7 +3359,7 @@ function renderHorasTable(data){
 function pagHoras(dir){ HORAS_PAGE+=dir; renderHorasTable(filteredHoras()); }
 
 function clearHorasFilters(){
-  ['h-ano','h-mes','h-unidade','h-nivel'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['h-ano','h-mes','h-unidade','h-resp','h-nivel'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('h-nome').value='';
   renderHoras();
 }
@@ -3433,7 +3444,7 @@ function renderFaltas(){
 }
 
 function clearFaltasFilters(){
-  ['f2-ano','f2-mes','f2-unidade'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['f2-ano','f2-mes','f2-unidade','f2-resp'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   renderFaltas();
 }
 
@@ -3475,9 +3486,10 @@ function initVRFilters(){
 function fmtBRL(n){ return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
 function renderVRAdm(){
-  var uni=v('vra-unidade'),mes=v('vra-mes'),ano=v('vra-ano'),nome=v('vra-nome');
+  var uni=v('vra-unidade'),mes=v('vra-mes'),ano=v('vra-ano'),nome=v('vra-nome'),resp=v('vra-resp');
   var data=ALL_VR_ADM.filter(function(r){
     if(uni&&r.unidade!==uni) return false;
+    if(resp&&getDPResp(r.unidade)!==resp) return false;
     if(mes&&r.mes!==mes) return false;
     if(ano&&r.ano!==ano) return false;
     if(nome&&r.nome!==nome) return false;
@@ -3505,9 +3517,10 @@ function renderVRAdm(){
 }
 
 function renderVRDoc(){
-  var uni=v('vrd-unidade'),mes=v('vrd-mes'),ano=v('vrd-ano'),nome=v('vrd-nome');
+  var uni=v('vrd-unidade'),mes=v('vrd-mes'),ano=v('vrd-ano'),nome=v('vrd-nome'),resp=v('vrd-resp');
   var data=ALL_VR_DOC.filter(function(r){
     if(uni&&r.unidade!==uni) return false;
+    if(resp&&getDPResp(r.unidade)!==resp) return false;
     if(mes&&r.mes!==mes) return false;
     if(ano&&r.ano!==ano) return false;
     if(nome&&r.nome!==nome) return false;
@@ -3542,11 +3555,11 @@ function switchVrTab(tab, btn){
 }
 
 function clearVRAdm(){
-  ['vra-unidade','vra-mes','vra-ano','vra-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['vra-unidade','vra-resp','vra-mes','vra-ano','vra-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   renderVRAdm();
 }
 function clearVRDoc(){
-  ['vrd-unidade','vrd-mes','vrd-ano','vrd-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['vrd-unidade','vrd-resp','vrd-mes','vrd-ano','vrd-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   renderVRDoc();
 }
 
@@ -3632,9 +3645,10 @@ function initCopaFilters(){
 }
 
 function filteredCopa(){
-  var uni=v('cp-unidade'),mes=v('cp-mes'),nome=v('cp-nome','').trim().toLowerCase();
+  var uni=v('cp-unidade'),mes=v('cp-mes'),nome=v('cp-nome','').trim().toLowerCase(),resp=v('cp-resp');
   return ALL_COPA.filter(function(r){
     if(uni&&r.unidade!==uni) return false;
+    if(resp&&getDPResp(r.unidade)!==resp) return false;
     if(mes&&r.mesAno!==mes) return false;
     if(nome&&!r.beneficiario.toLowerCase().includes(nome)) return false;
     return true;
@@ -3732,7 +3746,7 @@ function renderCopaPage(){
 function pagCopa(dir){ COPA_PAGE+=dir; renderCopaPage(); }
 
 function clearCopaFilters(){
-  ['cp-unidade','cp-mes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['cp-unidade','cp-resp','cp-mes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cp-nome').value='';
   renderCopa();
 }
