@@ -47,7 +47,7 @@ const GIFT_TABLE = {
 const GIFT_YEARS = [2025, 2026, 2027];
 
 // Mapeamento de siglas por responsável DP (MRI=MR e NS=CH são variantes aceitas)
-const DP_JESSICA_UNITS  = ['ME','BOD','BR','GR','NT','VP','VO','NL','MRI','MR','TJ','CG','CX','DT','ED','EC NEW','RC'];
+const DP_JESSICA_UNITS  = ['ME','BOD','BR','GR','NT','VP','VO','NL','MRI','MR','TJ','CG','CX','DT','ED','EC NEW','RC','TOSCA','ONLINE','BOL'];
 const DP_PRISCILA_UNITS = ['IT','BF','IG','NI','FG','PC','LJ','IP','TQ','CP','VQ','NS','CH','BG','PN','PO'];
 
 function getDPResponsavel_(unidade) {

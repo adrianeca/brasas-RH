@@ -729,7 +729,7 @@ Nuvem de sentimentos na aba Desligamentos, construída a partir dos campos `come
 Dropdown **"Responsável"** adicionado à barra de filtros de todas as 5 abas DP: Horas, Faltas, VR Administrativo, VR Docente e Coparticipação.
 
 **Mapeamento de siglas** (definido no frontend em `DP_JESSICA_UNITS` / `DP_PRISCILA_UNITS`):
-- **Jessica:** ME, BOD, BR, GR, NT, VP, VO, NL, MRI, MR, TJ, CG, CX, DT, ED, EC NEW, RC
+- **Jessica:** ME, BOD, BR, GR, NT, VP, VO, NL, MRI, MR, TJ, CG, CX, DT, ED, EC NEW, RC, TOSCA, ONLINE, BOL
 - **Priscila:** IT, BF, IG, NI, FG, PC, LJ, IP, TQ, CP, VQ, NS, CH, BG, PN, PO
 - `MRI` e `MR` são variantes da mesma empresa (Meier) — ambas mapeadas para Jessica
 - `NS` e `CH` são variantes da mesma empresa (Cachambi) — ambas mapeadas para Priscila
