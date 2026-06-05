@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const SPREADSHEET_ID     = '1BDiPjv0FqRJp5EwcvLdYXVvEAWesvwdEgbhYdnTlqPY';
+const USERS_SPREADSHEET_ID = '1eZPbzhzjhjHoPwMhAW5YvOZgYiAvlTYc07dRan6Lyoc';
 const SHEET_NAME         = 'RJ - UNIDADES';
 const ENGAGEMENT_SHEET_ID   = SPREADSHEET_ID;
 const ENGAGEMENT_SHEET_NAME = 'Questionário';
@@ -17,7 +18,7 @@ function normalizeH_(h) {
 
 function getUsers_() {
   try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const ss = SpreadsheetApp.openById(USERS_SPREADSHEET_ID);
     const sheet = ss.getSheetByName('USUARIOS');
     if (!sheet) return {};
     const raw = sheet.getDataRange().getValues();
@@ -59,7 +60,7 @@ function getDPResponsavel_(unidade) {
 
 function _getRolePermissions_(role, ss) {
   try {
-    if (!ss) ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    if (!ss) ss = SpreadsheetApp.openById(USERS_SPREADSHEET_ID);
     const sheet = ss.getSheetByName('ROLES');
     if (!sheet) return null;
     const raw = sheet.getDataRange().getValues();
@@ -147,8 +148,8 @@ function getGoogleSession_() {
 }
 
 // ID da planilha onde o Hub armazena as sessões (aba SESSOES).
-// Por padrão igual ao spreadsheet do RH; alterar se o Hub usar planilha própria.
-const HUB_SPREADSHEET_ID = SPREADSHEET_ID;
+// SESSOES, USUARIOS e ROLES estão na planilha do Hub (USERS_SPREADSHEET_ID).
+const HUB_SPREADSHEET_ID = USERS_SPREADSHEET_ID;
 
 // Valida token do Hub e cria sessão local no CacheService.
 // Chamada assincronamente pelo frontend para não bloquear o carregamento da página.
@@ -182,7 +183,7 @@ function validateAndCreateSession(hubToken) {
 
       const localToken = Utilities.getUuid();
       // Reutiliza ss quando Hub e RH usam a mesma planilha — evita segundo openById
-      const ssForRoles = HUB_SPREADSHEET_ID === SPREADSHEET_ID ? ss : null;
+      const ssForRoles = HUB_SPREADSHEET_ID === USERS_SPREADSHEET_ID ? ss : null;
       const allowedPages = _getRolePermissions_(role, ssForRoles);
       const sessData = { email, name, role, unidade };
       if (allowedPages) sessData.allowedPages = allowedPages;

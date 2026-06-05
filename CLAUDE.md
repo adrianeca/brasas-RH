@@ -20,7 +20,8 @@ Dashboard interno de RH da rede BRASAS RJ, construído em **Google Apps Script**
 | Constante | ID da planilha | Aba principal |
 |---|---|---|
 | `SPREADSHEET_ID` | `1BDiPjv0FqRJp5EwcvLdYXVvEAWesvwdEgbhYdnTlqPY` | `RJ - UNIDADES` |
-| `ENGAGEMENT_SHEET_ID` | mesmo ID acima | `Questionário` |
+| `USERS_SPREADSHEET_ID` | `1eZPbzhzjhjHoPwMhAW5YvOZgYiAvlTYc07dRan6Lyoc` | `USUARIOS`, `ROLES`, `SESSOES` (planilha do Hub) |
+| `ENGAGEMENT_SHEET_ID` | mesmo ID do `SPREADSHEET_ID` | `Questionário` |
 | `HORAS_SPREADSHEET_ID` | `1VNeT_tN6dJItg-bZti1zqdQbmz-0silTVH--nJhHZQg` | `Horas_2024+` |
 | `VR_SPREADSHEET_ID` | `1PgcBeGF9GKmt_jwNBaXijzF8T5jhBmGV2LssXGrsoRg` | `db_administrativo`, `db_docente` |
 | `COPA_SPREADSHEET_ID` | `1MGlfK7DXbnLpl55zc7AnzJvxDnsEA1umCeAbWRL5HhA` | `oficial_coparticipação` |
