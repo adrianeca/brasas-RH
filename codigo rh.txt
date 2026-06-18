@@ -150,6 +150,20 @@ function getGoogleSession_() {
 // ID da planilha onde o Hub armazena as sessões (aba SESSOES).
 // SESSOES, USUARIOS e ROLES estão na planilha do Hub (USERS_SPREADSHEET_ID).
 const HUB_SPREADSHEET_ID = USERS_SPREADSHEET_ID;
+const HUB_URL = 'https://script.google.com/a/macros/brasas.com/s/AKfycbyF7BArYMYFtcQY7_4RTGGPw89yNohAjR7eGptItP-EsnWhNfiZR2ISRaHdAkwlLSlr/exec';
+
+// Mapeamento das permissões rh_* (coluna ACESSOS da aba SESSOES) → IDs de aba do dashboard
+const RH_ACESSOS_MAP = {
+  'rh_visao':         'geral',
+  'rh_people':        'people',
+  'rh_professores':   'professores',
+  'rh_cohort':        'cohort',
+  'rh_engajamento':   'engajamento',
+  'rh_desligamentos': 'desligamentos',
+  'rh_dp':            ['horas','faltas','vr','copa'],
+  'rh_brindes':       'brindes',
+  'rh_wellhub':       'wellhub',
+};
 
 // Valida token do Hub e cria sessão local no CacheService.
 // Chamada assincronamente pelo frontend para não bloquear o carregamento da página.
@@ -166,7 +180,7 @@ function validateAndCreateSession(hubToken) {
       const row = raw[r];
       if (String(row[0]||'').trim() !== String(hubToken).trim()) continue;
 
-      // Valida expiração (col G = índice 6); parseDate_ suporta DD/MM/YYYY HH:MM:SS
+      // Valida expiração (col G = índice 6)
       const expiryRaw = row[6];
       if (expiryRaw) {
         const expiry = expiryRaw instanceof Date ? expiryRaw : parseDate_(expiryRaw);
@@ -176,22 +190,32 @@ function validateAndCreateSession(hubToken) {
       const email = String(row[1]||'').trim().toLowerCase();
       if (!email) return { ok: false, error: 'Email não encontrado na sessão.' };
 
-      // Lê nome, role e unidade diretamente do SESSOES — elimina chamada a getUsers_()
       const name    = String(row[2]||'').trim() || email;
       const role    = String(row[3]||'').trim().toLowerCase() || 'viewer';
-      const unidade = String(row[4]||'').trim();
+      const unidade = String(row[4]||'').trim(); // vazio = acesso a todas as unidades
+
+      // Col H (índice 7) = ACESSOS — lista separada por vírgula
+      const acessosRaw = String(row[7]||'').trim();
+      const acessos = acessosRaw.split(',').map(a => a.trim().toLowerCase()).filter(Boolean);
+
+      // Verifica se tem acesso ao painel RH (precisa ter 'rh' ou pelo menos um 'rh_*')
+      const hasRh = acessos.includes('rh') || acessos.some(a => a.startsWith('rh_'));
+      if (!hasRh) return { ok: false, error: 'Sem acesso ao painel RH.' };
+
+      // Mapeia rh_* → IDs de aba
+      const allowedPages = [];
+      acessos.forEach(a => {
+        const mapped = RH_ACESSOS_MAP[a];
+        if (!mapped) return;
+        const tabs = Array.isArray(mapped) ? mapped : [mapped];
+        tabs.forEach(t => { if (!allowedPages.includes(t)) allowedPages.push(t); });
+      });
 
       const localToken = Utilities.getUuid();
-      // Reutiliza ss quando Hub e RH usam a mesma planilha — evita segundo openById
-      const ssForRoles = HUB_SPREADSHEET_ID === USERS_SPREADSHEET_ID ? ss : null;
-      const allowedPages = _getRolePermissions_(role, ssForRoles);
-      const sessData = { email, name, role, unidade };
-      if (allowedPages) sessData.allowedPages = allowedPages;
+      const sessData = { email, name, role, unidade, allowedPages };
       CacheService.getScriptCache().put('sess_' + localToken, JSON.stringify(sessData), SESSION_TTL);
 
-      const result = { ok: true, token: localToken, name, role, unidade };
-      if (allowedPages) result.allowedPages = allowedPages;
-      return result;
+      return { ok: true, token: localToken, name, role, unidade, allowedPages };
     }
     return { ok: false, error: 'Token não encontrado.' };
   } catch(e) {
@@ -200,9 +224,14 @@ function validateAndCreateSession(hubToken) {
 }
 
 function doGet(e) {
+  const hubToken = (e && e.parameter && e.parameter.s) || '';
+  if (!hubToken) {
+    return HtmlService.createHtmlOutput(
+      '<!DOCTYPE html><html><head><script>window.top.location.href="' + HUB_URL + '";</script></head><body></body></html>'
+    ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
   const template = HtmlService.createTemplateFromFile('Index');
-  // Passa o token bruto do Hub para o frontend; validação acontece assincronamente
-  template.hubToken = (e && e.parameter && e.parameter.s) || '';
+  template.hubToken = hubToken;
   return template.evaluate()
     .setTitle('BRASAS Analytics · RH')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
@@ -310,9 +339,8 @@ function getData(token) {
         chaveMatriculaDP: String(row[38]||'').trim().split('|').pop().trim(),
       });
     }
-    const role = session.role;
     const unidadeSessao = session.unidade || '';
-    const result = (role === 'diretor' && unidadeSessao)
+    const result = unidadeSessao
       ? employees.filter(e => e.todasUnidades.includes(unidadeSessao))
       : employees;
     return { ok: true, employees: result, session, ts: new Date().toISOString() };
@@ -481,9 +509,8 @@ function getBrindesConsolidado(token) {
         giftInfo,
       });
     }
-    const role = session.role;
-    const uni  = session.unidade || '';
-    const filtered = (role === 'diretor' && uni) ? rows.filter(r => r.unidade === uni) : rows;
+    const uni = session.unidade || '';
+    const filtered = uni ? rows.filter(r => r.unidade === uni) : rows;
     return { ok: true, rows: filtered };
   } catch(e) {
     return { ok: false, error: e.message };
@@ -555,11 +582,8 @@ function getHorasData(token) {
       });
     }
 
-    const role = session.role;
     const unidadeSessao = session.unidade || '';
-    const filteredRows = (role === 'diretor' && unidadeSessao)
-      ? rows.filter(r => r.unidade === unidadeSessao)
-      : rows;
+    const filteredRows = unidadeSessao ? rows.filter(r => r.unidade === unidadeSessao) : rows;
     return { ok: true, rows: filteredRows };
   } catch(e) {
     return { ok: false, error: e.message };
@@ -629,9 +653,8 @@ function getVRData(token) {
       });
     }
 
-    const role = session.role;
     const uni = session.unidade || '';
-    const filterUni = (arr) => (role === 'diretor' && uni) ? arr.filter(r => r.unidade === uni) : arr;
+    const filterUni = (arr) => uni ? arr.filter(r => r.unidade === uni) : arr;
 
     return { ok: true, adm: filterUni(adm), doc: filterUni(doc) };
   } catch(e) {
@@ -710,9 +733,8 @@ function getCopaData(token) {
       });
     }
 
-    const role = session.role;
     const uni = session.unidade || '';
-    const result = (role === 'diretor' && uni) ? rows.filter(r => r.unidade === uni) : rows;
+    const result = uni ? rows.filter(r => r.unidade === uni) : rows;
     return { ok: true, rows: result };
   } catch(e) {
     return { ok: false, error: e.message };
@@ -868,9 +890,8 @@ function getTurmasData(token) {
       });
     }
 
-    const role = session.role;
     const uni = session.unidade || '';
-    const filtered = (role === 'diretor' && uni) ? rows.filter(r => r.unidade === uni) : rows;
+    const filtered = uni ? rows.filter(r => r.unidade === uni) : rows;
     return { ok: true, rows: filtered };
   } catch(e) {
     return { ok: false, error: e.message };
@@ -966,10 +987,10 @@ function getHistoricoTurmas(token) {
       });
     }
 
-    const role = session.role, uni = session.unidade || '';
+    const uni = session.unidade || '';
     const result = months.map(m => {
       let rows = monthRows[m.key] || [];
-      if (role === 'diretor' && uni) rows = rows.filter(r => r.unidade === uni);
+      if (uni) rows = rows.filter(r => r.unidade === uni);
       return { mes: m.mesStr, rows };
     });
     return { ok: true, meses: result };
@@ -1036,8 +1057,8 @@ function getDropoutsData(token) {
       });
     }
 
-    const role = session.role, uni = session.unidade||'';
-    const filtered = (role==='diretor'&&uni) ? rows.filter(r=>r.unidade===uni) : rows;
+    const uni = session.unidade||'';
+    const filtered = uni ? rows.filter(r=>r.unidade===uni) : rows;
     const debugD = {matColUsed: matColName, matColIdx, totalRows: rows.length,
                     sample: rows.slice(0,3).map(r=>({chave:r.chaveMatricula, teacher:r.teacher}))};
     return { ok: true, rows: filtered, debug: debugD };
@@ -1105,8 +1126,8 @@ function getNotasData(token) {
       });
     }
 
-    const role = session.role, uni = session.unidade||'';
-    const filtered = (role==='diretor'&&uni) ? rows.filter(r=>r.unidade===uni) : rows;
+    const uni = session.unidade||'';
+    const filtered = uni ? rows.filter(r=>r.unidade===uni) : rows;
     const debug = rows.length===0 ? {headers, sampleRow1, skippedNoChave, skippedNoDate, skippedNonNumNota, totalRaw:raw.length-1} : null;
     return { ok: true, rows: filtered, debug };
   } catch(e) { return { ok: false, error: e.message }; }
@@ -1162,8 +1183,7 @@ function getNotasMediasData(token) {
       ? { hdrs: hdrs.slice(0,10), iAp, iNota, iUn1, iUn2, iMat, totalRaw: raw.length-1 }
       : { rows: rows.length };
 
-    // diretor vê só sua unidade
-    const filtered = (session.role === 'diretor' && session.unidade)
+    const filtered = session.unidade
       ? rows.filter(r => r.unidade === session.unidade)
       : rows;
 

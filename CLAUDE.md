@@ -27,22 +27,42 @@ Dashboard interno de RH da rede BRASAS RJ, construído em **Google Apps Script**
 | `COPA_SPREADSHEET_ID` | `1MGlfK7DXbnLpl55zc7AnzJvxDnsEA1umCeAbWRL5HhA` | `oficial_coparticipação` |
 | `TURMAS_SPREADSHEET_ID` | `1O5mYkfiFKpSd0aFxWVWjXJFxlbw6jYnDZX0SbiDda5M` | `db_max` |
 
-### Autenticação (Google SSO via Hub)
+### Autenticação (via Hub)
 
-- Login via conta Google Workspace (`brasas.com`) — sem formulário de email/senha.
-- `doGet()` chama `getGoogleSession_()` que usa `Session.getActiveUser().getEmail()` para identificar o usuário.
-- O email é consultado na aba `USUARIOS` da planilha principal (colunas: email, ~~senha~~, nome, role, unidade — a coluna senha não é mais usada).
-- Se a sessão for criada no servidor, o token é injetado no HTML via template scriptlet `<?!= initialSession ?>`.
-- Se `Session.getActiveUser()` retornar vazio (configuração de deploy), o frontend chama `loginWithGoogle()` como fallback via `google.script.run`.
+- Acesso direto ao painel sem token (`?s=`) → `doGet()` redireciona para o Hub (`HUB_URL`) via `window.top.location.href`.
+- Acesso via Hub → URL contém `?s=hubToken` → `doGet()` injeta o token no template → frontend chama `validateAndCreateSession(hubToken)`.
+- `validateAndCreateSession()` lê a aba `SESSOES` da planilha do Hub:
+  - **Col A** — token
+  - **Col B** — email
+  - **Col C** — nome
+  - **Col D** — role (mantido na sessão para outros fins, não usado para autorização no RH)
+  - **Col E** — unidade: se preenchida, todos os dados são filtrados por ela; vazio = acesso a todas
+  - **Col G** — expiração
+  - **Col H** — ACESSOS: lista separada por vírgula com as permissões do usuário
 - Sessão cria UUID no `CacheService` com `SESSION_TTL = 8h`. Todas as funções de dados exigem token válido.
-- **Configuração de deploy necessária:** o webapp deve estar publicado com acesso restrito a usuários do domínio `brasas.com` (não anônimo), para que `Session.getActiveUser()` retorne o email correto.
 
-### Roles
+### Permissões (coluna ACESSOS — col H de SESSOES)
 
-- **`admin`** — vê todos os dados de todas as unidades.
-- **`diretor`** — vê Visão Geral, People, Professores, Brindes, Horas, Faltas e VR — filtrado pela própria unidade no backend.
-- **`marketing`** — acesso às abas Visão Geral e Brindes.
-- **`dp`** — acesso às abas Visão Geral, People, Desligamentos, Horas, Faltas, VR e Coparticipação.
+Valores relevantes para o painel RH:
+
+| Valor em ACESSOS | Efeito no painel |
+|---|---|
+| `rh` | Permite ver o painel no Hub; sozinho abre o painel sem abas |
+| `rh_visao` | Aba Visão Geral |
+| `rh_people` | Aba People Analytics |
+| `rh_professores` | Aba Professores |
+| `rh_cohort` | Aba Cohort |
+| `rh_engajamento` | Aba Engajamento |
+| `rh_desligamentos` | Aba Desligamentos |
+| `rh_dp` | Dropdown DP (Horas, Faltas, VR, Coparticipação) |
+| `rh_brindes` | Aba Brindes |
+| `rh_wellhub` | Aba Wellhub |
+
+Mapeamento definido em `RH_ACESSOS_MAP` no backend. Acesso negado se a coluna H não contiver `rh` nem nenhum `rh_*`.
+
+### Filtro por unidade
+
+Todas as funções de dados filtram pelo campo `session.unidade` (col E de SESSOES). Se vazio, retornam todos os dados sem filtro. O antigo filtro `role === 'diretor'` foi removido.
 
 ### Funções principais
 
