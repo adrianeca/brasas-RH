@@ -653,10 +653,56 @@ function getVRData(token) {
       });
     }
 
+    const sheetAdmSP = ss.getSheetByName('db_adm_SP');
+    const rawAdmSP = sheetAdmSP ? sheetAdmSP.getDataRange().getValues() : [];
+    const colAdmSP = {};
+    if (rawAdmSP.length) rawAdmSP[0].forEach((h,i) => { colAdmSP[String(h).trim()] = i; });
+    const gasp = (row, name) => { const i = colAdmSP[name]; return i !== undefined ? row[i] : ''; };
+    const admSP = [];
+    for (let r = 1; r < rawAdmSP.length; r++) {
+      const row = rawAdmSP[r];
+      const unidade = String(gasp(row,'Unidade')||'').trim();
+      if (!unidade) continue;
+      admSP.push({
+        unidade,
+        mes:             String(gasp(row,'Mês')||'').trim(),
+        ano:             String(gasp(row,'Ano')||'').trim(),
+        matricula:       String(gasp(row,'Matrícula')||'').trim(),
+        nome:            String(gasp(row,'Administrativo')||'').trim(),
+        hPrevSemanal:    numCol(row, colAdmSP['Horas Previstas Semanais']),
+        difHorSemMesAnt: numCol(row, colAdmSP['Diferença de Horas Semanais (Mês Anterior)']),
+        valorPagarVR:    numCol(row, colAdmSP['Valor a Pagar VR']),
+        valorPagarVA:    numCol(row, colAdmSP['Valor a Pagar VA']),
+      });
+    }
+
+    const sheetDocSP = ss.getSheetByName('db_doc_SP');
+    const rawDocSP = sheetDocSP ? sheetDocSP.getDataRange().getValues() : [];
+    const colDocSP = {};
+    if (rawDocSP.length) rawDocSP[0].forEach((h,i) => { colDocSP[String(h).trim()] = i; });
+    const gdsp = (row, name) => { const i = colDocSP[name]; return i !== undefined ? row[i] : ''; };
+    const docSP = [];
+    for (let r = 1; r < rawDocSP.length; r++) {
+      const row = rawDocSP[r];
+      const unidade = String(gdsp(row,'Unidade')||'').trim();
+      if (!unidade) continue;
+      docSP.push({
+        unidade,
+        mes:           String(gdsp(row,'Mês')||'').trim(),
+        ano:           String(gdsp(row,'Ano')||'').trim(),
+        matricula:     String(gdsp(row,'Matrícula')||'').trim(),
+        nome:          String(gdsp(row,'Docente')||'').trim(),
+        chPrevisto:    numCol(row, colDocSP['CH Previsto']),
+        difDiasMesAnt: numCol(row, colDocSP['Diferença em dias mês anterior']),
+        valorPagarVR:  numCol(row, colDocSP['Valor a Pagar VR']),
+        valorPagarVA:  numCol(row, colDocSP['Valor a Pagar VA']),
+      });
+    }
+
     const uni = session.unidade || '';
     const filterUni = (arr) => uni ? arr.filter(r => r.unidade === uni) : arr;
 
-    return { ok: true, adm: filterUni(adm), doc: filterUni(doc) };
+    return { ok: true, adm: filterUni(adm), doc: filterUni(doc), admSP: filterUni(admSP), docSP: filterUni(docSP) };
   } catch(e) {
     return { ok: false, error: e.message };
   }
@@ -1332,7 +1378,9 @@ function getWellhubData(token) {
         status:     g(row, 'Status'),
       });
     }
-    return { ok: true, rows };
+    const uni = session.unidade || '';
+    const filtered = uni ? rows.filter(r => r.empresa === uni) : rows;
+    return { ok: true, rows: filtered };
   } catch(e) {
     return { ok: false, error: e.message };
   }

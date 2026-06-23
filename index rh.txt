@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -865,6 +865,8 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   <div style="display:flex;gap:8px;margin-bottom:20px">
     <button class="toggle-btn active" id="vrTabAdm" onclick="switchVrTab('adm',this)" style="border-radius:var(--radius-sm);border:1.5px solid var(--gray-200)">VR Administrativo</button>
     <button class="toggle-btn" id="vrTabDoc" onclick="switchVrTab('doc',this)" style="border-radius:var(--radius-sm);border:1.5px solid var(--gray-200)">VR Docente</button>
+    <button class="toggle-btn" id="vrTabAdmSP" onclick="switchVrTab('admSP',this)" style="border-radius:var(--radius-sm);border:1.5px solid var(--gray-200)">VR Adm SP</button>
+    <button class="toggle-btn" id="vrTabDocSP" onclick="switchVrTab('docSP',this)" style="border-radius:var(--radius-sm);border:1.5px solid var(--gray-200)">VR Doc SP</button>
   </div>
 
   <!-- ADMINISTRATIVO -->
@@ -942,6 +944,84 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
             <th class="num">Valor a Descontar</th>
           </tr></thead>
           <tbody id="tblVRDoc"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADM SP -->
+  <div id="vr-admSP-panel" style="display:none">
+    <div class="filters-bar">
+      <div class="filter-group"><label>Unidade</label><select id="vraSP-unidade" onchange="renderVRAdmSP()"><option value="">Todas</option></select></div>
+      <div class="filter-group"><label>Responsável</label><select id="vraSP-resp" onchange="renderVRAdmSP()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
+      <div class="filter-group"><label>Mês</label><select id="vraSP-mes" onchange="renderVRAdmSP()"><option value="">Todos</option></select></div>
+      <div class="filter-group"><label>Ano</label><select id="vraSP-ano" onchange="renderVRAdmSP()"><option value="">Todos</option></select></div>
+      <div class="filter-group" style="flex:2"><label>Nome</label><select id="vraSP-nome" onchange="renderVRAdmSP()"><option value="">Todos</option></select></div>
+      <div class="filter-actions"><button class="btn-clear" onclick="clearVRAdmSP()">Limpar</button></div>
+    </div>
+    <div style="display:flex;gap:16px;margin-bottom:24px">
+      <div class="gift-summary-card" style="flex:1"><div class="gift-summary-label">Valor a Pagar VR</div><div class="gift-summary-value" id="vraSP-total-vr">R$ 0,00</div></div>
+      <div class="gift-summary-card" style="flex:1"><div class="gift-summary-label">Valor a Pagar VA</div><div class="gift-summary-value" id="vraSP-total-va" style="color:var(--teal-600)">R$ 0,00</div></div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div><div class="section-title">VR Administrativo SP</div><div class="section-subtitle">Dados consolidados por colaborador</div></div>
+        <div class="section-actions">
+          <div class="section-badge" id="vraSP-badge">0 registros</div>
+          <button class="btn-download" onclick="downloadVRAdmSPCSV()">⬇ Exportar CSV</button>
+          <button class="btn-sheets" id="sheets-vraSP" onclick="openVRAdmSPSheets(this)">↗ Abrir no Sheets</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr>
+            <th>Unidade</th><th>Mês</th><th class="num">Ano</th>
+            <th>Matrícula</th><th>Nome</th>
+            <th class="num">Hs Previstas Semanais</th>
+            <th class="num">Dif. Hs Semanais (Mês Ant.)</th>
+            <th class="num">Valor a Pagar VR</th>
+            <th class="num">Valor a Pagar VA</th>
+          </tr></thead>
+          <tbody id="tblVRAdmSP"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOC SP -->
+  <div id="vr-docSP-panel" style="display:none">
+    <div class="filters-bar">
+      <div class="filter-group"><label>Unidade</label><select id="vrdSP-unidade" onchange="renderVRDocSP()"><option value="">Todas</option></select></div>
+      <div class="filter-group"><label>Responsável</label><select id="vrdSP-resp" onchange="renderVRDocSP()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
+      <div class="filter-group"><label>Mês</label><select id="vrdSP-mes" onchange="renderVRDocSP()"><option value="">Todos</option></select></div>
+      <div class="filter-group"><label>Ano</label><select id="vrdSP-ano" onchange="renderVRDocSP()"><option value="">Todos</option></select></div>
+      <div class="filter-group" style="flex:2"><label>Docente</label><select id="vrdSP-nome" onchange="renderVRDocSP()"><option value="">Todos</option></select></div>
+      <div class="filter-actions"><button class="btn-clear" onclick="clearVRDocSP()">Limpar</button></div>
+    </div>
+    <div style="display:flex;gap:16px;margin-bottom:24px">
+      <div class="gift-summary-card" style="flex:1"><div class="gift-summary-label">Valor a Pagar VR</div><div class="gift-summary-value" id="vrdSP-total-vr">R$ 0,00</div></div>
+      <div class="gift-summary-card" style="flex:1"><div class="gift-summary-label">Valor a Pagar VA</div><div class="gift-summary-value" id="vrdSP-total-va" style="color:var(--teal-600)">R$ 0,00</div></div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div><div class="section-title">VR Docente SP</div><div class="section-subtitle">Dados consolidados por professor</div></div>
+        <div class="section-actions">
+          <div class="section-badge" id="vrdSP-badge">0 registros</div>
+          <button class="btn-download" onclick="downloadVRDocSPCSV()">⬇ Exportar CSV</button>
+          <button class="btn-sheets" id="sheets-vrdSP" onclick="openVRDocSPSheets(this)">↗ Abrir no Sheets</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr>
+            <th>Unidade</th><th>Mês</th><th class="num">Ano</th>
+            <th>Matrícula</th><th>Docente</th>
+            <th class="num">CH Previsto</th>
+            <th class="num">Dif. Dias (Mês Ant.)</th>
+            <th class="num">Valor a Pagar VR</th>
+            <th class="num">Valor a Pagar VA</th>
+          </tr></thead>
+          <tbody id="tblVRDocSP"></tbody>
         </table>
       </div>
     </div>
@@ -3448,7 +3528,7 @@ function clearFaltasFilters(){
   renderFaltas();
 }
 
-var ALL_VR_ADM=[], ALL_VR_DOC=[];
+var ALL_VR_ADM=[], ALL_VR_DOC=[], ALL_VR_ADM_SP=[], ALL_VR_DOC_SP=[];
 
 function loadVRData(){
   google.script.run
@@ -3457,9 +3537,13 @@ function loadVRData(){
       if(!r.ok){ console.warn('VR:',r.error); return; }
       ALL_VR_ADM=r.adm||[];
       ALL_VR_DOC=r.doc||[];
+      ALL_VR_ADM_SP=r.admSP||[];
+      ALL_VR_DOC_SP=r.docSP||[];
       initVRFilters();
       renderVRAdm();
       renderVRDoc();
+      renderVRAdmSP();
+      renderVRDocSP();
     })
     .withFailureHandler(function(e){ console.warn('VR falhou:',e.message); })
     .getVRData(TOKEN);
@@ -3477,10 +3561,22 @@ function initVRFilters(){
   var docNomes=[...new Set(ALL_VR_DOC.map(function(r){ return r.nome; }).filter(Boolean))].sort();
 
   function fill(id, vals){ var el=document.getElementById(id); if(!el) return; vals.forEach(function(v){ el.appendChild(new Option(v,v)); }); }
+  var admSPUnits=[...new Set(ALL_VR_ADM_SP.map(function(r){ return r.unidade; }).filter(Boolean))].sort();
+  var admSPMeses=[...new Set(ALL_VR_ADM_SP.map(function(r){ return r.mes; }).filter(Boolean))];
+  var admSPAnos=[...new Set(ALL_VR_ADM_SP.map(function(r){ return r.ano; }).filter(Boolean))].sort().reverse();
+  var admSPNomes=[...new Set(ALL_VR_ADM_SP.map(function(r){ return r.nome; }).filter(Boolean))].sort();
+  var docSPUnits=[...new Set(ALL_VR_DOC_SP.map(function(r){ return r.unidade; }).filter(Boolean))].sort();
+  var docSPMeses=[...new Set(ALL_VR_DOC_SP.map(function(r){ return r.mes; }).filter(Boolean))];
+  var docSPAnos=[...new Set(ALL_VR_DOC_SP.map(function(r){ return r.ano; }).filter(Boolean))].sort().reverse();
+  var docSPNomes=[...new Set(ALL_VR_DOC_SP.map(function(r){ return r.nome; }).filter(Boolean))].sort();
   fill('vra-unidade',admUnits); fill('vra-mes',admMeses); fill('vra-ano',admAnos); fill('vra-nome',admNomes);
   fill('vrd-unidade',docUnits); fill('vrd-mes',docMeses); fill('vrd-ano',docAnos); fill('vrd-nome',docNomes);
+  fill('vraSP-unidade',admSPUnits); fill('vraSP-mes',admSPMeses); fill('vraSP-ano',admSPAnos); fill('vraSP-nome',admSPNomes);
+  fill('vrdSP-unidade',docSPUnits); fill('vrdSP-mes',docSPMeses); fill('vrdSP-ano',docSPAnos); fill('vrdSP-nome',docSPNomes);
  var vraAno=document.getElementById('vra-ano'); if(vraAno) vraAno.value=String(new Date().getFullYear());
  var vrdAno=document.getElementById('vrd-ano'); if(vrdAno) vrdAno.value=String(new Date().getFullYear());
+ var vraSPAno=document.getElementById('vraSP-ano'); if(vraSPAno) vraSPAno.value=String(new Date().getFullYear());
+ var vrdSPAno=document.getElementById('vrdSP-ano'); if(vrdSPAno) vrdSPAno.value=String(new Date().getFullYear());
 }
 
 function fmtBRL(n){ return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -3550,7 +3646,9 @@ function renderVRDoc(){
 function switchVrTab(tab, btn){
   document.getElementById('vr-adm-panel').style.display=tab==='adm'?'':'none';
   document.getElementById('vr-doc-panel').style.display=tab==='doc'?'':'none';
-  document.querySelectorAll('#vrTabAdm,#vrTabDoc').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('vr-admSP-panel').style.display=tab==='admSP'?'':'none';
+  document.getElementById('vr-docSP-panel').style.display=tab==='docSP'?'':'none';
+  document.querySelectorAll('#vrTabAdm,#vrTabDoc,#vrTabAdmSP,#vrTabDocSP').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
 }
 
@@ -3562,6 +3660,76 @@ function clearVRDoc(){
   ['vrd-unidade','vrd-resp','vrd-mes','vrd-ano','vrd-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   renderVRDoc();
 }
+
+function renderVRAdmSP(){
+  var uni=v('vraSP-unidade'),mes=v('vraSP-mes'),ano=v('vraSP-ano'),nome=v('vraSP-nome'),resp=v('vraSP-resp');
+  var data=ALL_VR_ADM_SP.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(resp&&getDPResp(r.unidade)!==resp) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var totalVR=data.reduce(function(s,r){ return s+r.valorPagarVR; },0);
+  var totalVA=data.reduce(function(s,r){ return s+r.valorPagarVA; },0);
+  set('vraSP-badge',data.length+' registros');
+  set('vraSP-total-vr',fmtBRL(totalVR));
+  set('vraSP-total-va',fmtBRL(totalVA));
+  document.getElementById('tblVRAdmSP').innerHTML=data.map(function(r){
+    return '<tr>'+
+      '<td>'+esc(r.unidade)+'</td>'+
+      '<td>'+esc(r.mes)+'</td>'+
+      '<td class="num">'+esc(r.ano)+'</td>'+
+      '<td>'+esc(r.matricula)+'</td>'+
+      '<td>'+esc(String(r.nome||'').toUpperCase())+'</td>'+
+      '<td class="num">'+r.hPrevSemanal.toFixed(2)+'</td>'+
+      '<td class="num">'+r.difHorSemMesAnt.toFixed(2)+'</td>'+
+      '<td class="num" style="color:var(--success-600);font-weight:700">'+fmtBRL(r.valorPagarVR)+'</td>'+
+      '<td class="num" style="color:var(--teal-600);font-weight:700">'+fmtBRL(r.valorPagarVA)+'</td>'+
+      '</tr>';
+  }).join('')||'<tr><td colspan="9" class="table-empty">Sem dados.</td></tr>';
+}
+
+function renderVRDocSP(){
+  var uni=v('vrdSP-unidade'),mes=v('vrdSP-mes'),ano=v('vrdSP-ano'),nome=v('vrdSP-nome'),resp=v('vrdSP-resp');
+  var data=ALL_VR_DOC_SP.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(resp&&getDPResp(r.unidade)!==resp) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var totalVR=data.reduce(function(s,r){ return s+r.valorPagarVR; },0);
+  var totalVA=data.reduce(function(s,r){ return s+r.valorPagarVA; },0);
+  set('vrdSP-badge',data.length+' registros');
+  set('vrdSP-total-vr',fmtBRL(totalVR));
+  set('vrdSP-total-va',fmtBRL(totalVA));
+  document.getElementById('tblVRDocSP').innerHTML=data.map(function(r){
+    return '<tr>'+
+      '<td>'+esc(r.unidade)+'</td>'+
+      '<td>'+esc(r.mes)+'</td>'+
+      '<td class="num">'+esc(r.ano)+'</td>'+
+      '<td>'+esc(r.matricula)+'</td>'+
+      '<td>'+esc(String(r.nome||'').toUpperCase())+'</td>'+
+      '<td class="num">'+r.chPrevisto.toFixed(2)+'</td>'+
+      '<td class="num">'+r.difDiasMesAnt.toFixed(2)+'</td>'+
+      '<td class="num" style="color:var(--success-600);font-weight:700">'+fmtBRL(r.valorPagarVR)+'</td>'+
+      '<td class="num" style="color:var(--teal-600);font-weight:700">'+fmtBRL(r.valorPagarVA)+'</td>'+
+      '</tr>';
+  }).join('')||'<tr><td colspan="9" class="table-empty">Sem dados.</td></tr>';
+}
+
+function clearVRAdmSP(){
+  ['vraSP-unidade','vraSP-resp','vraSP-mes','vraSP-ano','vraSP-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  renderVRAdmSP();
+}
+function clearVRDocSP(){
+  ['vrdSP-unidade','vrdSP-resp','vrdSP-mes','vrdSP-ano','vrdSP-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  renderVRDocSP();
+}
+
 
 function showTabLoading(tabId){
   var el=document.getElementById('tab-'+tabId);
@@ -3811,6 +3979,70 @@ function openVRDocSheets(btn){
   var headers=['Unidade','Mês','Ano','Matrícula','Docente','CH Previsto','Diferença Mês Anterior (Horas)','Horas a Pagar','Valor a Pagar','Valor a Descontar'];
   var rows=data.map(function(r){ return [r.unidade,r.mes,r.ano,r.matricula,r.nome,r.chPrevisto,r.difMesAnt,r.horasPagar,r.valorPagar,r.valorDesc]; });
   _openSheets_(btn,'VR Docente BRASAS '+new Date().toISOString().slice(0,10),headers,rows);
+}
+
+function downloadVRAdmSPCSV(){
+  var uni=v('vraSP-unidade'),mes=v('vraSP-mes'),ano=v('vraSP-ano'),nome=v('vraSP-nome');
+  var data=ALL_VR_ADM_SP.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var headers=['Unidade','Mês','Ano','Matrícula','Nome','Hs Previstas Semanais','Dif. Hs Semanais (Mês Ant.)','Valor a Pagar VR','Valor a Pagar VA'];
+  var rows=data.map(function(r){ return [r.unidade,r.mes,r.ano,r.matricula,r.nome,r.hPrevSemanal,r.difHorSemMesAnt,r.valorPagarVR,r.valorPagarVA]; });
+  var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c===null||c===undefined?'':c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='vr_adm_sp_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function downloadVRDocSPCSV(){
+  var uni=v('vrdSP-unidade'),mes=v('vrdSP-mes'),ano=v('vrdSP-ano'),nome=v('vrdSP-nome');
+  var data=ALL_VR_DOC_SP.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var headers=['Unidade','Mês','Ano','Matrícula','Docente','CH Previsto','Dif. Dias (Mês Ant.)','Valor a Pagar VR','Valor a Pagar VA'];
+  var rows=data.map(function(r){ return [r.unidade,r.mes,r.ano,r.matricula,r.nome,r.chPrevisto,r.difDiasMesAnt,r.valorPagarVR,r.valorPagarVA]; });
+  var csv=[headers].concat(rows).map(function(r){ return r.map(function(c){ return '"'+String(c===null||c===undefined?'':c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='vr_doc_sp_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function openVRAdmSPSheets(btn){
+  var uni=v('vraSP-unidade'),mes=v('vraSP-mes'),ano=v('vraSP-ano'),nome=v('vraSP-nome');
+  var data=ALL_VR_ADM_SP.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var headers=['Unidade','Mês','Ano','Matrícula','Nome','Hs Previstas Semanais','Dif. Hs Semanais (Mês Ant.)','Valor a Pagar VR','Valor a Pagar VA'];
+  var rows=data.map(function(r){ return [r.unidade,r.mes,r.ano,r.matricula,r.nome,r.hPrevSemanal,r.difHorSemMesAnt,r.valorPagarVR,r.valorPagarVA]; });
+  _openSheets_(btn,'VR Adm SP BRASAS '+new Date().toISOString().slice(0,10),headers,rows);
+}
+
+function openVRDocSPSheets(btn){
+  var uni=v('vrdSP-unidade'),mes=v('vrdSP-mes'),ano=v('vrdSP-ano'),nome=v('vrdSP-nome');
+  var data=ALL_VR_DOC_SP.filter(function(r){
+    if(uni&&r.unidade!==uni) return false;
+    if(mes&&r.mes!==mes) return false;
+    if(ano&&r.ano!==ano) return false;
+    if(nome&&r.nome!==nome) return false;
+    return true;
+  });
+  var headers=['Unidade','Mês','Ano','Matrícula','Docente','CH Previsto','Dif. Dias (Mês Ant.)','Valor a Pagar VR','Valor a Pagar VA'];
+  var rows=data.map(function(r){ return [r.unidade,r.mes,r.ano,r.matricula,r.nome,r.chPrevisto,r.difDiasMesAnt,r.valorPagarVR,r.valorPagarVA]; });
+  _openSheets_(btn,'VR Doc SP BRASAS '+new Date().toISOString().slice(0,10),headers,rows);
 }
 
 function openCopaSheets(btn){
