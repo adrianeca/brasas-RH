@@ -860,6 +860,7 @@ function getDesligamentosData(token) {
         eImagem:      g(row, 'Empresa [Que imagem você leva do BRASAS?]'),
         comentario:   g(row, 'Fique à vontade para comentar o que desejar:'),
         motivoOutros: g(row, 'Se marcou a opção Outros, conte aqui o principal motivo que o levou a pedir demissão:'),
+        idade:        parseInt(g(row, 'Idade')) || null,
       });
     }
     return { ok: true, rows };

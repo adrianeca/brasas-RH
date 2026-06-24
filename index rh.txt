@@ -1192,6 +1192,11 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       </div>
       <div class="charts-grid">
         <div class="chart-container">
+          <div class="chart-title">Faixa de Idade</div>
+          <div class="chart-subtitle">Distribuição por faixa etária</div>
+          <div id="dl-idade-bars" style="padding:4px 0"></div>
+        </div>
+        <div class="chart-container">
           <div class="chart-title">Percepção Salarial</div>
           <div class="chart-subtitle">Considera salário compatível com o mercado?</div>
           <div id="dl-sal-compat" style="padding:24px 0 16px"></div>
@@ -4324,6 +4329,7 @@ function renderDesligamentos(){
   renderDlMotivos(rows);
   renderDlCargo(rows);
   renderDlTempo(rows);
+  renderDlIdade(rows);
   renderDlSalario(rows);
   renderDlSalCompat(rows);
   renderDlAvaliacoes(rows);
@@ -4491,6 +4497,36 @@ function renderDlTempo(rows){
   }).join('');
   var el=document.getElementById('dl-tempo-bars');
   if(el) el.innerHTML=html||'<div class="table-empty">Sem dados</div>';
+}
+
+function renderDlIdade(rows){
+  var faixas=['< 20','20–24','25–29','30–34','35–39','40–49','50+'];
+  var counts={'< 20':0,'20–24':0,'25–29':0,'30–34':0,'35–39':0,'40–49':0,'50+':0};
+  rows.forEach(function(r){
+    if(!r.idade) return;
+    var a=r.idade;
+    if(a<20) counts['< 20']++;
+    else if(a<=24) counts['20–24']++;
+    else if(a<=29) counts['25–29']++;
+    else if(a<=34) counts['30–34']++;
+    else if(a<=39) counts['35–39']++;
+    else if(a<=49) counts['40–49']++;
+    else counts['50+']++;
+  });
+  var maxV=Math.max.apply(null,faixas.map(function(f){ return counts[f]; }).concat([1]));
+  var total=rows.length||1;
+  var html=faixas.map(function(f){
+    var n=counts[f]; if(!n) return '';
+    var pct=Math.round(n/maxV*100);
+    var pctTotal=Math.round(n/total*100);
+    return '<div style="display:grid;grid-template-columns:80px 1fr auto;align-items:center;gap:10px;padding:5px 0">'+
+      '<div style="font-size:.78rem;font-weight:600;color:var(--navy-700)">'+f+'</div>'+
+      '<div style="background:var(--gray-100);border-radius:4px;height:20px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:#2a4d76;border-radius:4px;transition:width .4s"></div></div>'+
+      '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--gray-500);min-width:56px;text-align:right"><strong style="color:var(--navy-700)">'+n+'</strong> ('+pctTotal+'%)</div>'+
+    '</div>';
+  }).join('');
+  var el=document.getElementById('dl-idade-bars');
+  if(el) el.innerHTML=html||'<div class="table-empty">Sem dados de idade</div>';
 }
 
 function renderDlSalario(rows){
