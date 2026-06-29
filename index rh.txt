@@ -39,7 +39,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .login-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius-sm);padding:10px 14px;font-size:.82rem;color:#fca5a5;margin-top:12px;display:none}
 .login-spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--navy-300);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 20px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.cockpit-nav{background:var(--navy-900);border-bottom:1px solid rgba(255,255,255,.08);padding:0 32px}
+.cockpit-nav{background:var(--navy-900);border-bottom:1px solid rgba(255,255,255,.08);padding:0 32px;position:sticky;top:0;z-index:200}
 .cockpit-nav-inner{width:100%;display:flex;align-items:center;gap:6px}
 .cockpit-nav-logo{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-300);padding:10px 16px 10px 0;margin-right:8px;border-right:1px solid rgba(255,255,255,.1);white-space:nowrap}
 .cockpit-tab{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;font-size:.78rem;font-weight:600;color:var(--navy-300);text-decoration:none;border-bottom:2.5px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--font-main)}
@@ -66,6 +66,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{color:var(--gray-500);font-size:.9rem}
 .filters-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:var(--white);padding:20px 24px;border-radius:var(--radius);box-shadow:var(--shadow-sm);border:1px solid var(--gray-200);margin-bottom:24px}
+.tab-content > .filters-bar{position:sticky;top:48px;z-index:199;box-shadow:var(--shadow-md)}
 .filter-group{display:flex;flex-direction:column;gap:5px;min-width:130px;flex:1}
 .filter-group label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-500)}
 .filter-group select,.filter-group input[type=text],.filter-group input[type=date]{padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.85rem;color:var(--navy-800);background:var(--gray-50);min-height:38px;transition:border-color .2s;appearance:none;-webkit-appearance:none;width:100%}
@@ -635,10 +636,38 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
      </div>
       <div class="charts-grid" style="margin-bottom:24px">
         <div class="chart-container full">
-          <div class="chart-title">Top 15 com Mais e Menos Turmas Ativas</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+            <div class="chart-title">Top 15 com Mais e Menos Turmas Ativas</div>
+            <span id="turmas-baixas-badge" style="display:none;font-size:.72rem;font-weight:600;background:var(--warning-100);color:var(--warning-600);border-radius:6px;padding:3px 10px"></span>
+          </div>
           <div class="chart-subtitle">Azul = mais turmas · Âmbar = menos turmas · Linha tracejada = média BRASAS Geral</div>
           <div class="chart-canvas-wrapper" id="wrapTurmasComb" style="height:440px">
             <canvas id="chartTurmasComb"></canvas>
+          </div>
+          <div id="turmas-baixas-table" style="display:none;margin-top:20px;border-top:1px solid var(--gray-200);padding-top:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+              <div style="font-size:.8rem;font-weight:700;color:var(--warning-600)">⚠ Professores com menos de <span id="turmas-baixas-limite-label">4</span> turmas ativas</div>
+              <div style="font-size:.75rem;color:var(--gray-500)" id="turmas-baixas-pag-info"></div>
+            </div>
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse;font-size:.78rem">
+                <thead>
+                  <tr style="background:var(--gray-50);border-bottom:2px solid var(--gray-200)">
+                    <th style="text-align:right;padding:7px 10px;font-weight:600;color:var(--gray-400);width:36px">#</th>
+                    <th style="text-align:left;padding:7px 12px;font-weight:600;color:var(--gray-600)">Professor</th>
+                    <th style="text-align:left;padding:7px 12px;font-weight:600;color:var(--gray-600)">Unidade</th>
+                    <th style="text-align:left;padding:7px 12px;font-weight:600;color:var(--gray-600)">Nível</th>
+                    <th style="text-align:right;padding:7px 12px;font-weight:600;color:var(--gray-600)">Turmas</th>
+                  </tr>
+                </thead>
+                <tbody id="turmas-baixas-tbody"></tbody>
+              </table>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px" id="turmas-baixas-pag-ctrl">
+              <button onclick="pagTurmasBaixas(-1)" id="turmas-baixas-prev" style="padding:4px 14px;border:1px solid var(--gray-200);border-radius:6px;background:var(--white);color:var(--gray-700);font-family:var(--font-main);font-size:.78rem;cursor:pointer">&#8592; Anterior</button>
+              <span id="turmas-baixas-pag-pages" style="font-size:.78rem;color:var(--gray-500)"></span>
+              <button onclick="pagTurmasBaixas(1)" id="turmas-baixas-next" style="padding:4px 14px;border:1px solid var(--gray-200);border-radius:6px;background:var(--white);color:var(--gray-700);font-family:var(--font-main);font-size:.78rem;cursor:pointer">Próxima &#8594;</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1255,6 +1284,10 @@ var ENG_DATA=[];
 var ALL_BRINDES=[];
 var ALL_TURMAS=[];
 var ALL_HISTORICO=[];
+var TURMAS_BAIXAS_LIMITE=4;
+var TURMAS_BAIXAS_PAGE_SIZE=15;
+var TURMAS_BAIXAS_PAGE=0;
+var TURMAS_BAIXAS_ROWS=[];
 var ALL_DESLIG=[];
 var ALL_DROPOUTS=[], ALL_NOTAS=[], DO_CHARTS={};
 var ALL_NOTAS_MEDIAS=[];
@@ -2490,6 +2523,43 @@ function loadTurmasData(){
     .getTurmasData(TOKEN);
 }
 
+function renderTurmasBaixasPage(){
+  var rows=TURMAS_BAIXAS_ROWS;
+  var total=rows.length;
+  var pages=Math.ceil(total/TURMAS_BAIXAS_PAGE_SIZE)||1;
+  var p=Math.max(0,Math.min(TURMAS_BAIXAS_PAGE,pages-1));
+  TURMAS_BAIXAS_PAGE=p;
+  var start=p*TURMAS_BAIXAS_PAGE_SIZE;
+  var slice=rows.slice(start,start+TURMAS_BAIXAS_PAGE_SIZE);
+  var tbody=document.getElementById('turmas-baixas-tbody');
+  if(tbody) tbody.innerHTML=slice.map(function(r,i){
+    var num=start+i+1;
+    var bg=i%2===0?'':'background:var(--gray-50)';
+    return '<tr style="border-bottom:1px solid var(--gray-100);'+bg+'">'+
+      '<td style="padding:7px 10px;text-align:right;font-family:var(--font-mono);font-size:.72rem;color:var(--gray-400)">'+num+'</td>'+
+      '<td style="padding:7px 12px;font-weight:600;color:var(--navy-800)">'+esc(r.apelido)+'</td>'+
+      '<td style="padding:7px 12px;color:var(--gray-600)">'+esc(r.unidade)+'</td>'+
+      '<td style="padding:7px 12px;color:var(--gray-600)">'+esc(r.nivel)+'</td>'+
+      '<td style="padding:7px 12px;text-align:right;font-family:var(--font-mono);font-weight:700;color:var(--warning-600)">'+r.turmas+'</td>'+
+    '</tr>';
+  }).join('');
+  var info=document.getElementById('turmas-baixas-pag-info');
+  var pgs=document.getElementById('turmas-baixas-pag-pages');
+  var ctrl=document.getElementById('turmas-baixas-pag-ctrl');
+  var prev=document.getElementById('turmas-baixas-prev');
+  var next=document.getElementById('turmas-baixas-next');
+  if(info) info.textContent=total+' professor'+(total!==1?'es':'')+' · exibindo '+(start+1)+'–'+Math.min(start+TURMAS_BAIXAS_PAGE_SIZE,total);
+  if(pgs) pgs.textContent='Página '+(p+1)+' de '+pages;
+  if(ctrl) ctrl.style.display=pages>1?'flex':'none';
+  if(prev){ prev.disabled=p===0; prev.style.opacity=p===0?'0.4':'1'; }
+  if(next){ next.disabled=p>=pages-1; next.style.opacity=p>=pages-1?'0.4':'1'; }
+}
+
+function pagTurmasBaixas(dir){
+  TURMAS_BAIXAS_PAGE+=dir;
+  renderTurmasBaixasPage();
+}
+
 function renderTurmasChart(){
   var fUn=v('f-prof-unidade');
   var data=fUn?ALL_TURMAS.filter(function(r){ return r.unidade===fUn; }):ALL_TURMAS;
@@ -2514,14 +2584,36 @@ function renderTurmasChart(){
   var globalVals=Object.values(globalCounts);
   var avg=globalVals.length>0?Math.round((globalVals.reduce(function(s,v){ return s+v; },0)/globalVals.length)*10)/10:0;
 
-  // Top 15 mais turmas (decrescente)
+  // Badge + tabela de professores com < N turmas
+  var baixas=allEntries.filter(function(e){ return e[1]<TURMAS_BAIXAS_LIMITE; })
+    .sort(function(a,b){ return a[1]-b[1]||apelidoMap[a[0]].localeCompare(apelidoMap[b[0]]); });
+  var badge=document.getElementById('turmas-baixas-badge');
+  var tbl=document.getElementById('turmas-baixas-table');
+  var lbl=document.getElementById('turmas-baixas-limite-label');
+  if(lbl) lbl.textContent=TURMAS_BAIXAS_LIMITE;
+  if(badge){
+    if(baixas.length>0){ badge.textContent='⚠ '+baixas.length+' com < '+TURMAS_BAIXAS_LIMITE+' turmas'; badge.style.display=''; }
+    else { badge.style.display='none'; }
+  }
+  if(tbl){
+    if(baixas.length>0){
+      TURMAS_BAIXAS_ROWS=baixas.map(function(e){
+        return {key:e[0],apelido:apelidoMap[e[0]]||e[0],unidade:unidadeMap[e[0]]||'—',nivel:nivelMap[e[0]]||'—',turmas:e[1]};
+      });
+      TURMAS_BAIXAS_PAGE=0;
+      renderTurmasBaixasPage();
+      tbl.style.display='';
+    } else {
+      TURMAS_BAIXAS_ROWS=[];
+      tbl.style.display='none';
+    }
+  }
+
+  // Gráfico Top 15 + Bottom 15
   var top15=allEntries.slice().sort(function(a,b){ return b[1]-a[1]; }).slice(0,15);
   var top15keys=top15.reduce(function(m,e){ m[e[0]]=true; return m; },{});
-
-  // Bottom 15 menos turmas (crescente, sem overlap com top15)
   var bot15=allEntries.slice().sort(function(a,b){ return a[1]-b[1]; })
     .filter(function(e){ return !top15keys[e[0]]; }).slice(0,15);
-
   var combined=top15.concat(bot15);
   var labels=combined.map(function(e){
     var key=e[0];
@@ -2531,9 +2623,6 @@ function renderTurmasChart(){
     var line2=un+(un&&nv?' · ':'')+nv;
     return line2?[ap,line2]:ap;
   });
-  var n=combined.length;
-
-  // Dois datasets separados para ter legenda correta
   var topVals=combined.map(function(e,i){ return i<top15.length?e[1]:null; });
   var botVals=combined.map(function(e,i){ return i>=top15.length?e[1]:null; });
   var avgVals=labels.map(function(){ return avg; });
@@ -2543,16 +2632,14 @@ function renderTurmasChart(){
   var ctx=document.getElementById('chartTurmasComb');
   if(ctx){
     if(CHARTS['chartTurmasComb']){ CHARTS['chartTurmasComb'].destroy(); delete CHARTS['chartTurmasComb']; }
+    if(combined.length===0){ ctx.style.display='none'; return; }
+    ctx.style.display='';
     CHARTS['chartTurmasComb']=new Chart(ctx,{
-      data:{
-        labels:labels,
-        datasets:[
-          {type:'bar',label:'Mais turmas',data:topVals,backgroundColor:'#2a4d76',borderRadius:4,barThickness:16,order:2},
-          {type:'bar',label:'Menos turmas',data:botVals,backgroundColor:'#c9a227',borderRadius:4,barThickness:16,order:2},
-          {type:'line',label:'Média BRASAS ('+avg+')',data:avgVals,borderColor:'#e05c2a',borderWidth:2,
-           borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
-        ]
-      },
+      data:{labels:labels,datasets:[
+        {type:'bar',label:'Mais turmas',data:topVals,backgroundColor:'#2a4d76',borderRadius:4,barThickness:16,order:2},
+        {type:'bar',label:'Menos turmas',data:botVals,backgroundColor:'#c9a227',borderRadius:4,barThickness:16,order:2},
+        {type:'line',label:'Média BRASAS ('+avg+')',data:avgVals,borderColor:'#e05c2a',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+      ]},
       options:{
         responsive:true,maintainAspectRatio:false,
         plugins:{
@@ -4279,6 +4366,22 @@ function loadDesligamentosData(){
         return;
       }
       ALL_DESLIG=r.rows||[];
+      // Enrich com idade de ALL_EMP quando o formulário não tem campo Idade
+      var _dlEmpIdx={};
+      (ALL_EMP||[]).forEach(function(e){ if(e.nome) _dlEmpIdx[e.nome.toLowerCase().trim()]=e; });
+      ALL_DESLIG.forEach(function(row){
+        if(row.idade) return;
+        var emp=_dlEmpIdx[row.nome?row.nome.toLowerCase().trim():''];
+        if(!emp||!emp.dataNasc) return;
+        var p=emp.dataNasc.split('/');
+        if(p.length!==3) return;
+        var nasc=new Date(+p[2],+p[1]-1,+p[0]);
+        var ref=row.dataDeslig?(function(){var q=row.dataDeslig.split('/');return q.length===3?new Date(+q[2],+q[1]-1,+q[0]):new Date();})():new Date();
+        var age=ref.getFullYear()-nasc.getFullYear();
+        var dm=ref.getMonth()-nasc.getMonth();
+        if(dm<0||(dm===0&&ref.getDate()<nasc.getDate())) age--;
+        if(age>0&&age<100) row.idade=age;
+      });
       initDlFilters();
       renderDesligamentos();
     })
@@ -4460,6 +4563,7 @@ function renderDlCargo(rows){
     else if(cu.includes('ASG')||cu.includes('PORTEIRO')||cu.includes('PINTOR')) c='Serviços Gerais';
     else if(cu.includes('GERENTE')||cu.includes('COORDENADOR')||cu.includes('DIRETOR')) c='Gestão';
     else if(cu.includes('ANALISTA')||cu.includes('ASSISTENTE')) c='Analista / Assistente';
+    else c=c.split(' ').map(function(w){ return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase(); }).join(' ');
     counts[c]=(counts[c]||0)+1;
   });
   var sorted=Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
