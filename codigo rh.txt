@@ -1389,7 +1389,7 @@ function getWellhubData(token) {
 
 function createTempSheet(token, title, headers, rows) {
   const session = checkSession(token);
-  if (!session || !session.ok) return { ok: false, error: 'Sessão inválida.' };
+  if (!session) return { ok: false, error: 'Sessão expirada. Faça login novamente.' };
   try {
     const ss = SpreadsheetApp.create(title);
     const sheet = ss.getActiveSheet();

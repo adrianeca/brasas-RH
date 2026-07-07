@@ -787,6 +787,11 @@ Botão "↗ Abrir no Sheets" adicionado ao lado de "⬇ Exportar CSV" nas tabela
 
 **CSS:** `.btn-sheets` — verde `#1a7340` / fundo `#e6f4ea`
 
+**Bug resolvido — "Sessão inválida" ao abrir no Sheets:**
+- `createTempSheet` validava com `if (!session || !session.ok)`, mas o objeto de sessão gravado no cache (`{ email, name, role, unidade, allowedPages }`) não tem propriedade `ok` — a checagem falhava sempre, para qualquer usuário
+- Correção: validar com `if (!session)`, igual a todas as outras funções de dados
+- **Regra geral:** `checkSession(token)` retorna o objeto da sessão direto (ou `null`) — nunca checar `session.ok`
+
 ---
 
 ### Aba Wellhub (`getWellhubData`)
