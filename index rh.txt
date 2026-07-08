@@ -1128,6 +1128,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
     <div class="filter-group"><label>Empresa</label><select id="wh-empresa" onchange="renderWellhub()"><option value="">Todas</option></select></div>
     <div class="filter-group"><label>Plano</label><select id="wh-plano" onchange="renderWellhub()"><option value="">Todos</option></select></div>
     <div class="filter-group"><label>Status</label><select id="wh-status" onchange="renderWellhub()"><option value="">Todos</option></select></div>
+    <div class="filter-group"><label>Colaborador</label><input type="text" id="wh-nome" placeholder="Digite um nome…" oninput="renderWellhub()" style="background-image:none"></div>
     <div class="filter-actions"><button class="btn-clear" onclick="clearWellhubFilters()">Limpar</button></div>
   </div>
 
@@ -1162,9 +1163,16 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
     </div>
     <div class="table-scroll">
       <table class="data-table">
-        <thead><tr>
-          <th>Mês</th><th>Empresa</th><th>Colaborador</th><th>Dependente</th>
-          <th>Tipo</th><th>Plano</th><th class="num">Preço Final</th><th>Status</th><th>Início</th>
+        <thead id="tblWellhubHead"><tr>
+          <th class="sortable" onclick="sortWH('mes')">Mês</th>
+          <th class="sortable" onclick="sortWH('empresa')">Empresa</th>
+          <th class="sortable" onclick="sortWH('colaborador')">Colaborador</th>
+          <th class="sortable" onclick="sortWH('dependente')">Dependente</th>
+          <th class="sortable" onclick="sortWH('tipo')">Tipo</th>
+          <th class="sortable" onclick="sortWH('plano')">Plano</th>
+          <th class="num sortable" onclick="sortWH('precoFinal')">Preço Final</th>
+          <th class="sortable" onclick="sortWH('status')">Status</th>
+          <th class="sortable" onclick="sortWH('dataInicio')">Início</th>
         </tr></thead>
         <tbody id="tblWellhubBody"></tbody>
       </table>
@@ -4167,6 +4175,7 @@ function openCopaSheets(btn){
 var ALL_WELLHUB=[];
 var WH_CHARTS={};
 var WH_PLANO_ORDER=['DIGITAL','BASIC','BASIC+','SILVER','SILVER+','GOLD','GOLD+'];
+var WH_SORT={col:'mes',dir:-1};
 
 function loadWellhubData(){
   google.script.run
@@ -4200,11 +4209,13 @@ function initWellhubFilters(){
 
 function filteredWellhub(){
   var mes=v('wh-mes'),emp=v('wh-empresa'),plano=v('wh-plano'),status=v('wh-status');
+  var nome=(v('wh-nome')||'').trim().toLowerCase();
   return ALL_WELLHUB.filter(function(r){
     if(mes&&r.mes!==mes) return false;
     if(emp&&r.empresa!==emp) return false;
     if(plano&&r.plano!==plano) return false;
     if(status&&r.status!==status) return false;
+    if(nome&&!(r.colaborador||'').toLowerCase().includes(nome)) return false;
     return true;
   });
 }
@@ -4274,19 +4285,37 @@ function renderWellhubCharts(data){
   });
 }
 
+function sortWH(col){
+  WH_SORT.dir=WH_SORT.col===col?-WH_SORT.dir:1;
+  WH_SORT.col=col;
+  renderWellhubTable(filteredWellhub());
+}
 function renderWellhubTable(data){
   set('wh-badge',data.length+' registros');
-  var html=data.map(function(r){
-    var sc=r.status==='Active'?'var(--success-600)':r.status==='Paused'?'var(--warning-600)':'var(--danger-600)';
+  // ordenação
+  var sc=WH_SORT.col,sd=WH_SORT.dir;
+  var sorted=data.slice().sort(function(a,b){
+    var av=a[sc],bv=b[sc];
+    if(typeof av==='number'&&typeof bv==='number') return (av-bv)*sd;
+    return String(av||'').localeCompare(String(bv||''))*sd;
+  });
+  // indicador visual no cabeçalho
+  document.querySelectorAll('#tblWellhubHead th').forEach(function(th){
+    th.classList.remove('sort-asc','sort-desc');
+    var fn=(th.getAttribute('onclick')||'').match(/sortWH\('(\w+)'\)/);
+    if(fn&&fn[1]===sc) th.classList.add(sd===1?'sort-asc':'sort-desc');
+  });
+  var html=sorted.map(function(r){
+    var stColor=r.status==='Active'?'var(--success-600)':r.status==='Paused'?'var(--warning-600)':'var(--danger-600)';
     return '<tr>'+
       '<td>'+esc(r.mes)+'</td>'+
-      '<td>'+esc(r.empresa)+'</td>'+
-      '<td>'+esc(r.colaborador)+'</td>'+
-      '<td>'+esc(r.dependente||'—')+'</td>'+
+      '<td>'+esc((r.empresa||'').toUpperCase())+'</td>'+
+      '<td>'+esc((r.colaborador||'').toUpperCase())+'</td>'+
+      '<td>'+esc(r.dependente?(r.dependente.toUpperCase()):'—')+'</td>'+
       '<td>'+esc(r.tipo)+'</td>'+
       '<td><span class="badge badge-nivel">'+esc(r.plano)+'</span></td>'+
       '<td class="num">'+fmtBRL(r.precoFinal)+'</td>'+
-      '<td><span style="color:'+sc+';font-weight:600">'+esc(r.status)+'</span></td>'+
+      '<td><span style="color:'+stColor+';font-weight:600">'+esc(r.status)+'</span></td>'+
       '<td style="font-size:.78rem;color:var(--gray-500)">'+esc(r.dataInicio)+'</td>'+
       '</tr>';
   }).join('');
@@ -4299,6 +4328,8 @@ function clearWellhubFilters(){
   el=document.getElementById('wh-empresa'); if(el) el.value='';
   el=document.getElementById('wh-plano');   if(el) el.value='';
   el=document.getElementById('wh-status');  if(el) el.value='';
+  el=document.getElementById('wh-nome');    if(el) el.value='';
+  WH_SORT={col:'mes',dir:-1};
   renderWellhub();
 }
 
