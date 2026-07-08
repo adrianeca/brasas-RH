@@ -403,7 +403,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         </div>
         <div class="filter-group" style="min-width:160px;flex:1"><label>Efetivo em</label><select id="f-efetivo-em" onchange="applyFilters()"><option value="">Situação atual</option><option value="2022-12-31">Final de 2022</option><option value="2023-12-31">Final de 2023</option><option value="2024-12-31">Final de 2024</option><option value="2025-12-31">Final de 2025</option></select></div>
         <div class="filter-group"><label>Status</label><select id="f-status" onchange="applyFilters()"><option value="" selected>Todos</option><option value="Ativo">Ativos</option><option value="Inativo">Inativos</option></select></div>
-        <div class="filter-group" style="min-width:160px"><label>Setor</label><div class="multisel-wrap" id="f-setor-wrap"><button type="button" class="multisel-btn" id="f-setor-btn" onclick="toggleSetorMenu(event)"><span id="f-setor-lbl">Todos</span></button><div class="multisel-menu" id="f-setor-menu"><label class="multisel-item"><input type="checkbox" value="pedagogico" onchange="toggleSetor(this)"> Pedagógico</label><label class="multisel-item"><input type="checkbox" value="gerente" onchange="toggleSetor(this)"> Gerente de Unidade</label><label class="multisel-item"><input type="checkbox" value="escritorio" onchange="toggleSetor(this)"> Escritório Central</label><label class="multisel-item"><input type="checkbox" value="administrativo" onchange="toggleSetor(this)"> Administrativo</label></div></div></div>
+        <div class="filter-group"><label>Setor</label><select id="f-setor" onchange="applyFilters()"><option value="">Todos</option><option value="pedagogico">Pedagógico</option><option value="administrativo">Administrativo</option><option value="escritorio">Escritório Central</option></select></div>
         <div class="filter-group" style="min-width:160px"><label>Função</label><div class="multisel-wrap" id="f-funcao-wrap"><button type="button" class="multisel-btn" id="f-funcao-btn" onclick="toggleFuncaoMenu(event)"><span id="f-funcao-lbl">Todas</span></button><div class="multisel-menu" id="f-funcao-menu"></div></div></div>
         <div class="filter-group" style="min-width:100px;flex:0.6"><label>Sexo</label><select id="f-sexo" onchange="applyFilters()"><option value="">Todos</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
         <div class="filter-group" style="min-width:140px;flex:0.8"><label>Mês de Nasc.</label><select id="f-nasc-mes" onchange="applyFilters()"><option value="">Todos</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
@@ -1315,7 +1315,6 @@ var SC_SIGLA_PLUGIN={id:'scSiglaPlugin',afterDatasetsDraw:function(chart){
 }};
 var DL_ANOS_SEL=[];
 var FUNCAO_SEL=[];
-var SETOR_SEL=[];
 var ENG_COLORS={pos:'#22c55e',neg:'#ef4444',neu:'#f59e0b',def:'#3d6b99'};
 // Plugin de rótulos de dados para gráficos de barras
 var BAR_LABEL_PLUGIN={id:'barLabelPlugin',afterDatasetsDraw:function(chart){
@@ -1574,7 +1573,6 @@ window.addEventListener('load',function(){
     if(!e.target.closest('#mdBrindeAno'))      closeMd('mdBrindeAno');
     if(!e.target.closest('#mdBrindeTipo'))     closeMd('mdBrindeTipo');
     if(!e.target.closest('#mdBrindeLocal')) closeMd('mdBrindeLocal');
-    if(!e.target.closest('#f-setor-wrap')){ var ms=document.getElementById('f-setor-menu'); if(ms) ms.style.display='none'; }
     if(!e.target.closest('#f-funcao-wrap')){ var mf=document.getElementById('f-funcao-menu'); if(mf) mf.style.display='none'; }
     if(!e.target.closest('#dl-ano-wrap')){ var m=document.getElementById('dl-ano-menu'); if(m) m.style.display='none'; }
   });
@@ -2015,27 +2013,23 @@ function downloadBrindesCSV(){
 function applyFilters(){
   var fEfetivo=v('f-efetivo-em');
   var fS=v('f-status'),fX=v('f-sexo'),fN=v('f-nome','').trim().toLowerCase();
+  var fSetor=v('f-setor');
   var admDe=v('f-adm-de'),admAte=v('f-adm-ate'),desDe=v('f-des-de'),desAte=v('f-des-ate');
   var fMesNasc=v('f-nasc-mes');
   FILTERED=ALL_EMP.filter(function(e){
     if(SELECTED_UNITS.length&&!e.todasUnidades.some(function(u){ return SELECTED_UNITS.includes(u); })) return false;
     if(FUNCAO_SEL.length&&FUNCAO_SEL.indexOf(e.funcao)===-1) return false;
-    if(SETOR_SEL.length){
+    if(fSetor){
       var fu=(e.funcao||'').toUpperCase();
       var un=(e.unidade||'').toUpperCase().trim();
       var nm=(e.nome||'').toUpperCase().trim();
       var EC_UNITS=['MÉTODOS','EC NEW','BOD'];
       var EC_NAMES=['ALEXANDER REBELO VIEIRA','NATASHA FRANCA SILVA XAVIER'];
-      var isPedagogico=fu.indexOf('PROFESSOR')>=0;
-      var isGerente=fu==='GERENTE DE UNIDADE';
+      var isPedagogico=fu.indexOf('PROFESSOR')>=0||fu==='GERENTE DE UNIDADE';
       var isEscritorio=EC_UNITS.indexOf(un)>=0||EC_NAMES.indexOf(nm)>=0||fu.indexOf('COORDENADOR')>=0;
-      var isAdm=!isPedagogico&&!isGerente&&!isEscritorio;
-      var match=
-        (SETOR_SEL.indexOf('pedagogico')>=0&&isPedagogico)||
-        (SETOR_SEL.indexOf('gerente')>=0&&isGerente)||
-        (SETOR_SEL.indexOf('escritorio')>=0&&isEscritorio)||
-        (SETOR_SEL.indexOf('administrativo')>=0&&isAdm);
-      if(!match) return false;
+      if(fSetor==='pedagogico'&&!isPedagogico) return false;
+      if(fSetor==='administrativo'&&(isPedagogico||isEscritorio)) return false;
+      if(fSetor==='escritorio'&&!isEscritorio) return false;
     }
     if(fX&&e.sexo!==fX) return false;
     if(fN&&!e.nome.toLowerCase().includes(fN)) return false;
@@ -2068,10 +2062,7 @@ function clearFilters(){
   FUNCAO_SEL=[];
   document.querySelectorAll('#f-funcao-menu input[type=checkbox]').forEach(function(cb){ cb.checked=false; });
   var fLbl=document.getElementById('f-funcao-lbl'); if(fLbl) fLbl.textContent='Todas';
-  SETOR_SEL=[];
-  document.querySelectorAll('#f-setor-menu input[type=checkbox]').forEach(function(cb){ cb.checked=false; });
-  var sLbl=document.getElementById('f-setor-lbl'); if(sLbl) sLbl.textContent='Todos';
-  ['f-sexo','f-nasc-mes'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['f-setor','f-sexo','f-nasc-mes'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('f-status').value='';
   ['f-nome','f-adm-de','f-adm-ate','f-des-de','f-des-ate','f-efetivo-em'].forEach(function(id){ document.getElementById(id).value=''; });
   applyFilters();
@@ -4408,20 +4399,6 @@ var DL_COMMENT_THEMES=[
   {label:'Comunicação',          keys:['comunicação','comunicacao','feedback','informação','informacao','transparência','transparencia']},
 ];
 
-function toggleSetorMenu(e){
-  e.stopPropagation();
-  var menu=document.getElementById('f-setor-menu');
-  if(menu) menu.style.display=menu.style.display==='block'?'none':'block';
-}
-function toggleSetor(cb){
-  var val=cb.value;
-  var idx=SETOR_SEL.indexOf(val);
-  if(cb.checked){ if(idx===-1) SETOR_SEL.push(val); }
-  else { if(idx!==-1) SETOR_SEL.splice(idx,1); }
-  var lbl=document.getElementById('f-setor-lbl');
-  if(lbl) lbl.textContent=SETOR_SEL.length?SETOR_SEL.length+' selecionado'+(SETOR_SEL.length>1?'s':''):'Todos';
-  applyFilters();
-}
 function toggleFuncaoMenu(e){
   e.stopPropagation();
   var menu=document.getElementById('f-funcao-menu');
