@@ -4251,7 +4251,7 @@ function renderWellhubKPIs(data){
   document.getElementById('wh-kpis').innerHTML=
     '<div class="kpi-card highlight"><div class="kpi-label">Assinantes Ativos</div><div class="kpi-value">'+ativos.length+'</div><div class="kpi-sub">Employees · Active</div></div>'+
     '<div class="kpi-card"><div class="kpi-label">Dependentes Ativos</div><div class="kpi-value">'+deps.length+'</div><div class="kpi-sub">Family Member · Active</div></div>'+
-    '<div class="kpi-card"><div class="kpi-label">Custo Total Mensal</div><div class="kpi-value">'+fmtBRL(custoTotal)+'</div><div class="kpi-sub">registros Active</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Valor Pago pelos Colaboradores</div><div class="kpi-value">'+fmtBRL(custoTotal)+'</div><div class="kpi-sub">planos ativos no período</div></div>'+
     '<div class="kpi-card"><div class="kpi-label">Plano Mais Popular</div><div class="kpi-value" style="font-size:1.1rem">'+esc(planoPop)+'</div><div class="kpi-sub">'+(planoPop!=='—'?planosCount[planoPop]+' assinantes':'—')+'</div></div>';
 }
 
