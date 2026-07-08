@@ -2028,7 +2028,7 @@ function applyFilters(){
       var isPedagogico=fu.indexOf('PROFESSOR')>=0||fu==='GERENTE DE UNIDADE';
       var isEscritorio=EC_UNITS.indexOf(un)>=0||EC_NAMES.indexOf(nm)>=0||fu.indexOf('COORDENADOR')>=0;
       if(fSetor==='pedagogico'&&!isPedagogico) return false;
-      if(fSetor==='administrativo'&&(isPedagogico||isEscritorio)) return false;
+      if(fSetor==='administrativo'&&isPedagogico) return false;
       if(fSetor==='escritorio'&&!isEscritorio) return false;
     }
     if(fX&&e.sexo!==fX) return false;
