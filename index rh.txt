@@ -403,7 +403,8 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         </div>
         <div class="filter-group" style="min-width:160px;flex:1"><label>Efetivo em</label><select id="f-efetivo-em" onchange="applyFilters()"><option value="">Situação atual</option><option value="2022-12-31">Final de 2022</option><option value="2023-12-31">Final de 2023</option><option value="2024-12-31">Final de 2024</option><option value="2025-12-31">Final de 2025</option></select></div>
         <div class="filter-group"><label>Status</label><select id="f-status" onchange="applyFilters()"><option value="" selected>Todos</option><option value="Ativo">Ativos</option><option value="Inativo">Inativos</option></select></div>
-        <div class="filter-group"><label>Função</label><select id="f-funcao" onchange="applyFilters()"><option value="">Todas</option></select></div>
+        <div class="filter-group"><label>Setor</label><select id="f-setor" onchange="applyFilters()"><option value="">Todos</option><option value="docente">Docente</option><option value="administrativo">Administrativo</option></select></div>
+        <div class="filter-group" style="min-width:160px"><label>Função</label><div class="multisel-wrap" id="f-funcao-wrap"><button type="button" class="multisel-btn" id="f-funcao-btn" onclick="toggleFuncaoMenu(event)"><span id="f-funcao-lbl">Todas</span></button><div class="multisel-menu" id="f-funcao-menu"></div></div></div>
         <div class="filter-group" style="min-width:100px;flex:0.6"><label>Sexo</label><select id="f-sexo" onchange="applyFilters()"><option value="">Todos</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
         <div class="filter-group" style="min-width:140px;flex:0.8"><label>Mês de Nasc.</label><select id="f-nasc-mes" onchange="applyFilters()"><option value="">Todos</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
         <div class="filter-group" style="min-width:240px;flex:1.5">
@@ -1305,6 +1306,7 @@ var SC_SIGLA_PLUGIN={id:'scSiglaPlugin',afterDatasetsDraw:function(chart){
   ctx.restore();
 }};
 var DL_ANOS_SEL=[];
+var FUNCAO_SEL=[];
 var ENG_COLORS={pos:'#22c55e',neg:'#ef4444',neu:'#f59e0b',def:'#3d6b99'};
 // Plugin de rótulos de dados para gráficos de barras
 var BAR_LABEL_PLUGIN={id:'barLabelPlugin',afterDatasetsDraw:function(chart){
@@ -1563,6 +1565,7 @@ window.addEventListener('load',function(){
     if(!e.target.closest('#mdBrindeAno'))      closeMd('mdBrindeAno');
     if(!e.target.closest('#mdBrindeTipo'))     closeMd('mdBrindeTipo');
     if(!e.target.closest('#mdBrindeLocal')) closeMd('mdBrindeLocal');
+    if(!e.target.closest('#f-funcao-wrap')){ var mf=document.getElementById('f-funcao-menu'); if(mf) mf.style.display='none'; }
     if(!e.target.closest('#dl-ano-wrap')){ var m=document.getElementById('dl-ano-menu'); if(m) m.style.display='none'; }
   });
   function _goHub_(){ try{ window.top.location.href=HUB_URL; }catch(ex){ try{ window.location.href=HUB_URL; }catch(ex2){} } }
@@ -1751,8 +1754,15 @@ function initFilters(){
   if(optsDiv) optsDiv.innerHTML=units.map(function(u){
     return '<label class="multi-opt"><input type="checkbox" value="'+esc(u)+'" checked onchange="handleMdUnit(this)"><span class="multi-opt-label">'+esc(u)+'</span></label>';
   }).join('');
-  [...new Set(ALL_EMP.map(function(e){ return e.funcao; }).filter(Boolean))].sort()
-    .forEach(function(f){ document.getElementById('f-funcao').appendChild(new Option(f,f)); });
+  var fFuncaoMenu=document.getElementById('f-funcao-menu');
+  if(fFuncaoMenu){
+    [...new Set(ALL_EMP.map(function(e){ return e.funcao; }).filter(Boolean))].sort()
+      .forEach(function(f){
+        var lbl=document.createElement('label'); lbl.className='multisel-item';
+        lbl.innerHTML='<input type="checkbox" value="'+esc(f)+'" onchange="toggleFuncao(this)"> '+esc(f);
+        fFuncaoMenu.appendChild(lbl);
+      });
+  }
   // rotatividade
   var rU=document.getElementById('r-unidade');
   if(rU) units.forEach(function(u){ rU.appendChild(new Option(u,u)); });
@@ -1994,12 +2004,18 @@ function downloadBrindesCSV(){
 
 function applyFilters(){
   var fEfetivo=v('f-efetivo-em');
-  var fS=v('f-status'),fF=v('f-funcao'),fX=v('f-sexo'),fN=v('f-nome','').trim().toLowerCase();
+  var fS=v('f-status'),fX=v('f-sexo'),fN=v('f-nome','').trim().toLowerCase();
+  var fSetor=v('f-setor');
   var admDe=v('f-adm-de'),admAte=v('f-adm-ate'),desDe=v('f-des-de'),desAte=v('f-des-ate');
   var fMesNasc=v('f-nasc-mes');
   FILTERED=ALL_EMP.filter(function(e){
     if(SELECTED_UNITS.length&&!e.todasUnidades.some(function(u){ return SELECTED_UNITS.includes(u); })) return false;
-    if(fF&&e.funcao!==fF) return false;
+    if(FUNCAO_SEL.length&&FUNCAO_SEL.indexOf(e.funcao)===-1) return false;
+    if(fSetor){
+      var isDocente=e.funcao&&e.funcao.toUpperCase().indexOf('PROFESSOR')>=0;
+      if(fSetor==='docente'&&!isDocente) return false;
+      if(fSetor==='administrativo'&&isDocente) return false;
+    }
     if(fX&&e.sexo!==fX) return false;
     if(fN&&!e.nome.toLowerCase().includes(fN)) return false;
     if(fEfetivo){
@@ -2028,7 +2044,10 @@ function clearFilters(){
   document.getElementById('mdAll').checked=true;
   document.querySelectorAll('#mdUnidadeOpts input[type=checkbox]').forEach(function(c){ c.checked=true; });
   updateMdDisplay();
-  ['f-funcao','f-sexo','f-nasc-mes'].forEach(function(id){ document.getElementById(id).value=''; });
+  FUNCAO_SEL=[];
+  document.querySelectorAll('#f-funcao-menu input[type=checkbox]').forEach(function(cb){ cb.checked=false; });
+  var fLbl=document.getElementById('f-funcao-lbl'); if(fLbl) fLbl.textContent='Todas';
+  ['f-setor','f-sexo','f-nasc-mes'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('f-status').value='';
   ['f-nome','f-adm-de','f-adm-ate','f-des-de','f-des-ate','f-efetivo-em'].forEach(function(id){ document.getElementById(id).value=''; });
   applyFilters();
@@ -4342,6 +4361,20 @@ var DL_COMMENT_THEMES=[
   {label:'Comunicação',          keys:['comunicação','comunicacao','feedback','informação','informacao','transparência','transparencia']},
 ];
 
+function toggleFuncaoMenu(e){
+  e.stopPropagation();
+  var menu=document.getElementById('f-funcao-menu');
+  if(menu) menu.style.display=menu.style.display==='block'?'none':'block';
+}
+function toggleFuncao(cb){
+  var val=cb.value;
+  var idx=FUNCAO_SEL.indexOf(val);
+  if(cb.checked){ if(idx===-1) FUNCAO_SEL.push(val); }
+  else { if(idx!==-1) FUNCAO_SEL.splice(idx,1); }
+  var lbl=document.getElementById('f-funcao-lbl');
+  if(lbl) lbl.textContent=FUNCAO_SEL.length?FUNCAO_SEL.length+' selecionada'+(FUNCAO_SEL.length>1?'s':''):'Todas';
+  applyFilters();
+}
 function toggleAnoMenu(e){
   e.stopPropagation();
   var menu=document.getElementById('dl-ano-menu');
