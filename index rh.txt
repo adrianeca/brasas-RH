@@ -2023,7 +2023,7 @@ function applyFilters(){
       var fu=(e.funcao||'').toUpperCase();
       var un=(e.unidade||'').toUpperCase().trim();
       var nm=(e.nome||'').toUpperCase().trim();
-      var EC_UNITS=['MÉTODOS','EC NEW','BOD'];
+      var EC_UNITS=['MÉTODOS','EC NEW','BOD','EDITORA'];
       var EC_NAMES=['ALEXANDER REBELO VIEIRA','NATASHA FRANCA SILVA XAVIER'];
       var isPedagogico=fu.indexOf('PROFESSOR')>=0||fu==='GERENTE DE UNIDADE';
       var isEscritorio=EC_UNITS.indexOf(un)>=0||EC_NAMES.indexOf(nm)>=0||fu.indexOf('COORDENADOR')>=0;
