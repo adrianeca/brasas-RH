@@ -1125,7 +1125,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 <div id="tab-wellhub" class="tab-content">
   <div class="filters-bar">
     <div class="filter-group"><label>Mês de Referência</label><select id="wh-mes" onchange="renderWellhub()"><option value="">Todos</option></select></div>
-    <div class="filter-group"><label>Empresa</label><select id="wh-empresa" onchange="renderWellhub()"><option value="">Todas</option></select></div>
+    <div class="filter-group" style="min-width:180px"><label>Empresa</label><div class="multisel-wrap" id="wh-empresa-wrap"><button type="button" class="multisel-btn" id="wh-empresa-btn" onclick="toggleWhEmpMenu(event)"><span id="wh-empresa-lbl">Todas</span></button><div class="multisel-menu" id="wh-empresa-menu"></div></div></div>
     <div class="filter-group"><label>Plano</label><select id="wh-plano" onchange="renderWellhub()"><option value="">Todos</option></select></div>
     <div class="filter-group"><label>Status</label><select id="wh-status" onchange="renderWellhub()"><option value="">Todos</option></select></div>
     <div class="filter-group"><label>Colaborador</label><input type="text" id="wh-nome" placeholder="Digite um nome…" oninput="renderWellhub()" style="background-image:none"></div>
@@ -1573,6 +1573,7 @@ window.addEventListener('load',function(){
     if(!e.target.closest('#mdBrindeAno'))      closeMd('mdBrindeAno');
     if(!e.target.closest('#mdBrindeTipo'))     closeMd('mdBrindeTipo');
     if(!e.target.closest('#mdBrindeLocal')) closeMd('mdBrindeLocal');
+    if(!e.target.closest('#wh-empresa-wrap')){ var mwe=document.getElementById('wh-empresa-menu'); if(mwe) mwe.style.display='none'; }
     if(!e.target.closest('#f-funcao-wrap')){ var mf=document.getElementById('f-funcao-menu'); if(mf) mf.style.display='none'; }
     if(!e.target.closest('#dl-ano-wrap')){ var m=document.getElementById('dl-ano-menu'); if(m) m.style.display='none'; }
   });
@@ -4183,6 +4184,7 @@ var ALL_WELLHUB=[];
 var WH_CHARTS={};
 var WH_PLANO_ORDER=['DIGITAL','BASIC','BASIC+','SILVER','SILVER+','GOLD','GOLD+'];
 var WH_SORT={col:'mes',dir:-1};
+var WH_EMP_SEL=[];
 
 function loadWellhubData(){
   google.script.run
@@ -4204,8 +4206,12 @@ function initWellhubFilters(){
   var statuses=[...new Set(ALL_WELLHUB.map(function(r){ return r.status; }).filter(Boolean))].sort();
   var whMes=document.getElementById('wh-mes');
   if(whMes) meses.forEach(function(m){ whMes.appendChild(new Option(m,m)); });
-  var whEmp=document.getElementById('wh-empresa');
-  if(whEmp) empresas.forEach(function(e){ whEmp.appendChild(new Option(e,e)); });
+  var whEmpMenu=document.getElementById('wh-empresa-menu');
+  if(whEmpMenu){ whEmpMenu.innerHTML=''; empresas.forEach(function(e){
+    var lbl=document.createElement('label'); lbl.className='multisel-item';
+    lbl.innerHTML='<input type="checkbox" value="'+esc(e)+'" onchange="toggleWhEmp(this)"> '+esc(e);
+    whEmpMenu.appendChild(lbl);
+  }); }
   var whPl=document.getElementById('wh-plano');
   if(whPl) planos.forEach(function(p){ whPl.appendChild(new Option(p,p)); });
   var whSt=document.getElementById('wh-status');
@@ -4215,11 +4221,11 @@ function initWellhubFilters(){
 }
 
 function filteredWellhub(){
-  var mes=v('wh-mes'),emp=v('wh-empresa'),plano=v('wh-plano'),status=v('wh-status');
+  var mes=v('wh-mes'),plano=v('wh-plano'),status=v('wh-status');
   var nome=(v('wh-nome')||'').trim().toLowerCase();
   return ALL_WELLHUB.filter(function(r){
     if(mes&&r.mes!==mes) return false;
-    if(emp&&r.empresa!==emp) return false;
+    if(WH_EMP_SEL.length&&WH_EMP_SEL.indexOf(r.empresa)===-1) return false;
     if(plano&&r.plano!==plano) return false;
     if(status&&r.status!==status) return false;
     if(nome&&!(r.colaborador||'').toLowerCase().includes(nome)) return false;
@@ -4331,8 +4337,10 @@ function renderWellhubTable(data){
 }
 
 function clearWellhubFilters(){
+  WH_EMP_SEL=[];
+  document.querySelectorAll('#wh-empresa-menu input[type=checkbox]').forEach(function(cb){ cb.checked=false; });
+  var eLbl=document.getElementById('wh-empresa-lbl'); if(eLbl) eLbl.textContent='Todas';
   var el;
-  el=document.getElementById('wh-empresa'); if(el) el.value='';
   el=document.getElementById('wh-plano');   if(el) el.value='';
   el=document.getElementById('wh-status');  if(el) el.value='';
   el=document.getElementById('wh-nome');    if(el) el.value='';
@@ -4399,6 +4407,20 @@ var DL_COMMENT_THEMES=[
   {label:'Comunicação',          keys:['comunicação','comunicacao','feedback','informação','informacao','transparência','transparencia']},
 ];
 
+function toggleWhEmpMenu(e){
+  e.stopPropagation();
+  var menu=document.getElementById('wh-empresa-menu');
+  if(menu) menu.style.display=menu.style.display==='block'?'none':'block';
+}
+function toggleWhEmp(cb){
+  var val=cb.value;
+  var idx=WH_EMP_SEL.indexOf(val);
+  if(cb.checked){ if(idx===-1) WH_EMP_SEL.push(val); }
+  else { if(idx!==-1) WH_EMP_SEL.splice(idx,1); }
+  var lbl=document.getElementById('wh-empresa-lbl');
+  if(lbl) lbl.textContent=WH_EMP_SEL.length?WH_EMP_SEL.length+' selecionada'+(WH_EMP_SEL.length>1?'s':''):'Todas';
+  renderWellhub();
+}
 function toggleFuncaoMenu(e){
   e.stopPropagation();
   var menu=document.getElementById('f-funcao-menu');
