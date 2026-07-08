@@ -403,7 +403,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
         </div>
         <div class="filter-group" style="min-width:160px;flex:1"><label>Efetivo em</label><select id="f-efetivo-em" onchange="applyFilters()"><option value="">Situação atual</option><option value="2022-12-31">Final de 2022</option><option value="2023-12-31">Final de 2023</option><option value="2024-12-31">Final de 2024</option><option value="2025-12-31">Final de 2025</option></select></div>
         <div class="filter-group"><label>Status</label><select id="f-status" onchange="applyFilters()"><option value="" selected>Todos</option><option value="Ativo">Ativos</option><option value="Inativo">Inativos</option></select></div>
-        <div class="filter-group"><label>Setor</label><select id="f-setor" onchange="applyFilters()"><option value="">Todos</option><option value="docente">Docente</option><option value="administrativo">Administrativo</option></select></div>
+        <div class="filter-group"><label>Setor</label><select id="f-setor" onchange="applyFilters()"><option value="">Todos</option><option value="pedagogico">Pedagógico</option><option value="gerente">Gerente de Unidade</option><option value="escritorio">Escritório Central</option><option value="administrativo">Administrativo</option></select></div>
         <div class="filter-group" style="min-width:160px"><label>Função</label><div class="multisel-wrap" id="f-funcao-wrap"><button type="button" class="multisel-btn" id="f-funcao-btn" onclick="toggleFuncaoMenu(event)"><span id="f-funcao-lbl">Todas</span></button><div class="multisel-menu" id="f-funcao-menu"></div></div></div>
         <div class="filter-group" style="min-width:100px;flex:0.6"><label>Sexo</label><select id="f-sexo" onchange="applyFilters()"><option value="">Todos</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
         <div class="filter-group" style="min-width:140px;flex:0.8"><label>Mês de Nasc.</label><select id="f-nasc-mes" onchange="applyFilters()"><option value="">Todos</option><option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option><option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option><option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select></div>
@@ -2020,9 +2020,18 @@ function applyFilters(){
     if(SELECTED_UNITS.length&&!e.todasUnidades.some(function(u){ return SELECTED_UNITS.includes(u); })) return false;
     if(FUNCAO_SEL.length&&FUNCAO_SEL.indexOf(e.funcao)===-1) return false;
     if(fSetor){
-      var isDocente=e.funcao&&e.funcao.toUpperCase().indexOf('PROFESSOR')>=0;
-      if(fSetor==='docente'&&!isDocente) return false;
-      if(fSetor==='administrativo'&&isDocente) return false;
+      var fu=(e.funcao||'').toUpperCase();
+      var un=(e.unidade||'').toUpperCase().trim();
+      var nm=(e.nome||'').toUpperCase().trim();
+      var EC_UNITS=['MÉTODOS','EC NEW','BOD'];
+      var EC_NAMES=['ALEXANDER REBELO VIEIRA','NATASHA FRANCA SILVA XAVIER'];
+      var isPedagogico=fu.indexOf('PROFESSOR')>=0;
+      var isGerente=fu==='GERENTE DE UNIDADE';
+      var isEscritorio=EC_UNITS.indexOf(un)>=0||EC_NAMES.indexOf(nm)>=0||fu.indexOf('COORDENADOR')>=0;
+      if(fSetor==='pedagogico'&&!isPedagogico) return false;
+      if(fSetor==='gerente'&&!isGerente) return false;
+      if(fSetor==='escritorio'&&!isEscritorio) return false;
+      if(fSetor==='administrativo'&&(isPedagogico||isGerente||isEscritorio)) return false;
     }
     if(fX&&e.sexo!==fX) return false;
     if(fN&&!e.nome.toLowerCase().includes(fN)) return false;
