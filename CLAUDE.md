@@ -765,6 +765,19 @@ Dropdown **"Responsável"** adicionado à barra de filtros de todas as 5 abas DP
 
 > O filtro é **manual** (visível na UI, qualquer usuário pode usar). Não há filtragem automática por sessão/login.
 
+**Bug resolvido — ME (Métodos) e ED (Editora) sumindo do filtro da Jéssica:**
+- **Sintoma:** unidades ME e ED não apareciam ao filtrar por "Jessica", mesmo estando em `DP_JESSICA_UNITS`.
+- **Causa raiz:** nas planilhas de Horas/Faltas/VR/Coparticipação, essas duas unidades são gravadas pelo **nome por extenso** (`MÉTODOS`/`METODOS`, `EDITORA`) em vez da sigla (`ME`, `ED`). `getDPResp(u)` comparava `u` direto contra as siglas da lista e nunca batia — o registro ficava sem `resp` (nem jessica, nem priscila).
+- **Solução:** `getDPResp()` agora normaliza acentos (`normalize('NFD')` + strip de combining marks) e mapeia `METODOS`→`ME` e `EDITORA`→`ED` antes de checar `DP_JESSICA_UNITS`/`DP_PRISCILA_UNITS`.
+- Backend tem uma cópia morta dessa função (`getDPResponsavel_` em `codigo rh.txt`, nunca chamada) — **não** foi corrigida por ser código não utilizado; o filtro real é 100% frontend.
+
+**Filtro de Unidade em cascata com Responsável:**
+- Ao selecionar um Responsável, o dropdown de Unidade das 7 sub-abas (Horas, Faltas, VR Adm, VR Docente, VR Adm SP, VR Doc SP, Coparticipação) passa a exibir só as unidades daquela pessoa. Ao voltar para "Todos", a lista completa de unidades volta.
+- **`syncUnidadeByResp(uniId, respId, allRows)`** — helper genérico: reconstrói as `<option>` do select de unidade a partir de `allRows` (dataset completo, não filtrado), aplicando `getDPResp()` quando há responsável selecionado. Preserva a unidade já selecionada se ela continuar válida na nova lista; caso contrário, reseta para "Todas".
+- **Wrappers por aba** (chamados no `onchange` do select de Responsável, no lugar do render direto): `onHRespChange()`, `onF2RespChange()`, `onVraRespChange()`, `onVrdRespChange()`, `onVraSPRespChange()`, `onVrdSPRespChange()`, `onCpRespChange()` — cada um chama `syncUnidadeByResp()` e depois a função de render da aba.
+- **Botões "Limpar"** (`clearHorasFilters`, `clearFaltasFilters`, `clearVRAdm`, `clearVRDoc`, `clearVRAdmSP`, `clearVRDocSP`, `clearCopaFilters`) também chamam `syncUnidadeByResp()` após zerar os campos, para repopular a lista completa de unidades (senão o select ficava travado na lista filtrada do responsável anterior mesmo com o filtro limpo).
+- O dropdown de Unidade em si (`onchange`) continua chamando o render direto — só o select de Responsável dispara a resincronização, para não reconstruir o `<select>` a cada tecla digitada em outros filtros (ex: busca por nome).
+
 ---
 
 ### Abrir no Sheets — botões nas abas DP

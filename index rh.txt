@@ -817,7 +817,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
     <div class="filter-group"><label>Ano</label><select id="h-ano" onchange="renderHoras()"><option value="">Todos</option></select></div>
     <div class="filter-group"><label>Mês</label><select id="h-mes" onchange="renderHoras()"><option value="">Todos</option></select></div>
     <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="h-unidade" onchange="renderHoras()"><option value="">Todas</option></select></div>
-    <div class="filter-group"><label>Responsável</label><select id="h-resp" onchange="renderHoras()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
+    <div class="filter-group"><label>Responsável</label><select id="h-resp" onchange="onHRespChange()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
     <div class="filter-group"><label>Nível</label><select id="h-nivel" onchange="renderHoras()"><option value="">Todos</option></select></div>
     <div class="filter-group"><label>Buscar nome/apelido</label><input type="text" id="h-nome" placeholder="Digite…" oninput="renderHoras()" style="background-image:none"></div>
     <div class="filter-actions"><button class="btn-clear" onclick="clearHorasFilters()">Limpar</button></div>
@@ -861,7 +861,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
     <div class="filter-group"><label>Ano</label><select id="f2-ano" onchange="renderFaltas()"><option value="">Todos</option></select></div>
     <div class="filter-group"><label>Mês</label><select id="f2-mes" onchange="renderFaltas()"><option value="">Todos</option></select></div>
     <div class="filter-group" style="min-width:180px;flex:2"><label>Unidade</label><select id="f2-unidade" onchange="renderFaltas()"><option value="">Todas</option></select></div>
-    <div class="filter-group"><label>Responsável</label><select id="f2-resp" onchange="renderFaltas()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
+    <div class="filter-group"><label>Responsável</label><select id="f2-resp" onchange="onF2RespChange()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
     <div class="filter-actions"><button class="btn-clear" onclick="clearFaltasFilters()">Limpar</button></div>
   </div>
   <div class="kpi-row" id="faltas-kpis"></div>
@@ -903,7 +903,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   <div id="vr-adm-panel">
     <div class="filters-bar">
       <div class="filter-group"><label>Unidade</label><select id="vra-unidade" onchange="renderVRAdm()"><option value="">Todas</option></select></div>
-      <div class="filter-group"><label>Responsável</label><select id="vra-resp" onchange="renderVRAdm()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
+      <div class="filter-group"><label>Responsável</label><select id="vra-resp" onchange="onVraRespChange()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
       <div class="filter-group"><label>Mês</label><select id="vra-mes" onchange="renderVRAdm()"><option value="">Todos</option></select></div>
       <div class="filter-group"><label>Ano</label><select id="vra-ano" onchange="renderVRAdm()"><option value="">Todos</option></select></div>
       <div class="filter-group" style="flex:2"><label>Nome</label><select id="vra-nome" onchange="renderVRAdm()"><option value="">Todos</option></select></div>
@@ -943,7 +943,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   <div id="vr-doc-panel" style="display:none">
     <div class="filters-bar">
       <div class="filter-group"><label>Unidade</label><select id="vrd-unidade" onchange="renderVRDoc()"><option value="">Todas</option></select></div>
-      <div class="filter-group"><label>Responsável</label><select id="vrd-resp" onchange="renderVRDoc()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
+      <div class="filter-group"><label>Responsável</label><select id="vrd-resp" onchange="onVrdRespChange()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
       <div class="filter-group"><label>Mês</label><select id="vrd-mes" onchange="renderVRDoc()"><option value="">Todos</option></select></div>
       <div class="filter-group"><label>Ano</label><select id="vrd-ano" onchange="renderVRDoc()"><option value="">Todos</option></select></div>
       <div class="filter-group" style="flex:2"><label>Docente</label><select id="vrd-nome" onchange="renderVRDoc()"><option value="">Todos</option></select></div>
@@ -983,7 +983,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   <div id="vr-admSP-panel" style="display:none">
     <div class="filters-bar">
       <div class="filter-group"><label>Unidade</label><select id="vraSP-unidade" onchange="renderVRAdmSP()"><option value="">Todas</option></select></div>
-      <div class="filter-group"><label>Responsável</label><select id="vraSP-resp" onchange="renderVRAdmSP()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
+      <div class="filter-group"><label>Responsável</label><select id="vraSP-resp" onchange="onVraSPRespChange()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
       <div class="filter-group"><label>Mês</label><select id="vraSP-mes" onchange="renderVRAdmSP()"><option value="">Todos</option></select></div>
       <div class="filter-group"><label>Ano</label><select id="vraSP-ano" onchange="renderVRAdmSP()"><option value="">Todos</option></select></div>
       <div class="filter-group" style="flex:2"><label>Nome</label><select id="vraSP-nome" onchange="renderVRAdmSP()"><option value="">Todos</option></select></div>
@@ -1022,7 +1022,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   <div id="vr-docSP-panel" style="display:none">
     <div class="filters-bar">
       <div class="filter-group"><label>Unidade</label><select id="vrdSP-unidade" onchange="renderVRDocSP()"><option value="">Todas</option></select></div>
-      <div class="filter-group"><label>Responsável</label><select id="vrdSP-resp" onchange="renderVRDocSP()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
+      <div class="filter-group"><label>Responsável</label><select id="vrdSP-resp" onchange="onVrdSPRespChange()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
       <div class="filter-group"><label>Mês</label><select id="vrdSP-mes" onchange="renderVRDocSP()"><option value="">Todos</option></select></div>
       <div class="filter-group"><label>Ano</label><select id="vrdSP-ano" onchange="renderVRDocSP()"><option value="">Todos</option></select></div>
       <div class="filter-group" style="flex:2"><label>Docente</label><select id="vrdSP-nome" onchange="renderVRDocSP()"><option value="">Todos</option></select></div>
@@ -1062,7 +1062,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 <div id="tab-copa" class="tab-content">
   <div class="filters-bar">
     <div class="filter-group"><label>Unidade</label><select id="cp-unidade" onchange="renderCopa()"><option value="">Todas</option></select></div>
-    <div class="filter-group"><label>Responsável</label><select id="cp-resp" onchange="renderCopa()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
+    <div class="filter-group"><label>Responsável</label><select id="cp-resp" onchange="onCpRespChange()"><option value="">Todos</option><option value="jessica">Jessica</option><option value="priscila">Priscila</option></select></div>
     <div class="filter-group"><label>Mês/Ano</label><select id="cp-mes" onchange="renderCopa()"><option value="">Todos</option></select></div>
     <div class="filter-group" style="flex:2"><label>Buscar beneficiário</label><input type="text" id="cp-nome" placeholder="Digite um nome…" oninput="renderCopa()" style="background-image:none"></div>
     <div class="filter-actions"><button class="btn-clear" onclick="clearCopaFilters()">Limpar</button></div>
@@ -3440,7 +3440,33 @@ var HORAS_PAGE_SIZE=50;
 
 var DP_JESSICA_UNITS  = ['ME','BOD','BR','GR','NT','VP','VO','NL','MRI','MR','TJ','CG','CX','DT','ED','EC NEW','RC','TOSCA','ONLINE','BOL'];
 var DP_PRISCILA_UNITS = ['IT','BF','IG','NI','FG','PC','LJ','IP','TQ','CP','VQ','NS','CH','BG','PN','PO'];
-function getDPResp(u){ var s=(u||'').trim().toUpperCase(); if(DP_JESSICA_UNITS.indexOf(s)>=0) return 'jessica'; if(DP_PRISCILA_UNITS.indexOf(s)>=0) return 'priscila'; return ''; }
+function getDPResp(u){
+  var s=(u||'').trim().normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+  if(s==='METODOS') s='ME';
+  if(s==='EDITORA') s='ED';
+  if(DP_JESSICA_UNITS.indexOf(s)>=0) return 'jessica';
+  if(DP_PRISCILA_UNITS.indexOf(s)>=0) return 'priscila';
+  return '';
+}
+
+// Recalcula as opções do select de Unidade para exibir só as unidades do Responsável selecionado
+function syncUnidadeByResp(uniId, respId, allRows){
+  var sel=document.getElementById(uniId); if(!sel) return;
+  var resp=v(respId);
+  var units=[...new Set(allRows.map(function(r){ return r.unidade; }).filter(Boolean))].sort();
+  if(resp) units=units.filter(function(u){ return getDPResp(u)===resp; });
+  var cur=sel.value;
+  sel.innerHTML='<option value="">Todas</option>';
+  units.forEach(function(u){ sel.appendChild(new Option(u,u)); });
+  sel.value = units.indexOf(cur)>=0 ? cur : '';
+}
+function onHRespChange(){ syncUnidadeByResp('h-unidade','h-resp',ALL_HORAS); renderHoras(); }
+function onF2RespChange(){ syncUnidadeByResp('f2-unidade','f2-resp',ALL_HORAS); renderFaltas(); }
+function onVraRespChange(){ syncUnidadeByResp('vra-unidade','vra-resp',ALL_VR_ADM); renderVRAdm(); }
+function onVrdRespChange(){ syncUnidadeByResp('vrd-unidade','vrd-resp',ALL_VR_DOC); renderVRDoc(); }
+function onVraSPRespChange(){ syncUnidadeByResp('vraSP-unidade','vraSP-resp',ALL_VR_ADM_SP); renderVRAdmSP(); }
+function onVrdSPRespChange(){ syncUnidadeByResp('vrdSP-unidade','vrdSP-resp',ALL_VR_DOC_SP); renderVRDocSP(); }
+function onCpRespChange(){ syncUnidadeByResp('cp-unidade','cp-resp',ALL_COPA); renderCopa(); }
 
 function loadHorasData(){
   google.script.run
@@ -3568,6 +3594,7 @@ function pagHoras(dir){ HORAS_PAGE+=dir; renderHorasTable(filteredHoras()); }
 function clearHorasFilters(){
   ['h-ano','h-mes','h-unidade','h-resp','h-nivel'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('h-nome').value='';
+  syncUnidadeByResp('h-unidade','h-resp',ALL_HORAS);
   renderHoras();
 }
 
@@ -3652,6 +3679,7 @@ function renderFaltas(){
 
 function clearFaltasFilters(){
   ['f2-ano','f2-mes','f2-unidade','f2-resp'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  syncUnidadeByResp('f2-unidade','f2-resp',ALL_HORAS);
   renderFaltas();
 }
 
@@ -3781,10 +3809,12 @@ function switchVrTab(tab, btn){
 
 function clearVRAdm(){
   ['vra-unidade','vra-resp','vra-mes','vra-ano','vra-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  syncUnidadeByResp('vra-unidade','vra-resp',ALL_VR_ADM);
   renderVRAdm();
 }
 function clearVRDoc(){
   ['vrd-unidade','vrd-resp','vrd-mes','vrd-ano','vrd-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  syncUnidadeByResp('vrd-unidade','vrd-resp',ALL_VR_DOC);
   renderVRDoc();
 }
 
@@ -3850,10 +3880,12 @@ function renderVRDocSP(){
 
 function clearVRAdmSP(){
   ['vraSP-unidade','vraSP-resp','vraSP-mes','vraSP-ano','vraSP-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  syncUnidadeByResp('vraSP-unidade','vraSP-resp',ALL_VR_ADM_SP);
   renderVRAdmSP();
 }
 function clearVRDocSP(){
   ['vrdSP-unidade','vrdSP-resp','vrdSP-mes','vrdSP-ano','vrdSP-nome'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  syncUnidadeByResp('vrdSP-unidade','vrdSP-resp',ALL_VR_DOC_SP);
   renderVRDocSP();
 }
 
@@ -4043,6 +4075,7 @@ function pagCopa(dir){ COPA_PAGE+=dir; renderCopaPage(); }
 function clearCopaFilters(){
   ['cp-unidade','cp-resp','cp-mes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cp-nome').value='';
+  syncUnidadeByResp('cp-unidade','cp-resp',ALL_COPA);
   renderCopa();
 }
 
