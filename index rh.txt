@@ -83,7 +83,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .date-range-wrap input{flex:1;min-width:0}
 .date-range-sep{font-size:.72rem;color:var(--gray-400);white-space:nowrap}
 .filter-actions{display:flex;gap:8px;align-items:flex-end}
-.btn-clear,.btn-download{padding:9px 16px;border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.82rem;font-weight:600;cursor:pointer;min-height:38px;transition:all .2s;white-space:nowrap}
+.btn-clear,.btn-download,.btn-sheets{padding:9px 16px;border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.82rem;font-weight:600;cursor:pointer;min-height:38px;transition:all .2s;white-space:nowrap}
 .btn-clear{border:1.5px solid var(--gray-200);background:var(--white);color:var(--gray-500)}
 .btn-clear:hover{border-color:var(--navy-300);color:var(--navy-600)}
 .btn-download{border:1.5px solid var(--success-500);background:var(--success-50);color:var(--success-600);display:flex;align-items:center;gap:5px}
@@ -866,8 +866,8 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
   </div>
   <div class="kpi-row" id="faltas-kpis"></div>
   <div class="charts-grid">
-    <div class="chart-container"><div class="chart-title">Faltas Descontadas por Unidade</div><div class="chart-subtitle">Total de horas descontadas</div><div class="chart-canvas-wrapper"><canvas id="chartFDescUnidade"></canvas></div></div>
-    <div class="chart-container"><div class="chart-title">Faltas Abonadas por Unidade</div><div class="chart-subtitle">Total de horas abonadas</div><div class="chart-canvas-wrapper"><canvas id="chartFAbonUnidade"></canvas></div></div>
+    <div class="chart-container"><div class="chart-title">Faltas Descontadas por Unidade</div><div class="chart-subtitle">Total de horas descontadas · Top 12 unidades</div><div class="chart-canvas-wrapper"><canvas id="chartFDescUnidade"></canvas></div></div>
+    <div class="chart-container"><div class="chart-title">Faltas Abonadas por Unidade</div><div class="chart-subtitle">Total de horas abonadas · Top 12 unidades</div><div class="chart-canvas-wrapper"><canvas id="chartFAbonUnidade"></canvas></div></div>
   </div>
   <div class="section">
     <div class="section-header"><div class="section-title">🏆 Ranking · Faltas Descontadas</div><div class="section-subtitle">Professores com mais horas descontadas no período</div></div>
@@ -1325,15 +1325,16 @@ var BAR_LABEL_PLUGIN={id:'barLabelPlugin',afterDatasetsDraw:function(chart){
     meta.data.forEach(function(bar,j){
       var val=ds.data[j];
       if(val===null||val===undefined||val===0) return;
+      var lbl=Number.isInteger(val)?val:val.toFixed(2);
       ctx.save();
       ctx.font='600 10px DM Sans,sans-serif';
       ctx.fillStyle='#334155';
       if(chart.options.indexAxis==='y'){
         ctx.textAlign='left';ctx.textBaseline='middle';
-        ctx.fillText(val,bar.x+4,bar.y);
+        ctx.fillText(lbl,bar.x+4,bar.y);
       } else {
         ctx.textAlign='center';ctx.textBaseline='bottom';
-        ctx.fillText(val,bar.x,bar.y-3);
+        ctx.fillText(lbl,bar.x,bar.y-3);
       }
       ctx.restore();
     });
@@ -3627,12 +3628,12 @@ function renderFaltas(){
   var units=Object.keys(byUnit);
   var fdByUnit=units.map(function(u){ return byUnit[u].reduce(function(s,r){ return s+r.fDesc; },0); });
   var faByUnit=units.map(function(u){ return byUnit[u].reduce(function(s,r){ return s+r.fAbon; },0); });
-  // ordena desc por faltas descontadas
-  var idxDesc=[...fdByUnit.keys()].sort(function(a,b){ return fdByUnit[b]-fdByUnit[a]; });
+  // ordena desc por faltas descontadas e limita às 12 maiores unidades
+  var idxDesc=[...fdByUnit.keys()].sort(function(a,b){ return fdByUnit[b]-fdByUnit[a]; }).slice(0,12);
   units=idxDesc.map(function(i){ return units[i]; });
   fdByUnit=idxDesc.map(function(i){ return fdByUnit[i]; });
-  // ordena desc por faltas abonadas
-  var idxAbon=[...faByUnit.keys()].sort(function(a,b){ return faByUnit[b]-faByUnit[a]; });
+  // ordena desc por faltas abonadas e limita às 12 maiores unidades
+  var idxAbon=[...faByUnit.keys()].sort(function(a,b){ return faByUnit[b]-faByUnit[a]; }).slice(0,12);
   var unitsFAbon=idxAbon.map(function(i){ return Object.keys(byUnit)[i]; });
   faByUnit=idxAbon.map(function(i){ return faByUnit[i]; });
   mkChart('chartFDescUnidade','bar',units,fdByUnit,'H. Descontadas',{colors:['#ef4444'],indexAxis:'y',barThickness:14});

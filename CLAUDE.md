@@ -831,6 +831,24 @@ Botão "↗ Abrir no Sheets" adicionado ao lado de "⬇ Exportar CSV" nas tabela
 
 ---
 
+### Gráficos de barra — labels com 2 casas decimais e Top 12 unidades (Faltas)
+
+**`BAR_LABEL_PLUGIN`** (plugin global usado por todo gráfico de barra via `mkChart`): o texto desenhado sobre a barra agora é `Number.isInteger(val)?val:val.toFixed(2)` — evita floats longos (ex: `12.333333333333334`) em qualquer gráfico de barra do dashboard, sem afetar valores já inteiros (headcounts etc.).
+
+**`chartFDescUnidade`/`chartFAbonUnidade`** (aba Faltas): antes exibiam todas as unidades, ficando espremidos. `renderFaltas()` agora corta a lista ordenada (desc) em `.slice(0,12)` antes de montar os dois gráficos — mostra só as 12 unidades com mais horas descontadas/abonadas. Subtítulos atualizados para "· Top 12 unidades".
+
+---
+
+### Botão "Abrir no Sheets" (`.btn-sheets`) sem padding/tamanho
+
+**Sintoma:** botão "↗ Abrir no Sheets" nas abas DP aparecia espremido/feio, diferente do "⬇ Exportar CSV" ao lado.
+
+**Causa raiz:** `.btn-sheets` só definia cor/borda/fundo — nunca herdava `padding`, `border-radius`, `font-size`, `min-height` etc. da regra compartilhada `.btn-clear,.btn-download{...}`. Como o reset global zera `padding` de todo elemento, o botão ficava sem dimensão própria.
+
+**Solução:** `.btn-sheets` adicionado à regra compartilhada (`.btn-clear,.btn-download,.btn-sheets{...}`), mantendo sua cor verde própria (`#1a7340`/`#e6f4ea`, ligeiramente diferente do verde de `.btn-download`) só que agora com o mesmo tamanho/formato dos outros botões de ação.
+
+---
+
 ## Fluxo de trabalho no Git
 
 Esse projeto não tem CI nem deploy automático. As alterações são:
