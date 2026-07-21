@@ -197,6 +197,13 @@ var turnover = (rot / 2) / media;
 - O popup de ajuda da seção (botão "?" ao lado do título "Relatório de Rotatividade") ainda descrevia a fórmula antiga (`Rotatividade ÷ Quadro médio × 100`, sem `÷2`), divergindo do tooltip da linha "Turnover ⓘ" (que já estava correto). Texto do popup atualizado para bater com a fórmula real e usar o mesmo termo "Quadro Médio" em ambos os lugares (antes um usava "Quadro médio" e o outro "Efetivo Médio").
 - **"Quadro Médio" agora aparece como linha própria na tabela** (anual e mensal), logo após "(d) Saldo fim" — antes o valor só existia internamente em `computePeriod()` (variável `media`, não retornada) e nunca era exibido, só citado em texto. `computePeriod()` agora retorna `media` no objeto; `renderRotAnual`/`renderRotMensal` renderizam a linha com tooltip explicando o conceito ("efetivo típico do período, usado como base para calcular as taxas abaixo").
 
+**Correções adicionais (sessão de 2026-07-21, parte 2):**
+- **Ícone `ⓘ` dos tooltips trocado por elemento estilizado.** O caractere Unicode `ⓘ` (CIRCLED LATIN SMALL LETTER I) depende da fonte do sistema para renderizar — em algumas plataformas aparecia como um glifo quadrado/inconsistente em vez de um círculo, especialmente na linha "Turnover | Rotatividade" (`.rot-highlight`, fundo escuro). Substituído por `<i class="tip-ico">i</i>`, um badge circular via CSS (`.tip-ico` — mesmo padrão visual do `.help-btn` já usado no popup de ajuda da seção). Adicionada regra `.rot-highlight .tip-ico` para manter contraste correto sobre o fundo navy escuro dessa linha.
+- **Filtro "Até o mês" no resumo Anual** — novo `<select id="r-mes-corte">` na barra de filtros da Rotatividade (visível só na view Anual, oculto na Mensal — lógica oposta ao `#r-ano`, controlada em `setRotView`). Permite comparar todos os anos usando o mesmo corte de mês (ex: Jan–Jul de cada ano), em vez de sempre o ano civil completo — resolve comparações YoY quando o ano corrente ainda está em andamento.
+  - `renderRotAnual(emps, cutoffMonth)` agora recebe o mês de corte (1–12, default 12 = ano completo) e usa `new Date(yr, cutoffMonth, 1)` como limite superior de cada período (em vez de sempre `new Date(yr+1, 0, 1)`). Como o mês é 1-indexado na UI e `Date` usa 0-indexado, `cutoffMonth=12` já produz naturalmente 1º de janeiro do ano seguinte — sem precisar de caso especial para "ano completo".
+  - O cabeçalho de cada coluna de ano ganha sufixo `(até Mmm)` quando o corte não é dezembro.
+  - `renderRotatividade()` passa `v('r-mes-corte')` para `renderRotAnual`.
+
 ---
 
 ### Filtro de Mês/Ano na aba Coparticipação (`getCopaData`)

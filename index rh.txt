@@ -151,6 +151,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .data-table thead th.sort-desc::after{content:' ↓';color:var(--navy-400)}
 .th-tip{position:relative;cursor:help}
 .th-tip:hover::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 4px);background:var(--navy-900);color:#fff;padding:8px 12px;border-radius:6px;font-size:.74rem;white-space:normal;min-width:260px;line-height:1.5;z-index:999;box-shadow:var(--shadow-lg);pointer-events:none;font-weight:400}
+.tip-ico{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--gray-100);border:1.5px solid var(--gray-300);color:var(--gray-500);font-size:9px;font-weight:700;font-style:normal;font-family:var(--font-main);line-height:1;vertical-align:middle;margin-left:2px}
 .data-table tbody td{padding:11px 16px;border-bottom:1px solid var(--gray-100);color:var(--navy-800);vertical-align:middle}
 .data-table tbody td.num{text-align:right;font-family:var(--font-mono);font-size:.8rem}
 .data-table tbody td.center{text-align:center}
@@ -173,6 +174,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
 .rot-table tr.rot-highlight td{background:var(--navy-800);color:#fff;font-weight:700}
 .rot-table tr.rot-highlight td.rot-label{background:var(--navy-800);color:var(--navy-100)}
 .rot-table tr.rot-highlight td.rot-total{background:var(--navy-600);color:#fff}
+.rot-table tr.rot-highlight .tip-ico{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.45);color:#fff}
 .rot-table tr.rot-sub td{font-size:.73rem;color:var(--gray-600)}
 .rot-table tr.rot-sub td.rot-label{font-size:.73rem;color:var(--gray-500);padding-left:24px;font-style:italic}
 .rot-neg{color:var(--danger-600)!important;font-weight:700}
@@ -497,6 +499,20 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
             <select id="r-unidade" onchange="renderRotatividade()" style="padding:7px 28px 7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.82rem;color:var(--navy-800);background:var(--gray-50);appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364748b%27 stroke-width=%272%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center;min-height:34px;cursor:pointer"><option value="">Todas as Unidades</option></select>
             <div class="toggle-group"><button class="toggle-btn active" id="rotBtnAnual" onclick="setRotView('anual',this)">Anual</button><button class="toggle-btn" id="rotBtnMensal" onclick="setRotView('mensal',this)">Mensal</button></div>
             <select id="r-ano" onchange="renderRotatividade()" style="display:none;padding:7px 28px 7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.82rem;color:var(--navy-800);background:var(--gray-50);appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364748b%27 stroke-width=%272%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center;min-height:34px;cursor:pointer"></select>
+            <select id="r-mes-corte" onchange="renderRotatividade()" title="Compara os anos usando o mesmo intervalo (Jan até o mês escolhido) em cada um" style="padding:7px 28px 7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.82rem;color:var(--navy-800);background:var(--gray-50);appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364748b%27 stroke-width=%272%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center;min-height:34px;cursor:pointer">
+              <option value="1">Até Jan</option>
+              <option value="2">Até Fev</option>
+              <option value="3">Até Mar</option>
+              <option value="4">Até Abr</option>
+              <option value="5">Até Mai</option>
+              <option value="6">Até Jun</option>
+              <option value="7">Até Jul</option>
+              <option value="8">Até Ago</option>
+              <option value="9">Até Set</option>
+              <option value="10">Até Out</option>
+              <option value="11">Até Nov</option>
+              <option value="12" selected>Ano completo</option>
+            </select>
           </div>
         </div>
         <div class="table-scroll" style="padding:0 0 4px"><table class="rot-table" id="tblRotatividade"><tbody id="tblRotBody"><tr><td colspan="10" class="table-empty">Carregando…</td></tr></tbody></table></div>
@@ -2186,12 +2202,13 @@ function setRotView(mode,btn){
   document.querySelectorAll('.toggle-btn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   document.getElementById('r-ano').style.display=mode==='mensal'?'':'none';
+  document.getElementById('r-mes-corte').style.display=mode==='anual'?'':'none';
   renderRotatividade();
 }
 function renderRotatividade(){
   var unitSel=v('r-unidade');
   var emps=unitSel?ALL_EMP.filter(function(e){ return e.todasUnidades.includes(unitSel); }):ALL_EMP;
-  if(ROT_VIEW==='anual') renderRotAnual(emps);
+  if(ROT_VIEW==='anual') renderRotAnual(emps,v('r-mes-corte'));
   else renderRotMensal(emps,parseInt(v('r-ano')||new Date().getFullYear()));
 }
 function empAdm(e){ if(!e.admYear) return null; return new Date(e.admYear,(e.admMonth||1)-1,e.admDay||1); }
@@ -2219,13 +2236,14 @@ function computePeriod(emps,from,to){
   }).length;
   return {saldoInicio,contrat,demiss,rot,saldoFim,variacao,taxaVar,media,turnover,taxaAdm,taxaDem,deslig6m,taxa6m:deslig6m/media};
 }
-function renderRotAnual(emps){
+function renderRotAnual(emps,cutoffMonth){
+  cutoffMonth=parseInt(cutoffMonth)||12;
   var curYear=new Date().getFullYear();
   var admYears=emps.filter(function(e){ return e.admYear; }).map(function(e){ return e.admYear; });
   if(!admYears.length){ document.getElementById('tblRotBody').innerHTML='<tr><td colspan="10" class="table-empty">Sem dados.</td></tr>'; return; }
   var startY=Math.max(Math.min.apply(null,admYears),2022);
   var years=[]; for(var y=startY;y<=curYear;y++) years.push(y);
-  var periods=years.map(function(yr){ return {y:yr,d:computePeriod(emps,new Date(yr,0,1),new Date(yr+1,0,1))}; });
+  var periods=years.map(function(yr){ return {y:yr,d:computePeriod(emps,new Date(yr,0,1),new Date(yr,cutoffMonth,1))}; });
   var totContrat=periods.reduce(function(s,p){ return s+p.d.contrat; },0);
   var totDemiss=periods.reduce(function(s,p){ return s+p.d.demiss; },0);
   var totRot=totContrat+totDemiss,tot6m=periods.reduce(function(s,p){ return s+p.d.deslig6m; },0);
@@ -2235,7 +2253,8 @@ function renderRotAnual(emps){
   var totTaxaAdm=totContrat/totMedia,totTaxaDem=totDemiss/totMedia,totTaxa6m=tot6m/totMedia;
   var acumTO=0,acumTOs=periods.map(function(p){ acumTO+=p.d.turnover; return acumTO; });
   var acum6m=0,acum6ms=periods.map(function(p){ acum6m+=p.d.deslig6m; return acum6m; });
-  var TH='<th class="rot-label">Métrica</th>'+periods.map(function(p){ return '<th>'+p.y+'</th>'; }).join('')+'<th class="rot-total">Total Período</th>';
+  var cutoffSuffix=cutoffMonth<12?' <span style="font-weight:400;font-size:.72em;opacity:.75">(até '+MONTHS_PT[cutoffMonth-1]+')</span>':'';
+  var TH='<th class="rot-label">Métrica</th>'+periods.map(function(p){ return '<th>'+p.y+cutoffSuffix+'</th>'; }).join('')+'<th class="rot-total">Total Período</th>';
   var row=function(label,vals,totVal,cls,fmt_){
     cls=cls||''; var f=fmt_||function(x){ return x===null?'<span class="rot-dash">—</span>':String(x); };
     return '<tr class="'+cls+'"><td class="rot-label">'+label+'</td>'+vals.map(function(x){ return '<td>'+f(x)+'</td>'; }).join('')+'<td class="rot-total">'+f(totVal)+'</td></tr>';
@@ -2252,9 +2271,9 @@ function renderRotAnual(emps){
   html+=row('(=) Variação',periods.map(function(p){ return p.d.variacao; }),totVar,'',function(x){ return x===null?'—':x>0?'+'+fmt(x):fmt(x); });
   html+=row('Taxa de Variação',periods.map(function(p){ return p.d.taxaVar; }),totTaxaVar,'rot-bold',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
-  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Média entre o Saldo Início e o Saldo Fim do período — representa o efetivo típico da empresa nesse intervalo, usado como base para calcular as taxas abaixo.">Quadro Médio ⓘ</span>',periods.map(function(p){ return p.d.media; }),totMedia,'',fmt);
+  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Média entre o Saldo Início e o Saldo Fim do período — representa o efetivo típico da empresa nesse intervalo, usado como base para calcular as taxas abaixo.">Quadro Médio <i class="tip-ico">i</i></span>',periods.map(function(p){ return p.d.media; }),totMedia,'',fmt);
   html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
-  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Turnover = ((Contratações + Demissões) ÷ 2) ÷ Quadro Médio. Divide-se por 2 porque contratação e demissão juntas contam como uma única movimentação de rotatividade (fórmula padrão ABRH).">Turnover | Rotatividade ⓘ</span>',periods.map(function(p){ return p.d.turnover; }),totTO,'rot-highlight',fmtPct);
+  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Turnover = ((Contratações + Demissões) ÷ 2) ÷ Quadro Médio. Divide-se por 2 porque contratação e demissão juntas contam como uma única movimentação de rotatividade (fórmula padrão ABRH).">Turnover | Rotatividade <i class="tip-ico">i</i></span>',periods.map(function(p){ return p.d.turnover; }),totTO,'rot-highlight',fmtPct);
   html+=row('Turnover | Acumulado Anual',acumTOs,totTO,'rot-sub',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
   html+=row('Taxa | Rotatividade Admissional',periods.map(function(p){ return p.d.taxaAdm; }),totTaxaAdm,'rot-sub',fmtPct);
@@ -2287,9 +2306,9 @@ function renderRotMensal(emps,year){
   html+=row('(=) Variação',periods.map(function(p){ return p.d.variacao; }),totd.variacao,'',function(x){ return x===null?'—':x>0?'+'+fmt(x):'<span class="'+(x<0?'rot-neg':'')+'">'+fmt(x)+'</span>'; });
   html+=row('Taxa de Variação',periods.map(function(p){ return p.d.taxaVar; }),totd.taxaVar,'rot-bold',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
-  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Média entre o Saldo Início e o Saldo Fim do período — representa o efetivo típico da empresa nesse intervalo, usado como base para calcular as taxas abaixo.">Quadro Médio ⓘ</span>',periods.map(function(p){ return p.d.media; }),totd.media,'',fmt);
+  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Média entre o Saldo Início e o Saldo Fim do período — representa o efetivo típico da empresa nesse intervalo, usado como base para calcular as taxas abaixo.">Quadro Médio <i class="tip-ico">i</i></span>',periods.map(function(p){ return p.d.media; }),totd.media,'',fmt);
   html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
-  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Turnover = ((Contratações + Demissões) ÷ 2) ÷ Quadro Médio. Divide-se por 2 porque contratação e demissão juntas contam como uma única movimentação de rotatividade (fórmula padrão ABRH).">Turnover | Rotatividade ⓘ</span>',periods.map(function(p){ return p.d.turnover; }),totd.turnover,'rot-highlight',fmtPct);
+  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Turnover = ((Contratações + Demissões) ÷ 2) ÷ Quadro Médio. Divide-se por 2 porque contratação e demissão juntas contam como uma única movimentação de rotatividade (fórmula padrão ABRH).">Turnover | Rotatividade <i class="tip-ico">i</i></span>',periods.map(function(p){ return p.d.turnover; }),totd.turnover,'rot-highlight',fmtPct);
   html+=row('Turnover | Acumulado no Ano',acumTOs,totd.turnover,'rot-sub',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
   html+=row('Taxa | Rotatividade Admissional',periods.map(function(p){ return p.d.taxaAdm; }),totd.taxaAdm,'rot-sub',fmtPct);
