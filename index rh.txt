@@ -492,7 +492,7 @@ body{font-family:var(--font-main);background:var(--navy-25);color:var(--navy-900
       </div>
       <div class="section">
         <div class="section-header">
-          <div><div class="section-title">📊 Relatório de Rotatividade</div><div class="section-subtitle"><span class="help-wrap">Contratações, demissões e índices de turnover por período<button class="help-btn" style="margin-left:6px">?</button><div class="help-popup"><strong>Fórmulas</strong><br>Rotatividade = Contratações + Demissões<br>Saldo fim = Saldo início + Contratações – Demissões<br>Turnover = Rotatividade ÷ Quadro médio × 100<br>Quadro médio = (Saldo início + Saldo fim) ÷ 2<br>&lt;6m = desligados com &lt;6 meses de casa</div></span></div></div>
+          <div><div class="section-title">📊 Relatório de Rotatividade</div><div class="section-subtitle"><span class="help-wrap">Contratações, demissões e índices de turnover por período<button class="help-btn" style="margin-left:6px">?</button><div class="help-popup"><strong>Fórmulas</strong><br>Rotatividade = Contratações + Demissões<br>Saldo fim = Saldo início + Contratações – Demissões<br>Quadro Médio = (Saldo início + Saldo fim) ÷ 2 — efetivo típico do período<br>Turnover = ((Contratações + Demissões) ÷ 2) ÷ Quadro Médio<br>&lt;6m = desligados com &lt;6 meses de casa</div></span></div></div>
           <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
             <select id="r-unidade" onchange="renderRotatividade()" style="padding:7px 28px 7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:var(--font-main);font-size:.82rem;color:var(--navy-800);background:var(--gray-50);appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2364748b%27 stroke-width=%272%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 8px center;min-height:34px;cursor:pointer"><option value="">Todas as Unidades</option></select>
             <div class="toggle-group"><button class="toggle-btn active" id="rotBtnAnual" onclick="setRotView('anual',this)">Anual</button><button class="toggle-btn" id="rotBtnMensal" onclick="setRotView('mensal',this)">Mensal</button></div>
@@ -2217,7 +2217,7 @@ function computePeriod(emps,from,to){
     var ad=empAdm(e); if(!ad) return false;
     return (dd-ad)<6*30.44*24*3600*1000;
   }).length;
-  return {saldoInicio,contrat,demiss,rot,saldoFim,variacao,taxaVar,turnover,taxaAdm,taxaDem,deslig6m,taxa6m:deslig6m/media};
+  return {saldoInicio,contrat,demiss,rot,saldoFim,variacao,taxaVar,media,turnover,taxaAdm,taxaDem,deslig6m,taxa6m:deslig6m/media};
 }
 function renderRotAnual(emps){
   var curYear=new Date().getFullYear();
@@ -2231,7 +2231,7 @@ function renderRotAnual(emps){
   var totRot=totContrat+totDemiss,tot6m=periods.reduce(function(s,p){ return s+p.d.deslig6m; },0);
   var firstSaldo=periods[0]?periods[0].d.saldoInicio:0,lastSaldo=periods[periods.length-1]?periods[periods.length-1].d.saldoFim:0;
   var totMedia=(firstSaldo+lastSaldo)/2||1,totVar=lastSaldo-firstSaldo;
-  var totTaxaVar=firstSaldo?totVar/firstSaldo:0,totTO=totRot/totMedia;
+  var totTaxaVar=firstSaldo?totVar/firstSaldo:0,totTO=(totRot/2)/totMedia;
   var totTaxaAdm=totContrat/totMedia,totTaxaDem=totDemiss/totMedia,totTaxa6m=tot6m/totMedia;
   var acumTO=0,acumTOs=periods.map(function(p){ acumTO+=p.d.turnover; return acumTO; });
   var acum6m=0,acum6ms=periods.map(function(p){ acum6m+=p.d.deslig6m; return acum6m; });
@@ -2252,7 +2252,9 @@ function renderRotAnual(emps){
   html+=row('(=) Variação',periods.map(function(p){ return p.d.variacao; }),totVar,'',function(x){ return x===null?'—':x>0?'+'+fmt(x):fmt(x); });
   html+=row('Taxa de Variação',periods.map(function(p){ return p.d.taxaVar; }),totTaxaVar,'rot-bold',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
-  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Fórmula ABRH: ((Entradas + Saídas) ÷ 2) ÷ Efetivo Médio. Efetivo Médio = (Saldo Início + Saldo Fim) ÷ 2.">Turnover | Rotatividade ⓘ</span>',periods.map(function(p){ return p.d.turnover; }),totTO,'rot-highlight',fmtPct);
+  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Média entre o Saldo Início e o Saldo Fim do período — representa o efetivo típico da empresa nesse intervalo, usado como base para calcular as taxas abaixo.">Quadro Médio ⓘ</span>',periods.map(function(p){ return p.d.media; }),totMedia,'',fmt);
+  html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
+  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Turnover = ((Contratações + Demissões) ÷ 2) ÷ Quadro Médio. Divide-se por 2 porque contratação e demissão juntas contam como uma única movimentação de rotatividade (fórmula padrão ABRH).">Turnover | Rotatividade ⓘ</span>',periods.map(function(p){ return p.d.turnover; }),totTO,'rot-highlight',fmtPct);
   html+=row('Turnover | Acumulado Anual',acumTOs,totTO,'rot-sub',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="'+(years.length+2)+'"></td></tr>';
   html+=row('Taxa | Rotatividade Admissional',periods.map(function(p){ return p.d.taxaAdm; }),totTaxaAdm,'rot-sub',fmtPct);
@@ -2285,7 +2287,9 @@ function renderRotMensal(emps,year){
   html+=row('(=) Variação',periods.map(function(p){ return p.d.variacao; }),totd.variacao,'',function(x){ return x===null?'—':x>0?'+'+fmt(x):'<span class="'+(x<0?'rot-neg':'')+'">'+fmt(x)+'</span>'; });
   html+=row('Taxa de Variação',periods.map(function(p){ return p.d.taxaVar; }),totd.taxaVar,'rot-bold',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
-  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Fórmula ABRH: ((Entradas + Saídas) ÷ 2) ÷ Efetivo Médio. Efetivo Médio = (Saldo Início + Saldo Fim) ÷ 2.">Turnover | Rotatividade ⓘ</span>',periods.map(function(p){ return p.d.turnover; }),totd.turnover,'rot-highlight',fmtPct);
+  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Média entre o Saldo Início e o Saldo Fim do período — representa o efetivo típico da empresa nesse intervalo, usado como base para calcular as taxas abaixo.">Quadro Médio ⓘ</span>',periods.map(function(p){ return p.d.media; }),totd.media,'',fmt);
+  html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
+  html+=row('<span class="th-tip" style="display:inline-block" data-tip="Turnover = ((Contratações + Demissões) ÷ 2) ÷ Quadro Médio. Divide-se por 2 porque contratação e demissão juntas contam como uma única movimentação de rotatividade (fórmula padrão ABRH).">Turnover | Rotatividade ⓘ</span>',periods.map(function(p){ return p.d.turnover; }),totd.turnover,'rot-highlight',fmtPct);
   html+=row('Turnover | Acumulado no Ano',acumTOs,totd.turnover,'rot-sub',fmtPct);
   html+='<tr class="rot-section-hd"><td colspan="14"></td></tr>';
   html+=row('Taxa | Rotatividade Admissional',periods.map(function(p){ return p.d.taxaAdm; }),totd.taxaAdm,'rot-sub',fmtPct);

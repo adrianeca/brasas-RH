@@ -192,6 +192,11 @@ var turnover = (rot / 2) / media;
 
 **Tooltip adicionado:** ao passar o mouse sobre "Turnover | Rotatividade ⓘ" na tabela, aparece a explicação da fórmula. Implementado com `<span class="th-tip" data-tip="...">` (mesmo padrão CSS dos outros tooltips do projeto). Aplicado em ambas as views (anual e mensal).
 
+**Correções adicionais (sessão de 2026-07-21) — mesmo bug, pontas que ficaram para trás:**
+- A coluna "Total Período" (`totTO` em `renderRotAnual`) calculava o turnover **sem** o `÷2` (`totRot/totMedia`), enquanto cada coluna de ano/mês já usava `(rot/2)/media` — o total não batia com a mesma fórmula das colunas. Corrigido para `(totRot/2)/totMedia`.
+- O popup de ajuda da seção (botão "?" ao lado do título "Relatório de Rotatividade") ainda descrevia a fórmula antiga (`Rotatividade ÷ Quadro médio × 100`, sem `÷2`), divergindo do tooltip da linha "Turnover ⓘ" (que já estava correto). Texto do popup atualizado para bater com a fórmula real e usar o mesmo termo "Quadro Médio" em ambos os lugares (antes um usava "Quadro médio" e o outro "Efetivo Médio").
+- **"Quadro Médio" agora aparece como linha própria na tabela** (anual e mensal), logo após "(d) Saldo fim" — antes o valor só existia internamente em `computePeriod()` (variável `media`, não retornada) e nunca era exibido, só citado em texto. `computePeriod()` agora retorna `media` no objeto; `renderRotAnual`/`renderRotMensal` renderizam a linha com tooltip explicando o conceito ("efetivo típico do período, usado como base para calcular as taxas abaixo").
+
 ---
 
 ### Filtro de Mês/Ano na aba Coparticipação (`getCopaData`)
